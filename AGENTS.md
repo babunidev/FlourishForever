@@ -5,7 +5,7 @@
 
 ## Preserve the human-directed expression concept
 
-The creator's idea is **automatic random native-game emotes on selected ability casts**, with individual ability chance, cooldown and curated emote pools. Do not reimagine it as a chat spam bot, combat spell automation, AI-generated roleplay dialogue, or universal “every ability emotes” feature without explicit creator approval.
+The creative's idea is **automatic random native-game emotes on selected ability casts**, with individual ability chance, cooldown and curated emote pools. Do not reimagine it as a chat spam bot, combat spell automation, AI-generated roleplay dialogue, or universal “every ability emotes” feature without explicit creative approval.
 
 The player must choose eligible non-passive abilities; a fresh character's configured ability list is empty. The default enabled switch alone does not cause unsolicited emotes. Respect per-character autonomy and the `DoEmote` pipeline.
 
@@ -27,11 +27,11 @@ The player must choose eligible non-passive abilities; a fresh character's confi
 ## Development protocol
 
 1. Inspect the live source and Git history; preserve README, concept, architecture, design, decisions and DEVLOG as the shared specification.
-2. Record **creator direction**, assistant proposal, alternatives and constraints separately. Do not claim an AI proposal was accepted unless Babuni explicitly approved it.
+2. Record **creative direction**, assistant proposal, alternatives and constraints separately. Do not claim an AI proposal was accepted unless Babuni explicitly approved it.
 3. Record actual implementation files, dates, commit and release metadata; note that version 0.3.1 updated packaging/version text without runtime changes.
 4. For code changes, test client event signatures, abilities/spellbook enumeration, native emote output, per-character saved profiles, cooldown edge cases, reloads and compatibility with other emote addons.
 5. Distinguish source review, a mocked Lua test and real in-game proof; none were executed in this October 27 audit.
-6. Keep private chat/character GUIDs out of public portfolio examples. Respect third-party WoW assets and resolve absent code licensing with the creator.
+6. Keep private chat/character GUIDs out of public portfolio examples. Respect third-party WoW assets and resolve absent code licensing with the creative.
 7. Update README, CONCEPT, ROADMAP, CHANGELOG, AGENTS, docs/ARCHITECTURE, DESIGN, CONTENT, DECISIONS, DEVLOG, AI_COLLABORATION for material changes.
 
 No gameplay, TOC or packaging modifications are authorized by this docs-only audit.
