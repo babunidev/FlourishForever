@@ -1,6 +1,6 @@
 # Flourish Forever — development and AI collaboration rules
 
-**Creator and creative decision authority:** Babuni.dev.  
+**Human creative / final decision-maker:** Babuni.  
 **Release:** 0.3.1-beta / WoW: Forever 16001. **Prior development credit:** Babunigaming.
 
 ## Preserve the human-directed expression concept
@@ -27,7 +27,7 @@ The player must choose eligible non-passive abilities; a fresh character's confi
 ## Development protocol
 
 1. Inspect the live source and Git history; preserve README, concept, architecture, design, decisions and DEVLOG as the shared specification.
-2. Record **creator direction**, assistant proposal, alternatives and constraints separately. Do not claim an AI proposal was accepted unless Babuni.dev explicitly approved it.
+2. Record **creator direction**, assistant proposal, alternatives and constraints separately. Do not claim an AI proposal was accepted unless Babuni explicitly approved it.
 3. Record actual implementation files, dates, commit and release metadata; note that version 0.3.1 updated packaging/version text without runtime changes.
 4. For code changes, test client event signatures, abilities/spellbook enumeration, native emote output, per-character saved profiles, cooldown edge cases, reloads and compatibility with other emote addons.
 5. Distinguish source review, a mocked Lua test and real in-game proof; none were executed in this October 27 audit.
@@ -39,3 +39,7 @@ No gameplay, TOC or packaging modifications are authorized by this docs-only aud
 ## Related projects and provenance
 
 Review [the expressive-addon family history](docs/EMOTE_FAMILY_HISTORY.md) when documenting this addon. Do not conflate the older button-press hooks, the guild's user-registered token table, Flourish Forever's spellbook/client-token selection, or Roar Forever's voice-restoration purpose. A successful cast event does not imply a successful target hit. Respect first-person creative authorship and evidence limitations.
+
+## Repository-local documentation standard
+
+Before writing or changing project documentation, read [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md). These rules travel with this repository and do not depend on the babuni.dev ChatGPT Project. Preserve all project-specific technical, creative, canon, safety, licensing, and historical rules in this file; follow the linked standard for public first-person narrative, human–AI attribution, concise development journals, decision records, and evidence-based verification. **Babuni** is the human creative; **babuni.dev** is the website/portfolio, not the person. Preserve third-party credits and historical legal notices. References above to a dated “documentation-only audit” describe that past task, not a permanent ban on later authorized implementation.
