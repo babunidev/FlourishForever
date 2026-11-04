@@ -1,17 +1,17 @@
 # Flourish Forever — creative and technical development journal
 
-**Original creator and creative director:** Babuni.dev (earlier public identity Babunigaming)  
-**Historical source:** October 22 and 26, 2026 Git commits; three Lua files; README and metadata; the creator's recorded October conversation about project previews and descriptions. This is a **source-supported retrospective**, not a reconstruction of private messages which were not available.
+**Human creative:** Babuni · **Portfolio:** babuni.dev · **Historical public identity:** Babunigaming  
+**Historical source:** October 22 and 26, 2026 Git commits; three Lua files; README and metadata; Babuni's recorded October conversation about project previews and descriptions. This is a **source-supported retrospective**, not a reconstruction of private messages which were not available.
 
 ## Making ability casts feel like character moments
 
-Flourish Forever belongs to a particular thread of Babuni.dev experiments: allowing a character to do more than mechanically repeat a combat ability. A player may associate an important attack with a roar, a cheer, a gesture or a sudden burst of personality. But the game normally presents the ability as a spell and its ordinary combat animation, without adding this small expressive choice.
+Flourish Forever belongs to a particular thread of my experiments: allowing a character to do more than mechanically repeat a combat ability. A player may associate an important attack with a roar, a cheer, a gesture or a sudden burst of personality. But the game normally presents the ability as a spell and its ordinary combat animation, without adding this small expressive choice.
 
-The creator's direction was to make **automatic random emotes on selected abilities** possible. That small phrase captures the concept: not a system that chooses what the character casts, not a macro that must be pressed separately every time, and not a scripted roleplay monologue that speaks for the player without limits. A configured combat action becomes an opportunity for a tiny, variable flourish.
+The idea was to make **automatic random emotes on selected abilities** possible. That small phrase captures the concept: not a system that chooses what the character casts, not a macro that must be pressed separately every time, and not a scripted roleplay monologue that speaks for the player without limits. A configured combat action becomes an opportunity for a tiny, variable flourish.
 
 The public repository describes it as allowing the player to pick abilities from the spellbook, then set an independent chance, a cooldown and the emotes that might appear. The program expresses that in a way which leaves taste with the player. A powerful defensive ability might rarely produce one emblematic gesture, while a different move has a small menu of possible actions. The random choice introduces surprise but the source of variation remains the player's own selection.
 
-Babuni.dev owns that creative vision and directed the project. The available material does not provide a full original ideation transcript, exact rejected names or whether a particular coding assistant typed each October 22 Lua function. The October 27 documentation assistant is recording source and conversation evidence, not claiming to have originated the concept.
+As Babuni, the original creative direction is mine. The available material does not provide a full original ideation transcript, exact rejected names or whether a particular coding assistant typed each October 22 Lua function. The October 27 documentation assistant is recording source and conversation evidence, not claiming to have originated the concept.
 
 ## October 22, 2026 — a first Git commit that already contains a full interface
 
@@ -63,7 +63,7 @@ Commit **`56d8b67d719a`**, “Ship Flourish Forever 0.3.1-beta for the CurseForg
 
 That means the feature's first source state and the later beta packaging state are distinct distribution milestones, not evidence of a second gameplay implementation. Both [v0.3.0-beta](https://github.com/babunidev/FlourishForever/releases/tag/v0.3.0-beta) and [v0.3.1-beta](https://github.com/babunidev/FlourishForever/releases/tag/v0.3.1-beta) were published as GitHub release entries October 22. The GitHub API currently lists **no attached ZIP/assets** for either, and no confirmed CurseForge packaging result was inspected in this audit.
 
-A creator discussion later on October 22 focused on presenting Flourish Forever to the public: crafting a one-sentence project preview, comparing descriptions to other Babuni.dev addons, and designing promotional imagery from provided in-game screenshots. This demonstrates another part of the creative work: the addon was not merely a script, but something the creator wanted to communicate visually and consistently with a wider collection. The conversation's exact accepted copy and image artifact are not preserved as commits in this particular repository, so this journal does not assert they were added to the codebase.
+A discussion about the public presentation later on October 22 focused on presenting Flourish Forever to the public: crafting a one-sentence project preview, comparing descriptions to other addons on babuni.dev, and designing promotional imagery from provided in-game screenshots. This demonstrates another part of the creative work: the addon was not merely a script, but something I wanted to communicate visually and consistently with a wider collection. The conversation's exact accepted copy and image artifact are not preserved as commits in this particular repository, so this journal does not assert they were added to the codebase.
 
 ## October 26–27 — documenting the development as part of the artwork
 
@@ -73,23 +73,29 @@ On **October 27**, the current documentation assistant inspected the main Git tr
 
 This review found **no LICENSE**, no `tests/` path, no GitHub CI workflow, no project screenshots and no GitHub release assets in the repository tree/metadata. These absences are documented because it would be misleading to invent tests, download links or rights. The review did **not** open a WoW client, invoke `DoEmote`, check event payloads, run Lua tests, reproduce the early cooldown edge case or test live installation.
 
-**Human contribution:** Babuni.dev's original expressive concept, creative direction and eventual choices, with earlier Babunigaming credit retained as historical context. **AI contribution in this session:** code/history interpretation, identification of source-level limitations, editorial writing and the documentation Git commit. Git alone doesn't identify precisely who typed each function of the initial source, and this record doesn't claim to.
+**Human contribution:** Babuni's original expressive concept, creative direction and eventual choices, with earlier Babunigaming credit retained as historical context. **AI contribution in this session:** code/history interpretation, identification of source-level limitations, editorial writing and the documentation Git commit. Git alone doesn't identify precisely who typed each function of the initial source, and this record doesn't claim to.
 
 ## What the next chapter should actually observe
 
-The most valuable evidence would be video or logs from the intended Forever beta: select one ability, check an emote, and cast it repeatedly at known timestamps. Watch what happens at 0%, 100%, under a cooldown, after a reload, and when a cast succeeds but does not land damage. Try two configured abilities in quick succession and verify that one doesn't consume the other's cooldown. Switch characters and confirm saved choices stay separate.
+The next useful evidence will come from the Forever release client: select one ability, check an emote, and cast it repeatedly at known timestamps. Watch what happens at 0%, 100%, under a cooldown, after a reload, and when a cast succeeds but does not land damage. Try two configured abilities in quick succession and verify that one doesn't consume the other's cooldown. Switch characters and confirm saved choices stay separate.
 
-Then inspect the creative quality: Does the random flourish make a character feel more alive, or does a particular combination become repetitive? Which gestures convey the right personality? Do two fast emotes overwhelm normal social play? These are design findings the creator should make from the game itself, not things an assistant can certify from source alone.
+Then inspect the creative quality: Does the random flourish make a character feel more alive, or does a particular combination become repetitive? Which gestures convey the right personality? Do two fast emotes overwhelm normal social play? These are design findings for me to make in the game itself, not things an assistant can certify from source alone.
 
 Flourish Forever is a compact demonstration of **authored spontaneity**: the player chooses the moments and possible actions, and a modest system adds variation at playtime. The technical work matters because its restraints—per-character preferences, chance, cooldown, successful-cast events and honest data migration—let that spontaneous character expression remain under the player's control.
 
 ## October 27, 2026 — preserving the portfolio artwork
 
-The creator supplied the accepted FF medallion logo, gnome-roar promotional showcase, and smaller JPEG thumbnail, and explicitly requested their addition to the repository for the Babuni.dev portfolio. The visual direction came from the creator: match the other Forever addons, show the addon alongside an appealing composition, and keep the upload thumbnail below 2 MB. Earlier AI work generated the artwork and prepared the smaller export.
+I supplied the accepted FF medallion logo, gnome-roar promotional showcase, and smaller JPEG thumbnail, and explicitly requested their addition to the repository for the Babuni.dev portfolio. The visual direction was to match the other Forever addons, show the addon alongside an appealing composition, and keep the upload thumbnail below 2 MB. Earlier AI work generated the artwork and prepared the smaller export.
 
 This asset addition preserves the three supplied files unchanged under `assets/portfolio/`, using URL-safe filenames. The assistant added an index and JSON manifest with dimensions, byte sizes, roles, suggested alt text and display paths, identifying the JPEG as the preferred web preview. Image decoding, dimensions and byte-for-byte equality with the supplied originals were checked. The JPEG is 481,703 bytes. This records the actual supplied file, rather than relying on an earlier conversational size estimate.
 
 No portfolio website integration or in-game behavior was tested by this addition. The promotional composition is not an unedited gameplay screenshot. The exact date of the earlier creative exchange is not established by the supplied excerpts; October 27 dates this repository addition.
+
+## 4 November 2026 — small fixes, documentation and clean installations
+
+Having used the addon during the Forever beta, I considered its original feature set working. The aim of this maintenance pass was not a new emote engine; it was to keep the native `DoEmote` behavior and correct specific weaknesses without surprising players. My AI assistant implemented the first-cast cooldown correction, safer saved values and spellbook filtering on a **separate development branch**. The Lua syntax and mocked regression tests passed on GitHub Actions and my Nobara system, but that does not replace another check inside the live game.
+
+The GitHub repository should continue carrying the concept, history, development notes and portfolio images, without sending those files into everyone's AddOns directory. That led to a minimal CurseForge package configuration, merged into `main`. A matching MIT license was documented because CurseForge already listed this project as MIT. The README and release notes now keep the public CurseForge file, GitHub tag, development code and actual verification clearly separate. No new version was published or authorized.
 
 ## 1 November 2026 — connecting Flourish to the earlier experiments
 
