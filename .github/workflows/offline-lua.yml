@@ -1,0 +1,25 @@
+name: Offline Lua regression checks
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lua:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lua
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lua5.4
+      - name: Check addon Lua syntax
+        run: |
+          luac5.4 -p FlourishForever_Storage.lua
+          luac5.4 -p FlourishForever.lua
+          luac5.4 -p FlourishForever_ActionEmotes.lua
+      - name: Mocked gameplay and storage regression tests
+        run: lua5.4 tests/test_action_emotes.lua

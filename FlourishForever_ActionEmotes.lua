@@ -18,6 +18,16 @@ local function AbilityKey(name)
     return string.lower(Trim(name))
 end
 
+local function BoundedWholeNumber(value, default, minValue, maxValue)
+    local number = tonumber(value)
+    if not number or number ~= number then
+        return default
+    end
+    -- Clamp before rounding so infinite or excessively large saved values are safe.
+    number = math.max(minValue, math.min(maxValue, number))
+    return math.floor(number + 0.5)
+end
+
 local function EnsureDB()
     -- Rebind on access as well as login, so an early event cannot leave UI
     -- edits in a session-only table when the character GUID becomes available.
@@ -30,6 +40,9 @@ local function EnsureDB()
 
     if FlourishForeverDB.actionEmotesEnabled == nil then
         FlourishForeverDB.actionEmotesEnabled = true
+    elseif type(FlourishForeverDB.actionEmotesEnabled) ~= "boolean" then
+        -- A malformed saved switch must not silently enable unsolicited emotes.
+        FlourishForeverDB.actionEmotesEnabled = false
     end
 
     if type(FlourishForeverDB.instances) ~= "table" then
@@ -37,12 +50,13 @@ local function EnsureDB()
     end
 
     for key, cfg in pairs(FlourishForeverDB.instances) do
-        if type(cfg) ~= "table" then
-            FlourishForeverDB.instances[key] = nil
-        else
-            cfg.name = cfg.name or key
-            cfg.chance = tonumber(cfg.chance) or DEFAULT_CHANCE
-            cfg.cooldown = tonumber(cfg.cooldown) or DEFAULT_COOLDOWN
+        if type(key) == "string" and key ~= "" and type(cfg) == "table" then
+            -- Preserve unrecognized records for possible recovery, but never run them.
+            if type(cfg.name) ~= "string" or cfg.name == "" then
+                cfg.name = key
+            end
+            cfg.chance = BoundedWholeNumber(cfg.chance, DEFAULT_CHANCE, 0, 100)
+            cfg.cooldown = BoundedWholeNumber(cfg.cooldown, DEFAULT_COOLDOWN, 0, 120)
             if type(cfg.emotes) ~= "table" then
                 cfg.emotes = { ROAR = true }
             end
@@ -78,7 +92,9 @@ local function IsPassive(spellID)
 end
 
 local function AddKnownAbility(list, seen, name, spellID)
-    if not name or name == "" or not spellID or seen[spellID] then
+    if type(name) ~= "string" or name == ""
+        or type(spellID) ~= "number" or spellID <= 0
+        or spellID ~= math.floor(spellID) or seen[spellID] then
         return
     end
 
@@ -96,6 +112,7 @@ local function RefreshKnownAbilities()
 
     if C_SpellBook and C_SpellBook.GetNumSpellBookSkillLines and C_SpellBook.GetSpellBookSkillLineInfo and C_SpellBook.GetSpellBookItemInfo then
         local bank = (Enum and Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Player) or 0
+        local spellItemType = (Enum and Enum.SpellBookItemType and Enum.SpellBookItemType.Spell) or 1
         local numTabs = C_SpellBook.GetNumSpellBookSkillLines() or 0
 
         for tab = 1, numTabs do
@@ -106,7 +123,9 @@ local function RefreshKnownAbilities()
 
                 for index = offset + 1, offset + count do
                     local info = C_SpellBook.GetSpellBookItemInfo(index, bank)
-                    if info then
+                    -- Only learned, active player spells are selectable.
+                    -- Flyouts, future spells and pet actions have non-spell action IDs.
+                    if info and info.itemType == spellItemType and not info.isPassive and not info.isOffSpec then
                         local spellID = info.spellID or info.actionID
                         local name = info.name or GetSpellNameByID(spellID)
                         AddKnownAbility(list, seen, name, spellID)
@@ -129,9 +148,11 @@ local function RefreshKnownAbilities()
                     name = GetSpellBookItemName(index, bookType)
                 end
 
-                local _, spellID = GetSpellBookItemInfo(index, bookType)
-                name = name or GetSpellNameByID(spellID)
-                AddKnownAbility(list, seen, name, spellID)
+                local spellType, spellID = GetSpellBookItemInfo(index, bookType)
+                if spellType == "SPELL" then
+                    name = name or GetSpellNameByID(spellID)
+                    AddKnownAbility(list, seen, name, spellID)
+                end
             end
         end
     end
@@ -184,8 +205,10 @@ local function SortedInstanceKeys()
     EnsureDB()
     local keys = {}
 
-    for key in pairs(db.instances) do
-        table.insert(keys, key)
+    for key, cfg in pairs(db.instances) do
+        if type(key) == "string" and key ~= "" and type(cfg) == "table" then
+            table.insert(keys, key)
+        end
     end
 
     table.sort(keys, function(a, b)
@@ -199,7 +222,7 @@ local function PickRandomEmote(cfg)
     local pool = {}
 
     for token, enabled in pairs(cfg.emotes or {}) do
-        if enabled then
+        if type(token) == "string" and token ~= "" and enabled then
             table.insert(pool, token)
         end
     end
@@ -219,13 +242,13 @@ local function TryAbilityEmote(spellID)
     end
 
     local spellName = GetSpellNameByID(spellID)
-    if not spellName then
+    if type(spellName) ~= "string" or spellName == "" then
         return
     end
 
     local key = AbilityKey(spellName)
     local cfg = db.instances[key]
-    if not cfg then
+    if type(cfg) ~= "table" then
         return
     end
 
@@ -233,14 +256,15 @@ local function TryAbilityEmote(spellID)
     cfg.name = spellName
 
     local now = GetTime()
-    local last = lastFireByAbility[key] or 0
-    local cooldown = tonumber(cfg.cooldown) or 0
+    local last = lastFireByAbility[key]
+    local cooldown = cfg.cooldown
 
-    if now - last < cooldown then
+    -- Never throttle a first cast: no emote has fired for this ability yet.
+    if last and now - last < cooldown then
         return
     end
 
-    local chance = tonumber(cfg.chance) or DEFAULT_CHANCE
+    local chance = cfg.chance
     if math.random(1, 100) > chance then
         return
     end
@@ -260,7 +284,7 @@ local function AddOrSelectAbility(ability)
     local key = AbilityKey(ability.name)
     local cfg = db.instances[key]
 
-    if not cfg then
+    if type(cfg) ~= "table" then
         cfg = {
             name = ability.name,
             spellID = ability.spellID,
@@ -531,7 +555,11 @@ end
 function FlourishForever_ActionStatus()
     EnsureDB()
     local count = 0
-    for _ in pairs(db.instances) do count = count + 1 end
+    for key, cfg in pairs(db.instances) do
+        if type(key) == "string" and type(cfg) == "table" then
+            count = count + 1
+        end
+    end
     return db.actionEmotesEnabled, count
 end
 

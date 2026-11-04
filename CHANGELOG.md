@@ -2,6 +2,14 @@
 
 **Creator and creative director:** Babuni.dev. **Interface:** WoW: Forever 16001.
 
+## Unreleased development — 2026-11-04 (not publicly released)
+
+- Fixed the first eligible cast being subject to a cooldown despite no earlier emote.
+- Validated loaded chance/cooldown values against existing slider limits; invalid master switches disable automatic emotes rather than enabling unexpectedly.
+- Preserved unusable old records for recovery while skipping them during live selection, and ignored nonstring emote tokens.
+- Restricted spellbook selection to learned, non-passive, usable spell entries in the modern and legacy enumerators; existing cast-success and `DoEmote` behavior remain unchanged.
+- Added mocked Lua regression tests and pull-request-only CI. In-game verification and a new CurseForge package are **not** claimed.
+
 ## October 27, 2026 — portfolio artwork
 
 - Added three creator-supplied images under `assets/portfolio/`: square logo, PNG showcase and JPEG thumbnail.

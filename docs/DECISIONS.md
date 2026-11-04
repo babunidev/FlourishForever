@@ -17,6 +17,10 @@
 
 The code and commit messages do not prove the full initial brainstorming, all alternatives or which tool generated each earlier code line.
 
+## November 4, 2026 — approved maintenance boundary
+
+Babuni confirmed that Flourish Forever worked across its intended features during the Forever beta, authorized targeted architectural/code fixes, and asked to preserve functioning APIs rather than replace them speculatively. The development patch therefore keeps `UNIT_SPELLCAST_SUCCEEDED`, `DoEmote`, spell-name configuration and character GUID storage. It fixes first-cast cooldown handling, bounds saved configuration, and filters non-castable spellbook entries. Mock tests and CI are development checks; the patch is **not** an in-game-tested or publicly approved release.
+
 ## Source-level tradeoffs
 
 **Cast success versus damage hit:** The original introductory text said “when that ability lands.” The actual implementation observes **UNIT_SPELLCAST_SUCCEEDED**. That avoids parsing combat damage/target effects but may emit a flourish even when a cast later misses, is resisted or has no meaningful target hit. No new trigger is approved.
@@ -25,7 +29,7 @@ The code and commit messages do not prove the full initial brainstorming, all al
 
 **Independent cooldowns versus global social volume:** Every configured ability has its own timestamp; there is no overall emote budget. That respects distinctive spell personalities but two different abilities can emote close together. Any future global throttling is a creator decision.
 
-**Cooldown only on a fired emote:** A failed chance check or empty emote pool doesn't consume it. Chance therefore determines frequency independently from the *last actual emote*, though the zero default timestamp may suppress a very early first attempt.
+**Cooldown only on a fired emote:** A failed chance check or empty emote pool doesn't consume it. Chance therefore determines frequency independently from the *last actual emote*, and the development branch now avoids the earlier zero-default first-cast issue.
 
 **Transient runtime state versus persisted preferences:** Ability choices persist by GUID; timers reset on UI reload/relog. This is simpler but won't provide a durable anti-spam cooldown if a player logs in and out quickly.
 
@@ -37,7 +41,7 @@ The code and commit messages do not prove the full initial brainstorming, all al
 
 ## Unapproved questions for later discussion
 
-Should the first-cast `GetTime()` behavior be corrected? Should cooldowns survive reload? Should live hits (when knowable) be used rather than cast success? Should duplicated spell names be distinct configurations? Should a global emote frequency ceiling coexist with per-ability cooldowns? Should there be a preview button? Should the addon publish explicit license terms? Record an actual Babuni.dev choice before treating any as accepted.
+Should cooldowns survive reload? Should live hits (when knowable) be used rather than cast success? Should duplicated spell names be distinct configurations? Should a global emote frequency ceiling coexist with per-ability cooldowns? Should there be a preview button? Should the addon publish explicit license terms? Record an actual Babuni.dev choice before treating any as accepted.
 
 ## Related development history
 

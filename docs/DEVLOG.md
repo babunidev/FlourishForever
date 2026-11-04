@@ -91,6 +91,10 @@ This asset addition preserves the three supplied files unchanged under `assets/p
 
 No portfolio website integration or in-game behavior was tested by this addition. The promotional composition is not an unedited gameplay screenshot. The exact date of the earlier creative exchange is not established by the supplied excerpts; October 27 dates this repository addition.
 
+## 4 November 2026 — careful maintenance after beta play
+
+The addon had already worked for me throughout the Forever beta, so this round of maintenance was not a request to rewrite its emote system. My direction was to retain the familiar cast-triggered behavior and address only small code weaknesses that could be checked without running the game. The assistant made first-cast cooldown timing depend on a real previous emote, made saved values safe within the existing sliders, and narrowed spellbook selection to actual usable abilities. A separate mocked Lua test suite and pull-request checks were added to exercise those boundaries. The original cast event, native `DoEmote` call and character-profile format remain intact. These are unreleased development edits; they do not establish launch-client behavior or a new public version.
+
 ## 1 November 2026 — connecting Flourish to the earlier experiments
 
 The earlier action-emote addons helped me explore an idea that kept returning in new forms: character expression should grow naturally from what the player is already doing. After reviewing the complete family, I asked my AI assistant to distinguish the old watched-button model from **Flourish Forever's spellcast-success model**. The new GUI allows per-ability selection among existing client emotes, with ROAR as the starting choice, rather than a free-form text creator. The [cross-project record](EMOTE_FAMILY_HISTORY.md) also keeps Roar Forever's separate voice-restoration purpose clear. This was documentation research, not new game testing.

@@ -25,6 +25,10 @@ The assistant:
 
 This was **repository inspection, technical/historical analysis and documentation writing**, not a new gameplay implementation, an approval of future features, a WoW test, original authorship of the idea, or proof a CurseForge package was produced.
 
+## November 4, 2026 — targeted code maintenance
+
+Babuni reported complete functional use on the Forever beta and directed that working event and emote APIs remain unchanged. AI inspected the Lua source, researched Forever spellbook item types, implemented bounded saved settings, actual-prior-fire cooldown behavior and spellbook filtering, then added mocked tests and pull-request checks. This work is not a claim of launch-client or CurseForge verification; it remains on a development branch until reviewed.
+
 ## Rules for continued collaboration
 
 Each meaningful future feature or change should preserve:

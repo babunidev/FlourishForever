@@ -57,11 +57,13 @@ On startup the storage module can adopt a **previously loaded `ROARitFOREVERStor
 
 ## Technical limitations and known review points
 
-- **First-cast timing:** the code initializes an unseen ability's last-fire timestamp to **0**. If the client's `GetTime()` is still smaller than the configured cooldown (default 6 seconds), an otherwise eligible **first emote may be skipped**. This is a source-level edge case; it has not been reproduced in game in this audit.
-- **Chance/cooldown boundaries:** normal slider input is limited to 0–100 and 0–120; when loading modified/old saves the source converts values with `tonumber` but does **not clamp** them to these bounds. Test malformed saved data before assuming all entries always respect the UI limits.
-- **Spellbook APIs:** the addon tries the current `C_SpellBook` API and a legacy `GetSpellBookItemInfo` fallback, and filters passives with `C_Spell.IsSpellPassive` or `IsPassiveSpell`. Unrecognized spellbook entries or unsupported localized names won't necessarily be configurable.
+**Current public version:** `0.3.1-beta` remains unchanged. The fixes described below are proposed for the next approved release, not already installed from CurseForge.
+
+- **First-cast timing:** the unreleased development branch checks whether the ability has an actual previous emote timestamp. The first eligible cast is no longer suppressed simply because `GetTime()` is below the default cooldown. The published beta remains unchanged.
+- **Chance/cooldown boundaries:** the unreleased development branch clamps loaded values to the UI's whole-number ranges (chance 0–100%, cooldown 0–120 seconds), defaults invalid numbers, and safely disables malformed master switches. Valid stored values and the per-character schema remain unchanged.
+- **Spellbook APIs:** the unreleased development branch restricts modern entries to learned `Enum.SpellBookItemType.Spell` items (excluding passive and off-spec items) and legacy entries to `SPELL`. Existing spell-name matching and event-triggered `DoEmote` remain unchanged. Unsupported localized names may still not be configurable.
 - **UI dependencies:** it tries loading `Blizzard_UIDropDownMenu` if needed. Missing dropdown globals/templates on a particular client could still prevent the window from building.
-- **No dedicated tests:** the inspected main branch contains **no test files or CI workflow**. Source and commit inspection alone cannot verify actual emote output, restrictions, localization, combat interactions, or compatibility with other addons calling `DoEmote`.
+- **Offline tests:** the unreleased development branch adds `tests/test_action_emotes.lua` and a pull-request-only Lua 5.4 workflow for spell filtering, cooldowns, chance, malformed settings and legacy migration. These mocked checks cannot verify actual emote output, combat restrictions, localization or interactions with other addons.
 - **Licensing:** the inspected main tree contains **no LICENSE file**. No license should be invented or inferred from a public GitHub repository.
 
 ## Version story and portfolio documentation
