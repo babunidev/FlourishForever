@@ -6,7 +6,9 @@
 
 - Updated `.pkgmeta` to exclude portfolio artwork, project documentation, agent instructions and tests from future CurseForge packages; preserved `CHANGELOG.md` for release-note generation.
 - Added a dependency-free, static package-inventory guard at `tests/check_package_layout.py` and clarified installation documentation.
-- **No gameplay Lua or TOC change.** Actual CurseForge package contents and live-client behavior have not been verified by this documentation/packaging work.
+- Aligned the GitHub repository with CurseForge's pre-existing MIT designation by adding a formal `LICENSE` and `license-output` packaging directive.
+- Finalized the README for Forever launch, corrected human creative/portfolio attribution, and clarified public version differences, offline test evidence and remaining release-client checks.
+- **No gameplay Lua, TOC, version, publishing tag or public release change on `main`.** The separate gameplay safety patch remains in draft PR #2; only its branch has mocked Lua tests. Actual new CurseForge ZIP contents and launch-client behavior remain unverified.
 
 
 ## October 27, 2026 — portfolio artwork
@@ -21,7 +23,7 @@
 - Expanded/created 11 substantial Markdown files describing the human-directed character-expression concept, implementation, UI, saved-data migration, release chronology, design decisions and test gaps.
 - Clarified that the real gameplay trigger is **UNIT_SPELLCAST_SUCCEEDED**, not verification that an attack landed; that cooldowns are **session-only**, and that spell settings are keyed by normalized **name** within a GUID-based character profile.
 - Recorded the source-level first-cast `GetTime()`/zero-timestamp edge case, optional legacy-root migration behavior, `/rit` alias and raw-GUID status output.
-- Confirmed published GitHub beta entries have **no downloadable release assets** and the main repository has **no LICENSE**.
+- At the time of that historical audit, published GitHub beta entries had **no downloadable release assets** and the main repository had **no LICENSE** (the license was added during subsequent development).
 - Only Markdown documentation changed; no gameplay Lua, TOC, packaging metadata or assets were edited. This review **did not run WoW or automated tests**.
 
 ## October 22, 2026 — 0.3.0-beta: the original committed behavior
