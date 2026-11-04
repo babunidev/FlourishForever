@@ -1,6 +1,6 @@
 # Flourish Forever
 
-**Creator and creative director:** Babuni.dev (earlier project credit: Babunigaming)  
+**Creative direction:** Babuni · **Portfolio:** babuni.dev (earlier project credit: Babunigaming)  
 **Version:** **0.3.1-beta** · **Game:** World of Warcraft: Forever · **Interface:** 16001  
 **GitHub releases:** [0.3.1-beta](https://github.com/babunidev/FlourishForever/releases/tag/v0.3.1-beta) and [0.3.0-beta](https://github.com/babunidev/FlourishForever/releases/tag/v0.3.0-beta)
 
@@ -20,7 +20,9 @@ Interface/AddOns/FlourishForever/
     FlourishForever_ActionEmotes.lua
 ```
 
-Restart WoW, enable **Flourish Forever** in the addon list, and type `/flourish`. The TOC is built for the Forever **16001** interface, not a generic Vanilla 1.12 client. The two GitHub beta release entries **have no uploaded ZIP or binary assets** in their release metadata; download the source files from the repository or use the external CurseForge packaging channel if available. The included [`.pkgmeta`](.pkgmeta) requests `package-as: FlourishForever` and references the manual changelog; this doesn't itself prove the result of a CurseForge publish.
+Restart WoW, enable **Flourish Forever** in the addon list, and type `/flourish`. The TOC is built for the Forever **16001** interface, not a generic Vanilla 1.12 client. The two GitHub beta release entries **have no uploaded ZIP or binary assets** in their release metadata. Download the individual runtime files for manual installation, or use the Forever file on CurseForge. A GitHub **source** ZIP is not the same as a CurseForge **addon** ZIP: source archives also contain project documentation, portfolio artwork and tests.
+
+The [`.pkgmeta`](.pkgmeta) excludes `assets/`, `docs/`, `tests/`, `AGENTS.md`, `CONCEPT.md`, `README.md` and `ROADMAP.md` from **future CurseForge-packaged downloads**. It retains `CHANGELOG.md` for the packager's manual release notes. Hidden metadata such as `.pkgmeta` is excluded by the packager automatically. The development-only check `python3 tests/check_package_layout.py` verifies the expected file list locally, **not** an actual CurseForge ZIP. The existing published beta file was built from an earlier repository revision; verify the next package before publishing.
 
 ## Configuring the experience
 
@@ -61,7 +63,7 @@ On startup the storage module can adopt a **previously loaded `ROARitFOREVERStor
 - **Chance/cooldown boundaries:** normal slider input is limited to 0–100 and 0–120; when loading modified/old saves the source converts values with `tonumber` but does **not clamp** them to these bounds. Test malformed saved data before assuming all entries always respect the UI limits.
 - **Spellbook APIs:** the addon tries the current `C_SpellBook` API and a legacy `GetSpellBookItemInfo` fallback, and filters passives with `C_Spell.IsSpellPassive` or `IsPassiveSpell`. Unrecognized spellbook entries or unsupported localized names won't necessarily be configurable.
 - **UI dependencies:** it tries loading `Blizzard_UIDropDownMenu` if needed. Missing dropdown globals/templates on a particular client could still prevent the window from building.
-- **No dedicated tests:** the inspected main branch contains **no test files or CI workflow**. Source and commit inspection alone cannot verify actual emote output, restrictions, localization, combat interactions, or compatibility with other addons calling `DoEmote`.
+- **Testing:** a static packaging inventory check exists under `tests/`; there is still **no automated gameplay regression suite or CI workflow**. Source inspection and packaging checks cannot replace beta or release-client testing.
 - **Licensing:** the inspected main tree contains **no LICENSE file**. No license should be invented or inferred from a public GitHub repository.
 
 ## Version story and portfolio documentation
