@@ -2,18 +2,17 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev. **Interface:** WoW: Forever 16001.
 
-## 0.3.2-beta — prepared, not yet published
+## 0.3.2-beta — World of Warcraft: Forever
 
-**Player-facing changes planned for the next Forever beta update:**
-- The first configured ability cast after loading the UI can now trigger its emote immediately; it no longer inherits a phantom six-second cooldown.
-- Saved chance and cooldown settings are kept within their existing slider limits, with safer handling of malformed older data.
-- The spellbook picker now skips passive, off-spec, future and non-spell entries in the supported enumerators.
-- Existing per-character selections, the cast-success trigger, native emotes and default settings are preserved.
-- Future CurseForge packages are configured to include only the three runtime Lua files, the TOC, MIT license and changelog—not portfolio images or development documentation.
+- **First-cast cooldown:** a configured ability can now play its first eligible emote immediately after login or UI reload, without waiting for a cooldown that never started.
+- **Saved settings:** saved chance and cooldown values stay within the existing 0–100% and 0–120-second limits. Malformed saved values are handled safely.
+- **Spellbook selection:** skip passive, off-spec, future and non-spell entries instead of offering unusable actions.
+- **Cleaner installations:** future packaged downloads omit portfolio artwork, development documentation and test files; the MIT license and changelog are included.
+- **Existing behavior preserved:** player-selected abilities, per-character settings, native game emotes, successful-cast trigger and default options remain unchanged.
 
-**Verification:** Previous beta gameplay was confirmed by Babuni. The original gameplay-fix branch passed GitHub Actions Lua syntax/mocked tests and Babuni's Nobara checks. The combined release candidate requires its own CI and package dry run, followed by a real-client check when available.
+**Client target:** WoW Forever 1.60.1 / Interface 16001.
 
-**Release status:** Preparation only. No public version was created by this entry. The CurseForge source integration and final installable file must be confirmed at the release gate.
+**Verification:** original addon functionality was beta-tested by Babuni. Lua syntax, mocked regressions, static file inventory and a six-file BigWigs packager dry run passed for the prepared update. Live testing of the changed code on the launch client remains unverified.
 
 ## Unreleased development — 2026-11-04 (packaging and documentation milestones)
 
