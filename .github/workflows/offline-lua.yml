@@ -1,0 +1,48 @@
+name: Offline Lua and release package checks
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lua-and-inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lua 5.4
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lua5.4
+      - name: Check addon syntax
+        run: |
+          luac5.4 -p FlourishForever_Storage.lua
+          luac5.4 -p FlourishForever.lua
+          luac5.4 -p FlourishForever_ActionEmotes.lua
+      - name: Mocked logic regressions
+        run: lua5.4 tests/test_action_emotes.lua
+      - name: Static installable file inventory
+        run: python3 tests/check_package_layout.py
+
+  package-dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: BigWigs packager dry-run (never upload)
+        uses: BigWigsMods/packager@v2
+        with:
+          args: -d -g 1.60.1
+          pandoc: 'false'
+      - name: Inspect actual generated ZIP
+        run: python3 tests/check_packaged_zip.py
+      - name: Archive preview for private review
+        uses: actions/upload-artifact@v4
+        with:
+          name: flourishforever-packager-dry-run
+          path: .release/*.zip
+          if-no-files-found: error
+          retention-days: 7
