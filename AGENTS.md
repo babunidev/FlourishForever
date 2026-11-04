@@ -17,19 +17,19 @@ The player must choose eligible non-passive abilities; a fresh character's confi
 - `ROARitFOREVERStorage` is adopted **only if the old global has been loaded** and new root doesn't exist; avoid claiming automatic disk migration from a deleted previous addon.
 - Per-name `instances` store `name`, `spellID`, `chance`, `cooldown`, `emotes`. Spell **names** are normalized by trim/lowercase; event spell IDs are resolved back to names, so ranks/locale changes may collide or lose match.
 - Trigger event is **player `UNIT_SPELLCAST_SUCCEEDED`**, not combat-log proof that a spell hit. Failed casts shouldn't be described as landed or as the event source.
-- Default chance **100%**, cooldown **6 seconds**, default allowed token **ROAR**; UI bounds chance 0–100 and cooldown 0–120. Saved malformed values are only converted, not clamped on load.
+- Default chance **100%**, cooldown **6 seconds**, default allowed token **ROAR**; UI bounds chance 0–100 and cooldown 0–120. The unreleased branch clamps saved values and safely disables malformed master switches.
 - **Cooldown is consumed only on an actual successful emote selection**; a failed probability check or empty pool does not spend it. Runtime timestamps live in `lastFireByAbility`, **not SavedVariables**.
-- Source's `lastFireByAbility[key] or 0` potentially blocks a first cast when `GetTime()<cooldown`; investigate with test data before presenting as in-game proven.
+- The unreleased branch only enforces cooldown when `lastFireByAbility[key]` exists, avoiding first-cast suppression. Test this on Forever before claiming an in-game fix.
 - Emote list is discovered from `EMOTE*_TOKEN` globals, with ROAR fallback; `DoEmote(token)` executes client behavior. No custom chat strings/sounds.
 - Slash commands `/flourish`, `/flourishforever`, `/rit`; `status` currently exposes a character GUID in chat—redact when sharing.
-- No LICENSE or automated tests found in current main tree; don't fabricate either. CurseForge-oriented `.pkgmeta` is packaging configuration, not confirmation of a published artifact.
+- No LICENSE exists in the current main tree. The safety-fix branch adds mocked Lua tests and pull-request CI, not evidence of in-game verification. CurseForge-oriented `.pkgmeta` is packaging configuration, not confirmation of a published artifact.
 
 ## Development protocol
 
 1. Inspect the live source and Git history; preserve README, concept, architecture, design, decisions and DEVLOG as the shared specification.
 2. Record **creative direction**, assistant proposal, alternatives and constraints separately. Do not claim an AI proposal was accepted unless Babuni explicitly approved it.
 3. Record actual implementation files, dates, commit and release metadata; note that version 0.3.1 updated packaging/version text without runtime changes.
-4. For code changes, test client event signatures, abilities/spellbook enumeration, native emote output, per-character saved profiles, cooldown edge cases, reloads and compatibility with other emote addons.
+4. For code changes, test client event signatures, abilities/spellbook enumeration, native emote output, per-character saved profiles, cooldown edge cases, reloads and compatibility with other emote addons. Preserve the beta-tested `DoEmote` and cast-success APIs unless concrete evidence justifies a change.
 5. Distinguish source review, a mocked Lua test and real in-game proof; none were executed in this October 27 audit.
 6. Keep private chat/character GUIDs out of public portfolio examples. Respect third-party WoW assets and resolve absent code licensing with the creative.
 7. Update README, CONCEPT, ROADMAP, CHANGELOG, AGENTS, docs/ARCHITECTURE, DESIGN, CONTENT, DECISIONS, DEVLOG, AI_COLLABORATION for material changes.
