@@ -42,11 +42,11 @@ Older `ROARitFOREVERStorage` may be adopted if already loaded. Legacy character 
 - Labels **Enable ability emotes**, **Add ability**, **Configured abilities**, **Emotes (one is chosen at random)**, **Chance**, **Cooldown**, **Remove**.
 - Status prints master enabled state, configured ability count, and a **GUID-bearing** profile reference.
 
-The source relies on English UI strings and fallback emote labels, with game-global tokens/spell names potentially localized. There is no dedicated localization table, translated settings copy, or runtime icon bundle. Portfolio artwork is stored separately under `assets/portfolio/`.
+The unreleased maintenance branch additionally rejects nonstring token keys at emote-selection time and bounds malformed saved chance/cooldown values without changing valid presets. The source relies on English UI strings and fallback emote labels, with game-global tokens/spell names potentially localized. There is no dedicated localization table, translated settings copy, or runtime icon bundle. Portfolio artwork is stored separately under `assets/portfolio/`.
 
 ## Content provenance and rights
 
-The runtime consists of **three Lua files** and a TOC. The repository also contains `.pkgmeta`, project documentation, and creator-supplied promotional artwork under `assets/portfolio/`. See the [asset index](../assets/portfolio/README.md) and [manifest](../assets/portfolio/manifest.json). These promotional images are not loaded by the addon. No sound library, runtime dependency or test directory was added.
+The runtime consists of **three Lua files** and a TOC. The repository also contains `.pkgmeta`, project documentation, and creator-supplied promotional artwork under `assets/portfolio/`. See the [asset index](../assets/portfolio/README.md) and [manifest](../assets/portfolio/manifest.json). These promotional images are not loaded by the addon. No sound library or runtime dependency was added. The unreleased development branch includes a `tests/` directory for offline Lua checks, not part of runtime execution.
 
 The original text names **Babunigaming** as the developer; October 26 metadata credited **Babuni.dev**. WoW emote animations and client assets belong to their rightsholders. **No LICENSE** exists in the current repo, so do not imply a grant of permission to reuse this code beyond applicable law.
 
