@@ -1,7 +1,7 @@
 # Flourish Forever — visual and interaction design
 
-**Creator / creative direction:** Babuni.dev.  
-**Source:** current 0.3.1-beta UI Lua. The initial audit found no artwork; creator-supplied portfolio artwork was added on October 27, 2026.
+**Creative direction:** Babuni · **Portfolio:** babuni.dev.  
+**Source:** current 0.3.1-beta UI Lua. The initial audit found no artwork; Babuni-supplied portfolio artwork was added on October 27, 2026.
 
 ## A stage manager for a character's gestures
 

@@ -1,8 +1,8 @@
 # Flourish Forever — concept and creative direction
 
-**Creator and creative director:** Babuni.dev.  
-**Platform:** World of Warcraft: Forever beta (TOC interface 16001).  
-**Current version:** 0.3.1-beta.
+**Creative direction:** Babuni · **Portfolio:** babuni.dev.  
+**Platform:** World of Warcraft: Forever, TOC interface 16001 (beta-tested; release client requires confirmation).  
+**Latest GitHub release:** 0.3.1-beta; this is a version identifier, not a statement that the client remains in beta.
 
 ## A flourish of personality at the moment of action
 
@@ -10,7 +10,7 @@ Combat abilities can be mechanically identical every time they are used, while t
 
 The creative requirement is choice. The player decides *which* abilities deserve a flourish, *which* emotes may accompany them, *how often* the response is allowed, and whether the system is active on this character at all. The addon must not force an unsolicited global roleplay persona onto other characters or every spell in the spellbook.
 
-The October 22 creator discussion described the idea in terms of **automatic random emotes for selected abilities**. The current code supplies the implementation: a master switch, a curated spell list, and per-ability chance, cooldown and allowed-emote set. The portfolio record credits the human direction without retroactively assigning its conception to an assistant.
+The October 22 creator discussion described the idea in terms of **automatic random emotes for selected abilities**. The current code supplies the implementation: a master switch, a curated spell list, and per-ability chance, cooldown and allowed-emote set. The portfolio record credits Babuni's human direction without retroactively assigning its conception to an assistant.
 
 ## Variation without noise
 
@@ -32,7 +32,7 @@ The interaction is an example of **emergent personality made from a few small sy
 
 The difference from an always-on automated announcer is essential. The player can curate or remove any configured spell, leave some abilities entirely untouched, disable the system without deleting settings, or uncheck every emote to make one configuration silent.
 
-The next creative choices—more nuanced animation cues, previewing an emote, safety controls for rapid actions or visual redesign—are not implied approvals simply because they are recorded in a roadmap. They remain choices for Babuni.dev after real in-game testing.
+The next creative choices—more nuanced animation cues, previewing an emote, safety controls for rapid actions or visual redesign—are not implied approvals simply because they are recorded in a roadmap. They remain choices for Babuni after real in-game testing.
 
 ## Related development history
 

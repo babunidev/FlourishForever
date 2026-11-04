@@ -1,6 +1,6 @@
 # Flourish Forever — recorded design decisions and open alternatives
 
-**Creative decision authority:** Babuni.dev. **Evidence:** initial October 22 source commit, beta packaging change, README, project conversation context and October 26 attribution/docs. Missing early discussion and game tests are not invented.
+**Creative decision authority:** Babuni · **Portfolio:** babuni.dev. **Evidence:** initial October 22 source commit, beta packaging change, README, project conversation context and October 26 attribution/docs. Missing early discussion and game tests are not invented.
 
 ## Implemented decisions
 
@@ -13,9 +13,15 @@
 | Oct 22 `b60d0802` | Store settings by **character GUID** with legacy migration fallback | Supports the realmless character identity model and independent personalities |
 | Oct 22 `b60d0802` | Use a movable Blizzard-themed **620×520** editor | Keep decision UI separate from ongoing combat |
 | Oct 22 `56d8b67d` | Bump to **0.3.1-beta** for CurseForge packaging; runtime Lua unchanged | Distribution update isn't a new feature or proof of testing |
-| Oct 26 `61c7aadd`, `7e36f715` | Standardize displayed creator credit from Babunigaming to Babuni.dev | Preserve prior creative identity and actual project authorship |
+| Oct 26 `61c7aadd`, `7e36f715` | Standardize the public byline to babuni.dev while retaining Babunigaming history | Current documentation distinguishes Babuni (human creative) from babuni.dev (portfolio) |
 
 The code and commit messages do not prove the full initial brainstorming, all alternatives or which tool generated each earlier code line.
+
+## November 4, 2026 — confirmed maintenance decisions
+
+Babuni confirmed functional beta use and approved targeted source improvements while retaining the existing spellcast event and native `DoEmote` path. Draft PR #2 implements first-cast timing, bounded saved values and castable spellbook filtering; GitHub and Nobara mocks passed, but the changes remain unmerged and not live-client tested.
+
+The previously selected **MIT** designation is visible on CurseForge. Repository documentation now carries the matching `LICENSE` with credit to Babuni, and `.pkgmeta` requests inclusion in a future package. This aligns the already-public license declaration; it does not grant rights to separate Blizzard assets.
 
 ## Source-level tradeoffs
 
@@ -37,7 +43,7 @@ The code and commit messages do not prove the full initial brainstorming, all al
 
 ## Unapproved questions for later discussion
 
-Should the first-cast `GetTime()` behavior be corrected? Should cooldowns survive reload? Should live hits (when knowable) be used rather than cast success? Should duplicated spell names be distinct configurations? Should a global emote frequency ceiling coexist with per-ability cooldowns? Should there be a preview button? Should the addon publish explicit license terms? Record an actual Babuni.dev choice before treating any as accepted.
+Should cooldowns survive reload? Should live hits (when knowable) be used rather than cast success? Should duplicated spell names be distinct configurations? Should a global emote frequency ceiling coexist with per-ability cooldowns? Should there be a preview button? The repository now mirrors its pre-existing CurseForge MIT license; no new public release has been approved. Record Babuni's choice before treating any other alternative as accepted.
 
 ## Related development history
 
