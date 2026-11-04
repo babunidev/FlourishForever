@@ -22,7 +22,7 @@ The player must choose eligible non-passive abilities; a fresh character's confi
 - Source's `lastFireByAbility[key] or 0` potentially blocks a first cast when `GetTime()<cooldown`; investigate with test data before presenting as in-game proven.
 - Emote list is discovered from `EMOTE*_TOKEN` globals, with ROAR fallback; `DoEmote(token)` executes client behavior. No custom chat strings/sounds.
 - Slash commands `/flourish`, `/flourishforever`, `/rit`; `status` currently exposes a character GUID in chat—redact when sharing.
-- No LICENSE or automated **gameplay** tests are present. `tests/check_package_layout.py` checks the intended static package inventory only; it does not run the CurseForge packager or the game. The updated `.pkgmeta` excludes portfolio and project-only files, but this is not confirmation of a published artifact.
+- The repository now has an MIT `LICENSE` aligned to the pre-existing CurseForge declaration, included via `.pkgmeta` `license-output`. Main has `tests/check_package_layout.py` only; draft PR #2 contains Lua regression mocks and CI, but these are not in-game tests. The packager and actual ZIP have not been verified after these changes.
 
 ## Development protocol
 
@@ -30,11 +30,11 @@ The player must choose eligible non-passive abilities; a fresh character's confi
 2. Record **creative direction**, assistant proposal, alternatives and constraints separately. Do not claim an AI proposal was accepted unless Babuni explicitly approved it.
 3. Record actual implementation files, dates, commit and release metadata; note that version 0.3.1 updated packaging/version text without runtime changes.
 4. For code changes, test client event signatures, abilities/spellbook enumeration, native emote output, per-character saved profiles, cooldown edge cases, reloads and compatibility with other emote addons.
-5. Distinguish source review, a mocked Lua test and real in-game proof; none were executed in this October 27 audit.
-6. Keep private chat/character GUIDs out of public portfolio examples. Respect third-party WoW assets and resolve absent code licensing with the creative.
+5. Distinguish source review, a mocked Lua test and real in-game proof. The historical October 27 audit ran no tests, but Babuni later confirmed beta gameplay and passed offline Lua checks for draft PR #2 on Nobara. Neither validates the altered code on the launch client.
+6. Keep private chat/character GUIDs out of public portfolio examples. Respect third-party WoW assets and the existing declared MIT licensing; preserve Babuni's and historical Babunigaming's credit.
 7. Update README, CONCEPT, ROADMAP, CHANGELOG, AGENTS, docs/ARCHITECTURE, DESIGN, CONTENT, DECISIONS, DEVLOG, AI_COLLABORATION for material changes.
 
-No gameplay, TOC or packaging modifications are authorized by this docs-only audit.
+The earlier documentation-only audit did not authorize code changes; subsequent Babuni instructions explicitly authorized targeted code maintenance and separate lean-package work. Merge and release authorization must still be distinguished; never publish a public version without specific approval.
 
 ## Related projects and provenance
 
