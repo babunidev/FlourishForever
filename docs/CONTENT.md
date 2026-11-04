@@ -1,6 +1,6 @@
 # Flourish Forever — emote vocabulary, character settings and assets
 
-**Creator:** Babuni.dev · **Platform:** WoW: Forever interface 16001.  
+**Creative direction:** Babuni · **Portfolio:** babuni.dev · **Platform:** WoW: Forever interface 16001.  
 **Evidence:** `FlourishForever_ActionEmotes.lua`, storage module, TOC and release records.
 
 ## What is configurable content?
@@ -46,9 +46,9 @@ The source relies on English UI strings and fallback emote labels, with game-glo
 
 ## Content provenance and rights
 
-The runtime consists of **three Lua files** and a TOC. The repository also contains `.pkgmeta`, project documentation, and creator-supplied promotional artwork under `assets/portfolio/`. See the [asset index](../assets/portfolio/README.md) and [manifest](../assets/portfolio/manifest.json). These promotional images are not loaded by the addon. No sound library, runtime dependency or test directory was added.
+The runtime consists of **three Lua files** and a TOC. The repository also contains `.pkgmeta`, project documentation, and creator-supplied promotional artwork under `assets/portfolio/`. See the [asset index](../assets/portfolio/README.md) and [manifest](../assets/portfolio/manifest.json). These promotional images are not loaded by the addon. No sound library or runtime dependency was added. Main now contains the development-only static packaging test under `tests/`; draft PR #2 contains separate mocked Lua tests, not shipped runtime code.
 
-The original text names **Babunigaming** as the developer; October 26 metadata credited **Babuni.dev**. WoW emote animations and client assets belong to their rightsholders. **No LICENSE** exists in the current repo, so do not imply a grant of permission to reuse this code beyond applicable law.
+The original text names **Babunigaming** as the developer; October 26 metadata credited **Babuni.dev** as the public byline. Babuni is the human creative, and babuni.dev the portfolio. WoW emote animations and client assets belong to their rightsholders. The repository now includes an MIT `LICENSE`, matching CurseForge's pre-existing declaration. That source license does not relicense Blizzard's game assets.
 
 ## Related development history
 
