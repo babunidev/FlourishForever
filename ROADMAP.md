@@ -6,14 +6,14 @@
 ## What exists in current source
 
 - Player-only **UNIT_SPELLCAST_SUCCEEDED** listener; ability configured by lowercased spell **name** and resolved from event spell ID.
-- Spellbook enumeration via `C_SpellBook` or legacy spell-tab APIs; passive spells skipped when detectable.
+- Spellbook enumeration via `C_SpellBook` or legacy spell-tab APIs; the unreleased branch filters learned non-passive spell entries and excludes flyouts/future spells.
 - Configurable enabled emotes discovered from the game's `EMOTE*_TOKEN` globals, with ROAR fallback; each selected uniformly with `math.random`.
 - Per-ability **0–100% chance**, **0–120 seconds cooldown** via sliders; defaults **100%** and **6s**, with only ROAR enabled.
-- Rate limiting timestamp updated **only after DoEmote is selected**; failed chance / empty pool doesn't spend a cooldown.
+- Rate limiting timestamp updated **only after DoEmote is selected**; failed chance / empty pool doesn't spend a cooldown. The unreleased branch no longer blocks an eligible first cast with a zero fallback timestamp.
 - Separate character settings using GUID-based profiles inside account-wide `FlourishForeverStorage`; conditional adoption of `ROARitFOREVERStorage` and name-keyed profile migration.
 - Movable **620×520** Blizzard-style window with enable checkbox, ability dropdown/list, selected ability editor, sliders and emote checkboxes.
 - Slash aliases `/flourish`, `/flourishforever`, `/rit`, with `config`, `ui`, `status`.
-- Two GitHub beta release tags with **no uploaded release assets**, CurseForge-oriented `.pkgmeta`, **no LICENSE**, no committed test harness or CI.
+- Two GitHub beta release tags with **no uploaded release assets**, CurseForge-oriented `.pkgmeta`, and **no LICENSE**. The unreleased development branch adds Lua regression mocks and pull-request CI; publication and real-client testing remain separate.
 
 ## P0 — gameplay event correctness
 
@@ -24,7 +24,7 @@
 5. Verify the passive filter and dropdown's available spell list under both new and legacy API paths. Test changed talent/spellbook lists while the window remains open via `SPELLS_CHANGED`.
 6. Confirm `math.random` chance with 0%, 100% and intermediate values across repeated casts; distinguish probability from deterministic “every nth cast.”
 7. Confirm cooldown **per normalized ability name**, independence of two configured spells, and zero/6/120-second intervals.
-8. Specifically test **first eligible cast shortly after login**: `lastFireByAbility[key] or 0` may suppress it if `GetTime() < cooldown`. Decide whether to repair only after reproducing or designing the intended behavior.
+8. **Implemented in development:** check for an actual previous emote timestamp rather than defaulting to zero. **Still test in Forever:** eligible first cast immediately after login and normal subsequent cooldown.
 9. Confirm cooldown timestamps reset on `/reload` and relog; the source doesn't save them. Document whether that is acceptable for play.
 
 ## P1 — saved character profiles and emote behavior
@@ -34,14 +34,14 @@
 12. Test character setup when `UnitGUID` is briefly unavailable; `EnsureDB` creates a fallback session table and rebinds when the GUID returns. Ensure early edits aren't lost.
 13. Test no emotes checked, one enabled, several enabled and a token unsupported by `DoEmote`. Inspect actual client chat/sound/animation and behavior with other emote addons.
 14. Inspect `status` printing the raw character GUID and decide whether diagnostic privacy/readability should change.
-15. Test saved chance/cooldown values outside slider bounds or in nonnumeric legacy formats; source converts with `tonumber` but does not clamp on load.
+15. **Implemented in development:** normalize chance to 0–100 and cooldown to 0–120, with malformed settings handled safely and valid records preserved. **Still test:** old SavedVariables on backed-up real installs.
 16. Test duplicate spell names, spell localization changing the persisted ability key, and spell IDs changing rank/specialization.
 17. Test dropdown menu templates and their optional dynamic load; `CreateUI` still assumes several globals exist after attempting to load them.
 
 ## P2 — packaging and portfolio evidence
 
 18. Confirm CurseForge packager successfully processes `.pkgmeta`, includes only intended Lua/TOC files and uses the manual CHANGELOG; **not verified** by the existence of the metadata file.
-19. Consider adding a small mocked Lua harness for spellcast matching, cooldown, chance boundaries, GUID migration and UI creation, then run it and record output.
+19. **Implemented in development:** add mocked Lua tests for spell filtering, cast cooldown, chance bounds, malformed settings and GUID migration; add pull-request CI. **Not yet covered:** full UI construction and in-game behavior.
 20. Verify public GitHub beta release entries: currently v0.3.0-beta and v0.3.1-beta have **no uploaded release assets**. Do not advertise a ZIP at their release URLs.
 21. Decide on an explicit repository license; **no LICENSE** was found in the inspected main tree.
 22. Obtain actual client screenshots/recordings of the config panel and sample in-world emote, recording consent/character names appropriately.
