@@ -2,13 +2,25 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev. **Interface:** WoW: Forever 16001.
 
-## Unreleased development — 2026-11-04 (not a public version)
+## 0.3.2-beta — World of Warcraft: Forever
+
+- **First-cast cooldown:** a configured ability can now play its first eligible emote immediately after login or UI reload, without waiting for a cooldown that never started.
+- **Saved settings:** saved chance and cooldown values stay within the existing 0–100% and 0–120-second limits. Malformed saved values are handled safely.
+- **Spellbook selection:** skip passive, off-spec, future and non-spell entries instead of offering unusable actions.
+- **Cleaner installations:** future packaged downloads omit portfolio artwork, development documentation and test files; the MIT license and changelog are included.
+- **Existing behavior preserved:** player-selected abilities, per-character settings, native game emotes, successful-cast trigger and default options remain unchanged.
+
+**Client target:** WoW Forever 1.60.1 / Interface 16001.
+
+**Verification:** original addon functionality was beta-tested by Babuni. Lua syntax, mocked regressions, static file inventory and a six-file BigWigs packager dry run passed for the prepared update. Live testing of the changed code on the launch client remains unverified.
+
+## Unreleased development — 2026-11-04 (packaging and documentation milestones)
 
 - Updated `.pkgmeta` to exclude portfolio artwork, project documentation, agent instructions and tests from future CurseForge packages; preserved `CHANGELOG.md` for release-note generation.
 - Added a dependency-free, static package-inventory guard at `tests/check_package_layout.py` and clarified installation documentation.
 - Aligned the GitHub repository with CurseForge's pre-existing MIT designation by adding a formal `LICENSE` and `license-output` packaging directive.
 - Finalized the README for Forever launch, corrected human creative/portfolio attribution, and clarified public version differences, offline test evidence and remaining release-client checks.
-- **No gameplay Lua, TOC, version, publishing tag or public release change on `main`.** The separate gameplay safety patch remains in draft PR #2; only its branch has mocked Lua tests. Actual new CurseForge ZIP contents and launch-client behavior remain unverified.
+- The packaging and documentation commits on `main` did not alter gameplay Lua or the TOC. The later `release/0.3.2-beta-prep` candidate integrates the separately tested gameplay fixes and prepares the next version without publishing it. Actual CurseForge publication and launch-client verification remain outstanding.
 
 
 ## October 27, 2026 — portfolio artwork
