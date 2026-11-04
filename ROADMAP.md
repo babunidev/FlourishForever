@@ -1,7 +1,15 @@
 # Flourish Forever — verified baseline and roadmap
 
-**Creative decision authority:** Babuni.dev. **Release:** 0.3.1-beta, October 22, 2026.  
-**Status of this roadmap:** proposed checks and unapproved alternatives, not implementation instructions.
+**Creative decision authority:** Babuni. **TOC / latest GitHub Release:** 0.3.1-beta; **latest confirmed CurseForge file:** 0.3.0-beta (October 22, 2026).  
+**Status:** Current `main` contains packaging changes; gameplay safety fixes remain on draft PR #2. Tasks below distinguish completed offline work from in-game verification.
+
+## Launch readiness — November 4, 2026
+
+- **Confirmed by Babuni:** the original addon worked with its intended features on the Forever beta.
+- **Merged to `main`:** minimal CurseForge packaging rules, static package file inventory guard, MIT license matching CurseForge, and documentation corrections.
+- **Implemented and tested in draft PR #2 only:** first-cast cooldown fix, bounded SavedVariables, spellbook filtering, mock Lua tests and PR-only CI; Babuni's Nobara syntax and mocked regression checks passed.
+- **Still unverified:** in-game behavior of PR #2 on the launch client, real post-change CurseForge ZIP, CurseForge auto-publishing settings, and updated public file status.
+- **Release gate:** no tag, public GitHub Release or CurseForge publication without explicit authorization.
 
 ## What exists in current source
 
@@ -13,7 +21,7 @@
 - Separate character settings using GUID-based profiles inside account-wide `FlourishForeverStorage`; conditional adoption of `ROARitFOREVERStorage` and name-keyed profile migration.
 - Movable **620×520** Blizzard-style window with enable checkbox, ability dropdown/list, selected ability editor, sliders and emote checkboxes.
 - Slash aliases `/flourish`, `/flourishforever`, `/rit`, with `config`, `ui`, `status`.
-- Two GitHub beta release tags with **no uploaded release assets**, a CurseForge-oriented `.pkgmeta`, and **no LICENSE**. A development-only package inventory check now exists under `tests/`; there is still no gameplay test harness or CI.
+- GitHub tags v0.3.0-beta and v0.3.1-beta have no uploaded assets; CurseForge lists v0.3.0-beta. Main includes a lean-package `.pkgmeta` and static inventory check; development PR #2 includes mock Lua regressions and pull-request CI. MIT license is recorded in `LICENSE`.
 
 ## P0 — gameplay event correctness
 
@@ -24,7 +32,7 @@
 5. Verify the passive filter and dropdown's available spell list under both new and legacy API paths. Test changed talent/spellbook lists while the window remains open via `SPELLS_CHANGED`.
 6. Confirm `math.random` chance with 0%, 100% and intermediate values across repeated casts; distinguish probability from deterministic “every nth cast.”
 7. Confirm cooldown **per normalized ability name**, independence of two configured spells, and zero/6/120-second intervals.
-8. Specifically test **first eligible cast shortly after login**: `lastFireByAbility[key] or 0` may suppress it if `GetTime() < cooldown`. Decide whether to repair only after reproducing or designing the intended behavior.
+8. **Implemented in draft PR #2; Nobara mocks passed:** remove the synthetic zero timestamp for first-cast cooldown. **Remaining:** verify first and subsequent casts in-game on the release client.
 9. Confirm cooldown timestamps reset on `/reload` and relog; the source doesn't save them. Document whether that is acceptable for play.
 
 ## P1 — saved character profiles and emote behavior
@@ -34,20 +42,20 @@
 12. Test character setup when `UnitGUID` is briefly unavailable; `EnsureDB` creates a fallback session table and rebinds when the GUID returns. Ensure early edits aren't lost.
 13. Test no emotes checked, one enabled, several enabled and a token unsupported by `DoEmote`. Inspect actual client chat/sound/animation and behavior with other emote addons.
 14. Inspect `status` printing the raw character GUID and decide whether diagnostic privacy/readability should change.
-15. Test saved chance/cooldown values outside slider bounds or in nonnumeric legacy formats; source converts with `tonumber` but does not clamp on load.
+15. **Implemented in draft PR #2; Nobara mocks passed:** clamp saved chance/cooldown to the UI ranges and safely handle malformed settings. **Remaining:** verify with backed-up real SavedVariables on release client.
 16. Test duplicate spell names, spell localization changing the persisted ability key, and spell IDs changing rank/specialization.
 17. Test dropdown menu templates and their optional dynamic load; `CreateUI` still assumes several globals exist after attempting to load them.
 
 ## P2 — packaging and portfolio evidence
 
 18. Confirm CurseForge packager successfully processes `.pkgmeta`. A development change excludes portfolio assets, project docs, and tests, while retaining the manual CHANGELOG. The local inventory check is not proof of a real packaged ZIP; publication and package contents remain **unverified**.
-19. Consider adding a small mocked Lua harness for spellcast matching, cooldown, chance boundaries, GUID migration and UI creation, then run it and record output.
+19. **Implemented in draft PR #2; GitHub Actions and Nobara passed:** mocked spell filtering, chance, cooldown, malformed settings and profile migration. **Not yet covered:** full UI construction or real-client behavior.
 20. Verify public GitHub beta release entries: currently v0.3.0-beta and v0.3.1-beta have **no uploaded release assets**. Do not advertise a ZIP at their release URLs.
-21. Decide on an explicit repository license; **no LICENSE** was found in the inspected main tree.
+21. **Completed in development:** match the existing public CurseForge MIT declaration with the repository `LICENSE` and `license-output: LICENSE`; verify its inclusion in the next actual package.
 22. Obtain actual client screenshots/recordings of the config panel and sample in-world emote, recording consent/character names appropriately.
 23. Test UI legibility and keyboard accessibility for the ability/emote scroll frames at common display scales.
 
-## Open creative directions requiring creator approval
+## Open creative directions requiring Babuni's approval
 
 Would per-ability preview help select the right flourish? Should emotes triggered close together be globally rate limited to keep chat quieter? Should cooldowns survive reload? Should the addon distinguish cast success from actual hit? Should a user be able to supply custom text or keep the native emote-only boundary? Are certain class/proc spells too noisy? These are **proposals, not implemented features or accepted decisions**.
 
