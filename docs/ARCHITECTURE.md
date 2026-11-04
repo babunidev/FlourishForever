@@ -1,6 +1,6 @@
 # Flourish Forever — technical architecture
 
-**Static inspection:** FlourishForever_Storage.lua (84 lines), FlourishForever.lua (30 lines), FlourishForever_ActionEmotes.lua (554 lines), TOC and `.pkgmeta`, October 27, 2026. No actual game or automated test executed.
+**Baseline:** October 27, 2026 static inspection of the public beta. **Unreleased updates:** November 4, 2026 safety guards and mocked test harness. Existing client behavior was beta-tested by Babuni; these newly implemented changes still require in-game regression testing.
 
 ## Installed load sequence
 
@@ -41,13 +41,13 @@ FlourishForeverDB = currentCharacterProfile  -- runtime alias, not TOC root
 
 If the new root isn't a table, `AdoptPreviousStorage` can use an already loaded **ROARitFOREVERStorage** global. If a GUID profile isn't found, `LegacyKeys` tests an earlier plain **name** key and (when client returns one) an old **name-realm** form, migrates the found table to GUID and removes that old key. The source comment explicitly calls Forever **realmless**; legacy name-realm shapes are backward-compatibility only. It does not automatically read another addon SavedVariables file that the client never loaded, and does not merge two profile roots when both exist.
 
-`EnsureDB` initializes master switch true, instances table, and missing per-ability name/chance/cooldown/emote defaults. It only `tonumber`s stored values; out-of-range numeric values aren't clamped during this normalization.
+`EnsureDB` initializes master switch true, instances table, and missing per-ability name/chance/cooldown/emote defaults. In the unreleased branch, saved chance and cooldown are bounded and rounded to the UI's whole-number limits; invalid numbers default to 100%/6s. A malformed master switch becomes disabled for safety. Unsupported malformed instance entries remain stored for possible recovery but do not appear as configurable abilities.
 
 ## Spellbook and emote enumeration
 
 On config frame **OnShow**:
 1. `RefreshKnownAbilities` attempts `C_SpellBook.GetNumSpellBookSkillLines` and related current-client routines; if absent it falls back to `GetNumSpellTabs/GetSpellTabInfo/GetSpellBookItemInfo`.
-2. It collects entries with a real spell ID, removes duplicate **IDs**, filters passives via `C_Spell.IsSpellPassive` or legacy `IsPassiveSpell`, then sorts by name and ID.
+2. It collects valid numeric spell IDs, removes duplicate **IDs**, and filters passives. The unreleased branch restricts modern entries to `Enum.SpellBookItemType.Spell` and excludes `isPassive` and `isOffSpec`; the legacy fallback accepts only `SPELL`, not future spells or flyouts. Results are sorted by name and ID.
 3. `RefreshKnownEmotes` enumerates global names matching **`^EMOTE%d+_TOKEN$`**, retains distinct uppercase token values, adds `ROAR` if unavailable, and sorts the list.
 4. For UI labels, `GetEmoteSlashCmd(token)` is used if available, otherwise `"/"..lower(token)`.
 
@@ -62,8 +62,8 @@ UNIT_SPELLCAST_SUCCEEDED(unit, _, spellID)
   EnsureDB / db.actionEmotesEnabled?
   db.instances[key] exists?
   now = GetTime()
-  last = lastFireByAbility[key] or 0
-  if now-last < cfg.cooldown: stop
+  last = lastFireByAbility[key]  -- nil until the first fired emote
+  if last and now-last < cfg.cooldown: stop
   if random(1,100) > cfg.chance: stop
   pool = all truthy entries in cfg.emotes
   if pool empty: stop
@@ -74,7 +74,7 @@ UNIT_SPELLCAST_SUCCEEDED(unit, _, spellID)
 
 The source registers **UNIT_SPELLCAST_SUCCEEDED** and **SPELLS_CHANGED** only. It does not observe actual damage hits, resist outcomes or target effects, and does not cast an ability automatically. It queues no retries when a chance fails.
 
-Cooldown is **per normalized ability key** and only advances after a successful emote choice. The dictionary is **local session memory**; `/reload` and relog clear it. A small source-level edge case: the first spell cast when `GetTime() < cooldown` may be suppressed, because missing `lastFireByAbility` defaults to **0** rather than an unbounded-past timestamp.
+Cooldown is **per normalized ability key** and only advances after a successful emote choice. The dictionary is **local session memory**; `/reload` and relog clear it. The unreleased branch fixes the first-cast edge case by checking `last ~= nil` before enforcing cooldown. The last-fire timestamp remains session-only and per normalized ability name.
 
 The code sets lastFire **before** calling `DoEmote`, with no return-status check. An unsupported emote token may still consume cooldown even if the client doesn't visibly play it. The source doesn't include its own extra spam filter or cross-addon synchronization.
 
@@ -90,7 +90,7 @@ A slash-only UI hook `FlourishForever_OpenConfig` toggles that frame, and `Flour
 
 ## Risks, tests and publication evidence
 
-**No tests/** or CI workflow was found in the inspected main tree. GitHub published tags/releases [v0.3.0-beta](https://github.com/babunidev/FlourishForever/releases/tag/v0.3.0-beta) and [v0.3.1-beta](https://github.com/babunidev/FlourishForever/releases/tag/v0.3.1-beta), each with **zero uploaded assets**. `.pkgmeta` is CurseForge-packager metadata, not itself test evidence.
+**The unreleased branch adds** `tests/test_action_emotes.lua` (mocked behavior tests) and `.github/workflows/offline-lua.yml` (Lua syntax and regressions on pull requests). No game-client integration tests exist. GitHub published tags/releases [v0.3.0-beta](https://github.com/babunidev/FlourishForever/releases/tag/v0.3.0-beta) and [v0.3.1-beta](https://github.com/babunidev/FlourishForever/releases/tag/v0.3.1-beta), each with **zero uploaded assets**. `.pkgmeta` is CurseForge-packager metadata, not itself test evidence.
 
 The repository also has **no LICENSE** in its main tree. Exact target client event payloads, slider persistence and emote output still require **actual in-game tests**.
 
