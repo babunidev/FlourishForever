@@ -1,14 +1,14 @@
 # Flourish Forever — verified baseline and roadmap
 
-**Creative decision authority:** Babuni. **TOC / latest GitHub Release:** 0.3.1-beta; **latest confirmed CurseForge file:** 0.3.0-beta (October 22, 2026).  
-**Status:** Current `main` contains packaging changes; gameplay safety fixes remain on draft PR #2. Tasks below distinguish completed offline work from in-game verification.
+**Creative decision authority:** Babuni. **Release candidate:** 0.3.2-beta (not tagged or published). **Latest GitHub Release:** 0.3.1-beta. **Latest confirmed CurseForge file:** 0.3.0-beta (October 22, 2026).  
+**Status:** Current `main` contains the packaging and documentation updates; the release-preparation branch integrates the tested gameplay safety fixes. Tasks distinguish offline verification from in-game proof.
 
 ## Launch readiness — November 4, 2026
 
 - **Confirmed by Babuni:** the original addon worked with its intended features on the Forever beta.
 - **Merged to `main`:** minimal CurseForge packaging rules, static package file inventory guard, MIT license matching CurseForge, and documentation corrections.
-- **Implemented and tested in draft PR #2 only:** first-cast cooldown fix, bounded SavedVariables, spellbook filtering, mock Lua tests and PR-only CI; Babuni's Nobara syntax and mocked regression checks passed.
-- **Still unverified:** in-game behavior of PR #2 on the launch client, real post-change CurseForge ZIP, CurseForge auto-publishing settings, and updated public file status.
+- **Release candidate:** `release/0.3.2-beta-prep` includes the first-cast cooldown fix, bounded SavedVariables, spellbook filtering, mock Lua tests, PR-only CI and versioned changelog. These source changes originally passed GitHub and Nobara checks on draft PR #2.
+- **Still unverified:** in-game behavior of the combined candidate on the launch client, the final CurseForge-generated ZIP, CurseForge auto-publishing settings and whether the next file will be tagged for the correct Forever game flavor.
 - **Release gate:** no tag, public GitHub Release or CurseForge publication without explicit authorization.
 
 ## What exists in current source
@@ -21,7 +21,7 @@
 - Separate character settings using GUID-based profiles inside account-wide `FlourishForeverStorage`; conditional adoption of `ROARitFOREVERStorage` and name-keyed profile migration.
 - Movable **620×520** Blizzard-style window with enable checkbox, ability dropdown/list, selected ability editor, sliders and emote checkboxes.
 - Slash aliases `/flourish`, `/flourishforever`, `/rit`, with `config`, `ui`, `status`.
-- GitHub tags v0.3.0-beta and v0.3.1-beta have no uploaded assets; CurseForge lists v0.3.0-beta. Main includes a lean-package `.pkgmeta` and static inventory check; development PR #2 includes mock Lua regressions and pull-request CI. MIT license is recorded in `LICENSE`.
+- GitHub tags v0.3.0-beta and v0.3.1-beta have no uploaded assets; CurseForge lists v0.3.0-beta. The release candidate includes lean-package `.pkgmeta`, MIT LICENSE, mock Lua regressions and two independent PR-only CI checks (Lua and packager dry-run).
 
 ## P0 — gameplay event correctness
 
@@ -32,7 +32,7 @@
 5. Verify the passive filter and dropdown's available spell list under both new and legacy API paths. Test changed talent/spellbook lists while the window remains open via `SPELLS_CHANGED`.
 6. Confirm `math.random` chance with 0%, 100% and intermediate values across repeated casts; distinguish probability from deterministic “every nth cast.”
 7. Confirm cooldown **per normalized ability name**, independence of two configured spells, and zero/6/120-second intervals.
-8. **Implemented in draft PR #2; Nobara mocks passed:** remove the synthetic zero timestamp for first-cast cooldown. **Remaining:** verify first and subsequent casts in-game on the release client.
+8. **Integrated into release candidate; earlier Nobara mocks passed:** remove the synthetic zero timestamp for first-cast cooldown. **Remaining:** verify first and subsequent casts in-game on the release client.
 9. Confirm cooldown timestamps reset on `/reload` and relog; the source doesn't save them. Document whether that is acceptable for play.
 
 ## P1 — saved character profiles and emote behavior
@@ -42,18 +42,28 @@
 12. Test character setup when `UnitGUID` is briefly unavailable; `EnsureDB` creates a fallback session table and rebinds when the GUID returns. Ensure early edits aren't lost.
 13. Test no emotes checked, one enabled, several enabled and a token unsupported by `DoEmote`. Inspect actual client chat/sound/animation and behavior with other emote addons.
 14. Inspect `status` printing the raw character GUID and decide whether diagnostic privacy/readability should change.
-15. **Implemented in draft PR #2; Nobara mocks passed:** clamp saved chance/cooldown to the UI ranges and safely handle malformed settings. **Remaining:** verify with backed-up real SavedVariables on release client.
+15. **Integrated into release candidate; earlier Nobara mocks passed:** clamp saved chance/cooldown to UI ranges and safely handle malformed settings. **Remaining:** verify with backed-up real SavedVariables on release client.
 16. Test duplicate spell names, spell localization changing the persisted ability key, and spell IDs changing rank/specialization.
 17. Test dropdown menu templates and their optional dynamic load; `CreateUI` still assumes several globals exist after attempting to load them.
 
 ## P2 — packaging and portfolio evidence
 
 18. Confirm CurseForge packager successfully processes `.pkgmeta`. A development change excludes portfolio assets, project docs, and tests, while retaining the manual CHANGELOG. The local inventory check is not proof of a real packaged ZIP; publication and package contents remain **unverified**.
-19. **Implemented in draft PR #2; GitHub Actions and Nobara passed:** mocked spell filtering, chance, cooldown, malformed settings and profile migration. **Not yet covered:** full UI construction or real-client behavior.
+19. **Integrated into release candidate; previously passed GitHub Actions and Nobara:** mocked spell filtering, chance, cooldown, malformed settings and profile migration. **Not yet covered:** full UI construction or real-client behavior.
 20. Verify public GitHub beta release entries: currently v0.3.0-beta and v0.3.1-beta have **no uploaded release assets**. Do not advertise a ZIP at their release URLs.
 21. **Completed in development:** match the existing public CurseForge MIT declaration with the repository `LICENSE` and `license-output: LICENSE`; verify its inclusion in the next actual package.
 22. Obtain actual client screenshots/recordings of the config panel and sample in-world emote, recording consent/character names appropriately.
 23. Test UI legibility and keyboard accessibility for the ability/emote scroll frames at common display scales.
+
+## Release gate — before any public tag
+
+1. Confirm the candidate branch passes Lua regression checks, static package inventory and real BigWigs packager dry-run (uploads disabled).
+2. Compare the exact approved commit against v0.3.1-beta and check the final player-facing changelog, installed ZIP and MIT notice.
+3. Verify private CurseForge source settings: correct GitHub repository/branch or tagged-ref integration; **untagged commits must not auto-publish Alpha**.
+4. Recheck Forever interface 16001 and supported game file version 1.60.1 against the installed launch client.
+5. Record remaining client tests as unverified if not performed; do not invent gameplay proof.
+6. Receive Babuni's explicit approval for the **specific public version and exact commit** before any publishing tag, GitHub Release or CurseForge upload.
+7. After approval, push only the approved tag and verify the exact resulting CurseForge file and classification. No step above constitutes publication.
 
 ## Open creative directions requiring Babuni's approval
 

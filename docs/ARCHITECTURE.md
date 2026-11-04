@@ -1,6 +1,6 @@
 # Flourish Forever — technical architecture
 
-**Baseline:** October 27, 2026 source inspection of the original public beta. Babuni subsequently confirmed the beta gameplay worked. The November 4 packaging and documentation updates on `main` do not modify any of the three runtime Lua files; first-cast, save-validation and spellbook changes are implemented only on draft PR #2, whose Lua mocks passed on GitHub and Nobara.
+**Baseline:** October 27, 2026 source inspection of the original public beta, subsequently confirmed working by Babuni. The prepared but unpublished `0.3.2-beta` branch integrates the first-cast, saved-data and spellbook improvements from draft PR #2, which passed prior GitHub and Nobara mocked tests. Gameplay API calls and character storage layout are retained.
 
 ## Installed load sequence
 
@@ -41,13 +41,13 @@ FlourishForeverDB = currentCharacterProfile  -- runtime alias, not TOC root
 
 If the new root isn't a table, `AdoptPreviousStorage` can use an already loaded **ROARitFOREVERStorage** global. If a GUID profile isn't found, `LegacyKeys` tests an earlier plain **name** key and (when client returns one) an old **name-realm** form, migrates the found table to GUID and removes that old key. The source comment explicitly calls Forever **realmless**; legacy name-realm shapes are backward-compatibility only. It does not automatically read another addon SavedVariables file that the client never loaded, and does not merge two profile roots when both exist.
 
-`EnsureDB` initializes master switch true, instances table, and missing per-ability name/chance/cooldown/emote defaults. Main currently converts stored values with `tonumber` but does not clamp them. **Draft PR #2** clamps chance and cooldown to existing UI bounds, defaults malformed numbers, and disables malformed master switches, with offline mocked tests passed. These changes are not yet merged or release-client tested.
+`EnsureDB` initializes master switch true, instances table, and missing per-ability name/chance/cooldown/emote defaults. The release candidate clamps chance and cooldown to existing UI bounds, defaults malformed numbers and disables malformed master switches. Other malformed records are kept in storage for potential recovery but skipped by live selection. These edits passed earlier offline mocked tests and remain release-client unverified.
 
 ## Spellbook and emote enumeration
 
 On config frame **OnShow**:
 1. `RefreshKnownAbilities` attempts `C_SpellBook.GetNumSpellBookSkillLines` and related current-client routines; if absent it falls back to `GetNumSpellTabs/GetSpellTabInfo/GetSpellBookItemInfo`.
-2. It collects entries with a real spell ID, removes duplicate **IDs**, filters passives via `C_Spell.IsSpellPassive` or legacy `IsPassiveSpell`, then sorts by name and ID.
+2. It collects entries with a valid numeric spell ID, removes duplicate **IDs**, filters passives and off-spec entries, and restricts modern items to `Enum.SpellBookItemType.Spell` and legacy entries to `SPELL`, then sorts by name and ID.
 3. `RefreshKnownEmotes` enumerates global names matching **`^EMOTE%d+_TOKEN$`**, retains distinct uppercase token values, adds `ROAR` if unavailable, and sorts the list.
 4. For UI labels, `GetEmoteSlashCmd(token)` is used if available, otherwise `"/"..lower(token)`.
 
@@ -62,8 +62,8 @@ UNIT_SPELLCAST_SUCCEEDED(unit, _, spellID)
   EnsureDB / db.actionEmotesEnabled?
   db.instances[key] exists?
   now = GetTime()
-  last = lastFireByAbility[key] or 0
-  if now-last < cfg.cooldown: stop
+  last = lastFireByAbility[key] -- nil when this ability has not yet emote-fired
+  if last and now-last < cfg.cooldown: stop
   if random(1,100) > cfg.chance: stop
   pool = all truthy entries in cfg.emotes
   if pool empty: stop
@@ -74,7 +74,7 @@ UNIT_SPELLCAST_SUCCEEDED(unit, _, spellID)
 
 The source registers **UNIT_SPELLCAST_SUCCEEDED** and **SPELLS_CHANGED** only. It does not observe actual damage hits, resist outcomes or target effects, and does not cast an ability automatically. It queues no retries when a chance fails.
 
-Cooldown is **per normalized ability key** and only advances after a successful emote choice. The dictionary is **local session memory**; `/reload` and relog clear it. On current `main`, the first spell cast when `GetTime() < cooldown` may still be suppressed because an absent timestamp defaults to **0**. Draft PR #2 addresses this by checking for an actual prior emote timestamp. This correction has passed offline mocks but remains unmerged and untested in-game.
+Cooldown is **per normalized ability key** and only advances after a successful emote choice. The dictionary is **local session memory**; `/reload` and relog clear it. On the release candidate, the first spell cast is no longer suppressed by an absent timestamp. A timestamp is checked only if that ability has actually fired an emote earlier in the session. Previously tested in offline mocks; real-client confirmation remains pending.
 
 The code sets lastFire **before** calling `DoEmote`, with no return-status check. An unsupported emote token may still consume cooldown even if the client doesn't visibly play it. The source doesn't include its own extra spam filter or cross-addon synchronization.
 
@@ -90,7 +90,7 @@ A slash-only UI hook `FlourishForever_OpenConfig` toggles that frame, and `Flour
 
 ## Risks, tests and publication evidence
 
-**The October 27 source snapshot contained no tests or CI.** Current `main` includes a static package inventory check at `tests/check_package_layout.py`. Draft PR #2 separately adds Lua 5.4 mocked regression tests and a pull-request-only CI workflow, both of which passed; neither is a client-integrated test. GitHub published tags/releases [v0.3.0-beta](https://github.com/babunidev/FlourishForever/releases/tag/v0.3.0-beta) and [v0.3.1-beta](https://github.com/babunidev/FlourishForever/releases/tag/v0.3.1-beta), each with **zero uploaded assets**. `.pkgmeta` is CurseForge-packager metadata, not itself test evidence.
+**The October 27 snapshot had no tests or CI.** The release-preparation branch contains the static package inventory check, mocked Lua 5.4 regressions and an upload-disabled BigWigs packager ZIP validation job. Prior mock tests passed; the candidate's new combined CI must pass before approval. Neither is an in-game client test. GitHub published tags/releases [v0.3.0-beta](https://github.com/babunidev/FlourishForever/releases/tag/v0.3.0-beta) and [v0.3.1-beta](https://github.com/babunidev/FlourishForever/releases/tag/v0.3.1-beta), each with **zero uploaded assets**. `.pkgmeta` is CurseForge-packager metadata, not itself test evidence.
 
 The repository now contains a formal MIT `LICENSE`, consistent with CurseForge's listed license; `license-output: LICENSE` requests it in future packages. Current public CurseForge v0.3.0-beta predates this change. Actual target-client event payloads, modified-save behavior and emote output still require **in-game tests**.
 

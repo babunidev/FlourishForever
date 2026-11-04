@@ -19,9 +19,13 @@ The code and commit messages do not prove the full initial brainstorming, all al
 
 ## November 4, 2026 — confirmed maintenance decisions
 
-Babuni confirmed functional beta use and approved targeted source improvements while retaining the existing spellcast event and native `DoEmote` path. Draft PR #2 implements first-cast timing, bounded saved values and castable spellbook filtering; GitHub and Nobara mocks passed, but the changes remain unmerged and not live-client tested.
+Babuni confirmed functional beta use and approved targeted source improvements while retaining the existing spellcast event and native `DoEmote` path. Draft PR #2 implemented first-cast timing, bounded saved values and castable spellbook filtering; earlier GitHub and Nobara mocks passed. Those precise gameplay changes have now been integrated into a separate `0.3.2-beta` release-preparation branch, but remain unmerged to main and not live-client tested.
 
 The previously selected **MIT** designation is visible on CurseForge. Repository documentation now carries the matching `LICENSE` with credit to Babuni, and `.pkgmeta` requests inclusion in a future package. This aligns the already-public license declaration; it does not grant rights to separate Blizzard assets.
+
+## Release preparation — November 4, 2026
+
+Version `0.3.2-beta` is prepared as a proposed patch-level beta increment from the prior GitHub `0.3.1-beta`, carrying fixes and packaging cleanup without expanding the feature set. The TOC is updated on the release-preparation branch; the actual version and exact tagged commit still require Babuni's approval. Automated packaging is configured only for **no-upload** dry runs on pull requests. Public CurseForge source settings and the real published ZIP remain unverified.
 
 ## Source-level tradeoffs
 

@@ -1,7 +1,7 @@
 # Flourish Forever — development and AI collaboration rules
 
 **Human creative / final decision-maker:** Babuni.  
-**Release:** 0.3.1-beta / WoW: Forever 16001. **Prior development credit:** Babunigaming.
+**Latest GitHub release:** 0.3.1-beta · **Prepared candidate:** 0.3.2-beta (unpublished) / WoW: Forever 16001. **Prior development credit:** Babunigaming.
 
 ## Preserve the human-directed expression concept
 
@@ -17,12 +17,12 @@ The player must choose eligible non-passive abilities; a fresh character's confi
 - `ROARitFOREVERStorage` is adopted **only if the old global has been loaded** and new root doesn't exist; avoid claiming automatic disk migration from a deleted previous addon.
 - Per-name `instances` store `name`, `spellID`, `chance`, `cooldown`, `emotes`. Spell **names** are normalized by trim/lowercase; event spell IDs are resolved back to names, so ranks/locale changes may collide or lose match.
 - Trigger event is **player `UNIT_SPELLCAST_SUCCEEDED`**, not combat-log proof that a spell hit. Failed casts shouldn't be described as landed or as the event source.
-- Default chance **100%**, cooldown **6 seconds**, default allowed token **ROAR**; UI bounds chance 0–100 and cooldown 0–120. Saved malformed values are only converted, not clamped on load.
+- Default chance **100%**, cooldown **6 seconds**, default allowed token **ROAR**; UI bounds chance 0–100 and cooldown 0–120. The prepared candidate clamps malformed saved numeric values to the supported ranges.
 - **Cooldown is consumed only on an actual successful emote selection**; a failed probability check or empty pool does not spend it. Runtime timestamps live in `lastFireByAbility`, **not SavedVariables**.
-- Source's `lastFireByAbility[key] or 0` potentially blocks a first cast when `GetTime()<cooldown`; investigate with test data before presenting as in-game proven.
+- The prepared candidate checks for an actual prior emote timestamp, so an unseen ability's first cast is not throttled by a synthetic zero. This passed earlier mocked tests but remains unverified in-game.
 - Emote list is discovered from `EMOTE*_TOKEN` globals, with ROAR fallback; `DoEmote(token)` executes client behavior. No custom chat strings/sounds.
 - Slash commands `/flourish`, `/flourishforever`, `/rit`; `status` currently exposes a character GUID in chat—redact when sharing.
-- The repository now has an MIT `LICENSE` aligned to the pre-existing CurseForge declaration, included via `.pkgmeta` `license-output`. Main has `tests/check_package_layout.py` only; draft PR #2 contains Lua regression mocks and CI, but these are not in-game tests. The packager and actual ZIP have not been verified after these changes.
+- The repository contains an MIT `LICENSE` aligned to CurseForge's declaration and included via `.pkgmeta` `license-output`. The release candidate integrates both the package inventory test and the mocked Lua regression suite; the dry-run packager check verifies a generated ZIP, not CurseForge publishing. In-game checks remain separate.
 
 ## Development protocol
 

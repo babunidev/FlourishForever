@@ -1,6 +1,6 @@
 # FlourishForever
 
-**World of Warcraft: Forever only** · **TOC interface:** `16001` · **Latest GitHub version:** `0.3.1-beta`  
+**World of Warcraft: Forever only** · **TOC interface:** `16001` · **Prepared version:** `0.3.2-beta` (not yet published)  
 **Creative direction:** Babuni · **Portfolio:** [babuni.dev](https://babuni.dev) · **Earlier project credit:** Babunigaming
 
 FlourishForever lets a character express themselves through ordinary ability casts. Choose a spellbook ability, select the game-native emotes it may trigger, and configure that ability's chance and cooldown. The addon listens for a **successful cast event**, not a confirmed damage hit. It never casts an ability for the player.
@@ -10,7 +10,7 @@ FlourishForever lets a character express themselves through ordinary ability cas
 - **Beta-tested:** Babuni used the existing addon successfully throughout the WoW Forever beta, including its intended features.
 - **Forever launch:** Blizzard announced November 4, 2026, at 23:00 UTC (November 5, 00:00 CET). Launch-client compatibility still requires confirmation; successful beta use is not a launch-client test.
 - **Public files:** [CurseForge](https://www.curseforge.com/wow/addons/flourishforever) currently lists `v0.3.0-beta` for Forever `1.60.1`. The latest [GitHub release](https://github.com/babunidev/FlourishForever/releases/tag/v0.3.1-beta) is `v0.3.1-beta` and has no attached binary ZIP.
-- **Development:** Packaging improvements are merged into `main`. First-cast cooldown, SavedVariables and spellbook fixes are implemented and tested offline in [draft PR #2](https://github.com/babunidev/FlourishForever/pull/2), **not merged or publicly released**.
+- **Release preparation:** `release/0.3.2-beta-prep` combines the merged packaging work with first-cast cooldown, SavedVariables and spellbook fixes originally tested on [draft PR #2](https://github.com/babunidev/FlourishForever/pull/2). The candidate is **not merged into `main`, tagged or publicly released**. It retains the existing cast-success event and native `DoEmote` API.
 
 ## Installation
 
@@ -45,7 +45,7 @@ The GitHub **source archive is not an installable CurseForge package**: it also 
 
 ## Compatibility and testing
 
-The current public source retains the beta-tested `DoEmote` and `UNIT_SPELLCAST_SUCCEEDED` behavior. Draft PR #2 deliberately keeps those APIs unchanged while addressing edge cases. Its GitHub Lua 5.4 regression workflow passed, and Babuni also ran Lua syntax and mocked regression checks successfully on Nobara Linux. **Mocks are not in-game proof.**
+The prepared `0.3.2-beta` candidate retains the beta-tested `DoEmote` and `UNIT_SPELLCAST_SUCCEEDED` behavior. Its cooldown, saved-data and spellbook changes match the earlier draft PR #2 implementation. GitHub Lua 5.4 regression checks passed for that earlier branch, and Babuni passed syntax and mocked regression checks on Nobara Linux. **The candidate's own full CI and packager dry run must also pass; mocks are not in-game proof.**
 
 The merged packaging check runs from the repository root using:
 
@@ -53,7 +53,7 @@ The merged packaging check runs from the repository root using:
 python3 tests/check_package_layout.py
 ```
 
-After checking out draft PR #2, the offline Lua checks can be run with:
+On the release-preparation branch, the offline Lua checks can be run with:
 
 ```bash
 luac -p FlourishForever_Storage.lua
@@ -62,7 +62,9 @@ luac -p FlourishForever_ActionEmotes.lua
 lua tests/test_action_emotes.lua
 ```
 
-In-game validation remains necessary for the development fixes, the config UI, multiplayer emotes and RoarForever coexistence.
+Run `python3 tests/check_package_layout.py` to confirm the planned installed file list. The pull-request workflow additionally builds a **dry-run** archive using the BigWigs packager with `-d` (no upload), validated by `python3 tests/check_packaged_zip.py`. Neither check confirms CurseForge's private source integration or publishing settings.
+
+In-game validation remains necessary for the development fixes, the config UI, multiplayer emotes and RoarForever coexistence. No publishing tag, GitHub Release or CurseForge upload has been created.
 
 ## License, history and project records
 

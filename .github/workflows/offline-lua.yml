@@ -39,7 +39,7 @@ jobs:
           pandoc: 'false'
       - name: Inspect actual generated ZIP
         run: python3 tests/check_packaged_zip.py
-      - name: Archive preview for private review
+      - name: Archive dry-run preview for development review
         uses: actions/upload-artifact@v4
         with:
           name: flourishforever-packager-dry-run

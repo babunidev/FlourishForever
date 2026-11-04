@@ -97,6 +97,12 @@ Having used the addon during the Forever beta, I considered its original feature
 
 The GitHub repository should continue carrying the concept, history, development notes and portfolio images, without sending those files into everyone's AddOns directory. That led to a minimal CurseForge package configuration, merged into `main`. A matching MIT license was documented because CurseForge already listed this project as MIT. The README and release notes now keep the public CurseForge file, GitHub tag, development code and actual verification clearly separate. No new version was published or authorized.
 
+## 4 November 2026 — preparing the next beta update
+
+The first game launch seemed like a good point to gather the small improvements into one version rather than keep them scattered across separate branches. Since the beta gameplay had worked for me, the release candidate keeps the familiar spellcast trigger and native emotes, while incorporating the tested fixes and lean installation package. My AI assistant assembled the proposed `0.3.2-beta` code and version notes, then added a dry-run packaging check that does not upload to CurseForge.
+
+This is a development checkpoint, not the announcement of a public update. The modified code still needs its release-client check, and the private CurseForge integration settings need confirmation before a publishing tag is pushed.
+
 ## 1 November 2026 — connecting Flourish to the earlier experiments
 
 The earlier action-emote addons helped me explore an idea that kept returning in new forms: character expression should grow naturally from what the player is already doing. After reviewing the complete family, I asked my AI assistant to distinguish the old watched-button model from **Flourish Forever's spellcast-success model**. The new GUI allows per-ability selection among existing client emotes, with ROAR as the starting choice, rather than a free-form text creator. The [cross-project record](EMOTE_FAMILY_HISTORY.md) also keeps Roar Forever's separate voice-restoration purpose clear. This was documentation research, not new game testing.
