@@ -13,7 +13,7 @@
 - Separate character settings using GUID-based profiles inside account-wide `FlourishForeverStorage`; conditional adoption of `ROARitFOREVERStorage` and name-keyed profile migration.
 - Movable **620×520** Blizzard-style window with enable checkbox, ability dropdown/list, selected ability editor, sliders and emote checkboxes.
 - Slash aliases `/flourish`, `/flourishforever`, `/rit`, with `config`, `ui`, `status`.
-- Two GitHub beta release tags with **no uploaded release assets**, CurseForge-oriented `.pkgmeta`, **no LICENSE**, no committed test harness or CI.
+- Two GitHub beta release tags with **no uploaded release assets**, a CurseForge-oriented `.pkgmeta`, and **no LICENSE**. A development-only package inventory check now exists under `tests/`; there is still no gameplay test harness or CI.
 
 ## P0 — gameplay event correctness
 
@@ -40,7 +40,7 @@
 
 ## P2 — packaging and portfolio evidence
 
-18. Confirm CurseForge packager successfully processes `.pkgmeta`, includes only intended Lua/TOC files and uses the manual CHANGELOG; **not verified** by the existence of the metadata file.
+18. Confirm CurseForge packager successfully processes `.pkgmeta`. A development change excludes portfolio assets, project docs, and tests, while retaining the manual CHANGELOG. The local inventory check is not proof of a real packaged ZIP; publication and package contents remain **unverified**.
 19. Consider adding a small mocked Lua harness for spellcast matching, cooldown, chance boundaries, GUID migration and UI creation, then run it and record output.
 20. Verify public GitHub beta release entries: currently v0.3.0-beta and v0.3.1-beta have **no uploaded release assets**. Do not advertise a ZIP at their release URLs.
 21. Decide on an explicit repository license; **no LICENSE** was found in the inspected main tree.

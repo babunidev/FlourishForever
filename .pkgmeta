@@ -2,3 +2,14 @@ package-as: FlourishForever
 manual-changelog:
   filename: CHANGELOG.md
   markup-type: markdown
+
+# Development and portfolio content stays in GitHub, not in the installable addon.
+# CHANGELOG.md is retained for the packager's manual release notes.
+ignore:
+  - assets
+  - docs
+  - tests
+  - AGENTS.md
+  - CONCEPT.md
+  - README.md
+  - ROADMAP.md

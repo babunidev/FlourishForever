@@ -1,6 +1,13 @@
 # Flourish Forever — dated changelog and development evidence
 
-**Creator and creative director:** Babuni.dev. **Interface:** WoW: Forever 16001.
+**Creative direction:** Babuni · **Portfolio:** babuni.dev. **Interface:** WoW: Forever 16001.
+
+## Unreleased development — 2026-11-04 (not a public version)
+
+- Updated `.pkgmeta` to exclude portfolio artwork, project documentation, agent instructions and tests from future CurseForge packages; preserved `CHANGELOG.md` for release-note generation.
+- Added a dependency-free, static package-inventory guard at `tests/check_package_layout.py` and clarified installation documentation.
+- **No gameplay Lua or TOC change.** Actual CurseForge package contents and live-client behavior have not been verified by this documentation/packaging work.
+
 
 ## October 27, 2026 — portfolio artwork
 

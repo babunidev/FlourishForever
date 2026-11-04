@@ -90,7 +90,7 @@ A slash-only UI hook `FlourishForever_OpenConfig` toggles that frame, and `Flour
 
 ## Risks, tests and publication evidence
 
-**No tests/** or CI workflow was found in the inspected main tree. GitHub published tags/releases [v0.3.0-beta](https://github.com/babunidev/FlourishForever/releases/tag/v0.3.0-beta) and [v0.3.1-beta](https://github.com/babunidev/FlourishForever/releases/tag/v0.3.1-beta), each with **zero uploaded assets**. `.pkgmeta` is CurseForge-packager metadata, not itself test evidence.
+**The October 27 source snapshot contained no tests or CI.** A subsequent development change added a static package-file inventory guard under `tests/`, but there is still no automated gameplay regression test or CI workflow. GitHub published tags/releases [v0.3.0-beta](https://github.com/babunidev/FlourishForever/releases/tag/v0.3.0-beta) and [v0.3.1-beta](https://github.com/babunidev/FlourishForever/releases/tag/v0.3.1-beta), each with **zero uploaded assets**. `.pkgmeta` is CurseForge-packager metadata, not itself test evidence.
 
 The repository also has **no LICENSE** in its main tree. Exact target client event payloads, slider persistence and emote output still require **actual in-game tests**.
 
