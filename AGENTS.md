@@ -22,7 +22,7 @@ The player must choose eligible non-passive abilities; a fresh character's confi
 - Source's `lastFireByAbility[key] or 0` potentially blocks a first cast when `GetTime()<cooldown`; investigate with test data before presenting as in-game proven.
 - Emote list is discovered from `EMOTE*_TOKEN` globals, with ROAR fallback; `DoEmote(token)` executes client behavior. No custom chat strings/sounds.
 - Slash commands `/flourish`, `/flourishforever`, `/rit`; `status` currently exposes a character GUID in chat—redact when sharing.
-- No LICENSE or automated tests found in current main tree; don't fabricate either. CurseForge-oriented `.pkgmeta` is packaging configuration, not confirmation of a published artifact.
+- No LICENSE or automated **gameplay** tests are present. `tests/check_package_layout.py` checks the intended static package inventory only; it does not run the CurseForge packager or the game. The updated `.pkgmeta` excludes portfolio and project-only files, but this is not confirmation of a published artifact.
 
 ## Development protocol
 
