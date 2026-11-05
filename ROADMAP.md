@@ -4,6 +4,16 @@
 **Last public Git tag:** `v0.3.2-beta` · **Next version prepared:** `0.4.0-beta` (not released).  
 **Development:** Expanded UI restored from Babuni's older local archive and committed to `dev/expanded-ui-merge`. Preparation occurs separately; no public release tag was created.
 
+## Current bugfix work — PvP emote restrictions
+
+- [x] Diagnose a reported `ADDON_ACTION_BLOCKED` after battleground entry to `DoEmote` → protected `PerformEmote()` inside a cast-success handler.
+- [x] Implement conservative no-emote behavior for both native and custom Flourish triggers whenever Forever reports `IsInInstance()` as `pvp` or `arena`.
+- [x] Add mocked tests for suppressed PvP output and restored non-PvP behavior.
+- [ ] Retest entering a battleground, ability presses, combat, and leaving the battleground with BugGrabber enabled; verify no protected-action errors.
+- [ ] Confirm custom and native emotes still work in the overworld and ordinary party/raid instances.
+- [ ] Revisit PvP silence only if player experience demands it; do not bypass protected APIs or change trigger semantics without approval.
+- [ ] Choose and approve any new public hotfix version separately; no tag or CurseForge publication from this branch.
+
 ## Completed implementation
 
 - [x] Expanded **810×676** multi-page editor with configured-ability overview, icons and per-ability enable switches.

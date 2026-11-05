@@ -2,7 +2,7 @@
 
 **Human creative and final decision-maker:** Babuni. **Portfolio:** babuni.dev. **Historical project credit:** Babunigaming.  
 **Game:** World of Warcraft **Forever only**, client 1.60.1 / interface 16001. Recheck after each game update.  
-**Current tagged baseline:** `v0.3.2-beta` · **Prepared next version:** `0.4.0-beta` (not yet tagged/published).
+**Current tagged baseline:** `v0.4.0-beta` · **Development fix branch:** `fix/pvp-protected-emotes` / `0.4.0-beta-dev` (unpublished).
 
 ## Creative boundaries
 
@@ -16,6 +16,7 @@ The expanded interface and custom `/e` text are now part of the approved develop
 - `FlourishForeverStorage` is account-wide, with character profiles keyed by `UnitGUID("player")`; earlier name or name-realm keys are migration only. `ROARitFOREVERStorage` can be adopted **only when already loaded**.
 - Configured abilities remain keyed by lowercased, trimmed **spell name**. Ranks/localization or duplicate names can affect matching. Profiles are not dungeon-instance-scoped.
 - Each ability has `enabled`, `chance` (0–100), and selected `emotes`. Each selected native/custom token stores `{ cooldown = 0..120 }`. The old ability-level `cfg.cooldown` stays for migration/defaults; older `true` token values migrate using that cooldown. An empty emote pool is intentionally silent.
+- **Unpublished PvP guard:** the reported Forever client blocked protected `PerformEmote()` during a battleground cast-success event. For safety, both native and custom addon-driven emotes are suppressed in `IsInInstance()` types `pvp` and `arena`; normal settings are preserved. This must be retested in-game before a hotfix release.
 - The native `DoEmote` path uses **player `UNIT_SPELLCAST_SUCCEEDED`**, not combat-hit proof. First casts must not be throttled by a synthetic zero timestamp; runtime cooldown timestamps are session-only.
 - Custom `/e` text uses `c:id` tokens and is attempted during player button-press hooks (`UseAction`, `CastSpellByID`, `C_Spell.CastSpell` where available). It can trigger **before cast success**, including on failed/aborted casts. Preserve this distinction and verify secure-chat restrictions in Forever before claiming complete compatibility.
 - Spellbook selection excludes passive, future, off-spec and non-spell entries. Actual modern API availability must be verified on the target Forever build, not guessed from an interface number.
