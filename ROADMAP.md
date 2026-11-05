@@ -1,8 +1,18 @@
 # Flourish Forever — roadmap and verification status
 
 **Creative decision authority:** Babuni · **Game:** WoW Forever 1.60.1 / Interface 16001  
-**Latest confirmed Git tag:** `v0.4.1-beta` · **Prepared version:** `0.4.2-beta` (not yet tagged).  
+**Latest confirmed Git tag:** `v0.4.2-beta` · **Unpublished development:** `0.4.2-beta-dev` group-play fix.  
 **Development:** Expanded UI restored from Babuni's older local archive and committed to `dev/expanded-ui-merge`. Preparation occurs separately; no public release tag was created.
+
+## Group-play regression — development fix
+
+- [x] Inspect the `0.4.2-beta` trigger code and identify overbroad `Map`, `Encounter` and `ChallengeMode` restriction-state suppression.
+- [x] Keep genuine chat lockdown, `Chat`/`PvPMatch` restrictions, and battleground/arena safeguards while allowing ordinary party/raid action-press emotes.
+- [x] Add mocked tests for outdoor party, party dungeon and raid states, both native and custom text, and actual chat lockdown.
+- [ ] Confirm GitHub Lua/UI checks and no-upload packaged ZIP checks on the exact development commit.
+- [ ] Verify directly in-game: outdoor party, dungeon group, raid, combat, login/reload, custom and native emotes, and no new BugGrabber protected-action errors.
+- [ ] If still silent in a group, inspect real `IsInInstance`, chat lockdown and restriction-state values before changing safety policy.
+- [ ] No public release is authorized for this change; existing `v0.4.2-beta` tag must remain unchanged.
 
 ## 0.4.2-beta hotfix release gate
 

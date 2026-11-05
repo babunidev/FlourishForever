@@ -1,5 +1,11 @@
 # Flourish Forever — creative and technical development journal
 
+## 5 November 2026 — getting Flourish back into group play
+
+After the protected-action fix, Flourish seemed to go quiet whenever I was in a group. That undermines the purpose of the addon: a flourish should give other players a glimpse of the character, not disappear when company arrives.
+
+The review found that addon restrictions for map and encounter information had been treated like chat prohibitions. My AI assistant narrowed that guard without disabling the actual chat and PvP protections, and added group and instance regression mocks. Whether this resolves the exact in-game silence is still to be confirmed; the change stays on a development branch until then.
+
 ## 5 November 2026 — preparing the safer emote trigger for everyone
 
 The revised Flourish build behaved much like the version I was used to when I tried it in Forever. Its native emotes no longer wait for the delayed cast-success callback that caused the protected-action errors. The timing may differ when a spell fails, but the change was not noticeable during my ordinary use.

@@ -1,5 +1,9 @@
 # Flourish Forever — human–AI collaboration and attribution
 
+## 5 November 2026 — group-play silence investigation
+
+Babuni reported that Flourish did not appear to trigger during group play and emphasized preserving its social expression purpose. AI reviewed the published action-press restriction guard, identified its overly broad treatment of unrelated Map/Encounter/ChallengeMode states, narrowed the guard while preserving real chat and PvP safeguards, and added mocked party/raid coverage. The cause is a code-backed hypothesis, not an observed runtime diagnosis; no in-game group test or public release is claimed.
+
 ## 5 November 2026 — general in-game confirmation and release preparation
 
 Babuni installed the hardware-action experiment and reported that it works like the previous version, without a noticeable difference, then directed a public release. AI prepared the `0.4.2-beta` version metadata, release notes, documentation and package checks. The change to action-press timing is explicit. A successful battleground-specific retest has not been reported, and publication requires the separately pushed tag and CurseForge verification.

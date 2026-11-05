@@ -2,7 +2,14 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** WoW Forever 1.60.1 / Interface 16001.
 
-## 0.4.2-beta — protected native emotes (prepared; not yet published)
+## Unreleased development — group-play emote restoration (2026-11-05)
+
+- Stop treating `Map`, `Encounter` and `ChallengeMode` addon data-restriction states as blanket emote bans. Normal outdoor parties, dungeons and raids can attempt native and custom emotes through existing player-action hooks.
+- Keep actual `C_ChatInfo.InChatMessagingLockdown()`, activating/active `Chat` and `PvPMatch` state checks, and battleground/arena suppression. No protected function bypass or delayed native-emote dispatch is added.
+- Add mocked regressions for ordinary parties, dungeon groups and raids with unrelated restriction states active, along with actual chat-lockdown suppression.
+- **Verification:** offline tests and GitHub package preview required. Live group/instance behavior remains unverified until retested; `0.4.2-beta-dev` is for development only. No new public tag.
+
+## 0.4.2-beta — protected native emotes (tagged; final CurseForge approval not independently confirmed)
 
 - Stop calling `DoEmote` from delayed `UNIT_SPELLCAST_SUCCEEDED` events, which continued to trigger protected `PerformEmote()` errors after the 0.4.1-beta PvP guard.
 - Attempt native `C_ChatInfo.PerformEmote` and custom `/e` only during direct player-action hooks, without deferred native replay.
