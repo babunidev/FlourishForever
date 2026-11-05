@@ -2,7 +2,7 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev.  
 **Platform:** World of Warcraft: Forever, TOC interface 16001 (expanded build tested in-game on November 5, 2026; specific edge cases remain open).  
-**Latest published Git tag:** v0.3.2-beta · **Next release candidate:** 0.4.0-beta (unpublished).
+**Latest confirmed Git tag:** v0.4.1-beta · **Experimental fix:** hardware-press native emotes (not a released design).
 
 ## A flourish of personality at the moment of action
 
@@ -18,17 +18,17 @@ An emote on every cast may become repetitive or irritating. The design gives eac
 
 Once a configured cast passes those checks, the program chooses uniformly from the enabled emote tokens. The player can select a single reliable signature gesture or a larger pool for surprise. **ROAR** is the default *allowed emote* when a spell is first added; it is not a hardcoded requirement, and the default ability list is empty.
 
-The expanded editor offers both the game's native `DoEmote` vocabulary and player-written `/e` lines. The latter are ordinary chat emotes, not custom animations or new sound files. Native emotes follow cast-success while custom text is attempted during the player's button press; the two triggers are intentionally distinct.
+The expanded editor offers both the game's native emote-token vocabulary and player-written `/e` lines. The latter are ordinary chat emotes, not custom animations or new sound files. In the public version, native emotes are attempted after cast-success and custom text during the player's button press. The experimental security fix instead triggers both on a real action press, with the possibility of emotes on failed casts. That trade-off has not been approved as a permanent creative decision.
 
 ## Honor the boundaries of player agency
 
-The native-emote trigger is the player's **reported successful spellcast event**, not actual damage, a hit landing, or a game command automatically cast by Flourish Forever. Custom text emotes instead originate during the button-press hook and may occur before cast success. The addon never chooses or triggers a combat spell. It can send an emote after an eligible spellcast; this can have the ordinary visibility/social consequences of a normal in-game emote.
+Originally the native-emote trigger was the player's **reported successful spellcast event**, not an actual hit. Custom text is generated at the button press. The experimental 0.4.1-beta-dev implementation attempts both emote types on user action instead, never automatically casts a spell, and remains subject to Forever's security restrictions. This change of timing is under evaluation, not an approved replacement for the original behavior.
 
 Character settings are isolated by **character GUID**, consistent with the realmless Forever naming environment. The existing source contains migration logic for previously name-keyed profiles, but the full historical ROARitFOREVER design conversation isn't present in the inspected Git repository. That conditional migration path isn't evidence a separate realm model applies.
 
 ## Why this small concept makes a useful portfolio piece
 
-The interaction is an example of **emergent personality made from a few small systems**: a cast event, a probability decision, a time limit, a curated list and a user interface. The computer contributes variation; the player contributes taste and character identity.
+The interaction is an example of **emergent personality made from a few small systems**: a player-chosen ability action, a probability decision, a time limit, a curated list and a user interface. The computer contributes variation; the player contributes taste and character identity.
 
 The difference from an always-on automated announcer is essential. The player can curate or remove any configured spell, leave some abilities entirely untouched, disable the system without deleting settings, or uncheck every emote to make one configuration silent.
 

@@ -1,13 +1,19 @@
 # FlourishForever
 
-**World of Warcraft: Forever only** · **Interface:** `16001` · **Prepared hotfix:** `0.4.1-beta` (not yet tagged)  
-**Last confirmed Git tag:** `v0.4.0-beta` · **Creative direction:** Babuni · **Portfolio:** [babuni.dev](https://babuni.dev) · **Historical credit:** Babunigaming
+**World of Warcraft: Forever only** · **Interface:** `16001` · **Experimental version:** `0.4.1-beta-dev` (unpublished)  
+**Latest confirmed Git tag:** `v0.4.1-beta` · **Creative direction:** Babuni · **Portfolio:** [babuni.dev](https://babuni.dev) · **Historical credit:** Babunigaming
 
 Flourish Forever adds character expression to abilities the player chooses. An ability may trigger a random native WoW emote or a player-written `/e` emote, subject to configurable chance and individual emote cooldowns. It never casts spells on the player's behalf.
 
+## Experimental security correction — not yet released
+
+A second player-reported `ADDON_ACTION_BLOCKED` showed that the 0.4.1-beta PvP-instance guard did not fully prevent restricted native emotes. The source still issued `DoEmote` from the delayed `UNIT_SPELLCAST_SUCCEEDED` event. The **experimental `fix/hardware-native-emotes` branch** removes that delayed native action entirely. Both native and custom emotes are now attempted only during the player's direct ability-action hooks. Native tokens use Forever's `C_ChatInfo.PerformEmote` API, and only successful calls consume token cooldown; there is no delayed retry or cast-success fallback.
+
+**Behavioral trade-off:** Native and custom emotes can both occur for an *attempted* spell, even if it later fails, rather than waiting for a confirmed cast. Abilities that bypass the action hooks may not trigger any emote. The branch additionally suppresses both emote types during battleground/arena and chat/PvP/map/encounter restriction states. This design remains **proposed and unverified in-game**: even hardware-press hooks might not be permitted in every restricted combat state. No public `v0.4.2` version or release has been approved.
+
 ## 0.4.1-beta — battleground and arena protected-emote safeguard
 
-A player-reported `ADDON_ACTION_BLOCKED` occurred after entering a Forever battleground: a cast-success `DoEmote` call reached protected `PerformEmote()`. In this prepared hotfix, automatic Flourish emotes are intentionally **silent in battlegrounds and arenas**, detected via `IsInInstance()` (`pvp`/`arena`). The guard covers both native `DoEmote` and player-written `/e`, without deleting settings or consuming cooldowns. It leaves normal world and dungeon behavior unchanged. This is a preventive workaround, not a bypass of protected APIs, and **has not been retested in a live battleground**. This mitigation is being prepared for prompt distribution because the current release can generate protected-action errors; remaining compatibility uncertainty must remain visible. Manual player emotes are not changed.
+A player-reported `ADDON_ACTION_BLOCKED` occurred after entering a Forever battleground: a cast-success `DoEmote` call reached protected `PerformEmote()`. In this prepared hotfix, automatic Flourish emotes are intentionally **silent in battlegrounds and arenas**, detected via `IsInInstance()` (`pvp`/`arena`). The guard covers both native `DoEmote` and player-written `/e`, without deleting settings or consuming cooldowns. It leaves normal world and dungeon behavior unchanged. This is a preventive workaround, not a bypass of protected APIs, and **has not been fully verified in a live battleground**. This mitigation is being prepared for prompt distribution because the current release can generate protected-action errors; remaining compatibility uncertainty must remain visible. Manual player emotes are not changed.
 
 ## What's new in 0.4.0-beta
 
@@ -23,7 +29,7 @@ The expanded interface recovered from Babuni's earlier local work is now prepare
 
 - **In-game report (November 5, 2026):** Babuni installed and used the expanded development build in WoW Forever and confirmed that it works well. This is a general hands-on confirmation, **not an exhaustive test report** for failed casts, every secure action path, character switching or all other addon combinations.
 - **Automated checks:** GitHub runs Lua syntax and mocked gameplay/UI regressions, static package inventory, and an **upload-disabled** packager ZIP inspection. Tests are not substitutes for the game client.
-- **Publication:** `v0.4.0-beta` was tagged and its CurseForge Beta upload was observed Processing. Final approval was not independently rechecked here. The PvP guard is prepared for `v0.4.1-beta`, not part of the previously tagged `v0.4.0-beta`. A new tag and CurseForge file have not yet been verified.
+- **Publication:** Git tag `v0.4.1-beta` exists and Babuni observed its CurseForge Beta file in Processing. Final approval was not independently confirmed. The hardware-press experiment is confined to a GitHub development branch and **has no public release**.
 - **Target:** Forever `1.60.1` / interface `16001`. No Retail, Classic or other client is supported.
 
 ## Installation and controls
@@ -48,7 +54,7 @@ Restart WoW when first installing; open the configuration with `/flourish`. New 
 
 ### How emote triggers differ
 
-**Native emotes** use the player's `UNIT_SPELLCAST_SUCCEEDED` event and `DoEmote`, so they follow reported successful casts, not confirmed target hits. **Custom `/e` text** is attempted from the player's action-button/spell press using a chat API; it can therefore appear even if the following cast is interrupted or fails. This tradeoff is preserved from the recovered implementation and requires care when testing different action bindings and macros.
+In public `v0.4.1-beta`, native emotes are still attempted from `UNIT_SPELLCAST_SUCCEEDED` via `DoEmote`, which can trigger protected-action errors. On the **experimental development branch**, both native (`C_ChatInfo.PerformEmote`) and custom (`C_ChatInfo.SendChatMessage`) emotes instead run from player action hooks where supported; neither is sent later from the cast event. The experiment may emote for a failed cast and may miss buttons not covered by those hooks. Neither behavior is claimed fully supported until tested in the Forever client.
 
 Each enabled emote has its own cooldown; the chosen emote's timestamp is kept in memory and resets after `/reload` or relog. Chance is per configured ability. Character profiles use `UnitGUID("player")` within account-wide `FlourishForeverStorage`; older boolean emote selections are converted to cooldown entries. **Back up SavedVariables before switching between the old and expanded versions**, as the saved configuration format differs.
 

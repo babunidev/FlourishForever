@@ -1,8 +1,18 @@
 # Flourish Forever — roadmap and verification status
 
 **Creative decision authority:** Babuni · **Game:** WoW Forever 1.60.1 / Interface 16001  
-**Last confirmed Git tag:** `v0.4.0-beta` · **Next version prepared:** `0.4.1-beta` (PvP hotfix, not yet tagged).  
+**Latest confirmed Git tag:** `v0.4.1-beta` · **Experimental source version:** `0.4.1-beta-dev` (no publishing tag).  
 **Development:** Expanded UI restored from Babuni's older local archive and committed to `dev/expanded-ui-merge`. Preparation occurs separately; no public release tag was created.
+
+## Urgent investigation — protected native emotes persist
+
+- [x] Confirm second player's `ADDON_ACTION_BLOCKED` stack matches the still-present native `DoEmote` call on the asynchronous cast-success handler in `v0.4.1-beta`.
+- [x] Research Forever's hardware-event chat requirements, modern `C_ChatInfo.PerformEmote` and `C_ChatInfo.InChatMessagingLockdown`, plus `C_RestrictedActions.GetAddOnRestrictionState`.
+- [x] **Implement for experimental testing only:** native `C_ChatInfo.PerformEmote` during ability press, remove delayed native-emote dispatch and add chat/PvP/encounter/map restriction checks.
+- [x] Update offline mocks for no delayed native emote calls, native return failure, chance/cooldown, custom emotes, and restriction transitions.
+- [ ] Run exact-commit GitHub CI and real packager ZIP dry-run; verify preserved Lua syntax and packaging.
+- [ ] Verify in-game: ordinary attack buttons, custom and native output, failed casts, cooldowns, action bar vs macro vs spellbook, combat and battleground restriction transitions. Observe BugGrabber errors.
+- [ ] Decide explicitly whether changing native emotes from cast-success to press-time is an acceptable product behavior. **No new release tag or public version is approved.**
 
 ## Current bugfix work — PvP emote restrictions
 

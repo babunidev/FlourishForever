@@ -1,5 +1,11 @@
 # Flourish Forever — creative and technical development journal
 
+## 5 November 2026 — a second blocked emote
+
+Another protected-emote error appeared after the battleground hotfix, and its new line numbers showed the fix had loaded but hadn't solved the underlying issue. The old design still asked the game to perform a native emote after the ability's cast-success event, when the player's button press was already over.
+
+A different approach is now being tested: both native gestures and custom lines can originate from the button press itself, while restricted chat and encounter states remain silent. My AI assistant prepared this as an experimental GitHub branch rather than another hurried public tag. It changes an important detail of when a flourish occurs, so the final creative decision is still open, and live testing has not yet confirmed whether Forever permits it.
+
 ## 5 November 2026 — protected emotes inside a battleground
 
 After the expanded version went to CurseForge, a battleground exposed a restriction that the ordinary interface tests hadn't caught. The game blocked a native emote from the cast-success handler. Rather than force an insecure call, the development fix keeps Flourish silent in battlegrounds and arenas while preserving the settings and timing for the rest of the game.

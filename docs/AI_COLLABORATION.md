@@ -1,5 +1,9 @@
 # Flourish Forever — human–AI collaboration and attribution
 
+## 5 November 2026 — second protected-action investigation
+
+Babuni reported another `PerformEmote()` block after the first PvP hotfix. AI compared source line numbers, researched Forever's chat restriction APIs, and implemented an experimental hardware-action native emote path with stricter chat/PvP restrictions and mocked regressions. This changes native trigger semantics from cast success to action press and is **not yet approved as the permanent gameplay design**. Neither game-client success nor publication is claimed.
+
 ## 5 November 2026 — PvP protected-action hotfix preparation
 
 Babuni reported a protected-function error when entering a Forever battleground and then asked to publish a preventive fix. AI traced the report to the native emote dispatch, implemented the PvP/arena suppression guard, added mocked regression checks, and prepared a `0.4.1-beta` patch candidate and documentation. This work does not constitute a live battleground test or evidence of CurseForge publication. The public tag and subsequent file verification remain distinct steps.

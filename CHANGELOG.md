@@ -2,7 +2,16 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** WoW Forever 1.60.1 / Interface 16001.
 
-## 0.4.1-beta — PvP protected-emote hotfix (prepared; not yet published)
+## Unreleased experimental development — hardware-native emotes (2026-11-05)
+
+- **Follow-up bug report:** `v0.4.1-beta` still generated `ADDON_ACTION_BLOCKED` at `PerformEmote()` from the `UNIT_SPELLCAST_SUCCEEDED` native-emote path, proving the location-only mitigation insufficient.
+- Remove all native `DoEmote` calls from asynchronous cast-success events. Attempt native `C_ChatInfo.PerformEmote` only from player action hooks; custom `/e` stays on those hooks. Do not replay native messages after a later cast.
+- Add guards for chat messaging lockdown and active/activating addon restrictions (PvP match, chat, map, encounter, challenge), alongside existing PvP/arena instance checks.
+- Preserve cooldowns when native calls return failure or output is suppressed. Add mocked tests for event silence, deduplication, expiry and restriction transitions.
+- **Trade-off:** native emotes are now press-time, so failed casts may emote; other activation paths may be missed. This is an **unapproved experimental implementation**, not a public design decision or confirmed secure-API fix.
+- **Evidence:** GitHub mocked tests/ZIP preview are pending for the new branch. No live in-game confirmation or public release.
+
+## 0.4.1-beta — PvP protected-emote hotfix (Git tag pushed; CurseForge upload observed processing)
 
 - Suppress addon-triggered native and custom emotes in battlegrounds (`pvp`) and arenas (`arena`) after a player-reported blocked `PerformEmote()` call on battleground entry.
 - Preserve SavedVariables, enabled abilities, and individual emote cooldown timestamps while PvP suppression is active. Ordinary world and dungeon emotes remain enabled.

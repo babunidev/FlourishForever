@@ -1,7 +1,7 @@
 # Flourish Forever — technical architecture
 
 **Target:** World of Warcraft Forever 1.60.1, interface 16001.  
-**Prepared release:** `0.4.0-beta` (unpublished). **Public baseline:** `v0.3.2-beta`.  
+**Public baseline:** `v0.4.1-beta` · **Experimental branch:** `fix/hardware-native-emotes` / `0.4.1-beta-dev`.  
 **Evidence:** current Lua source, package configuration, mocked test suites and Babuni's November 5, 2026 general in-game confirmation.
 
 ## Runtime files and load order
@@ -31,28 +31,32 @@ Spellbook data is discovered using the Forever client's `C_SpellBook` family, wi
 
 `CreateUI` constructs an 810×676 movable window with four pages: configured-ability overview, spellbook picker, ability editor and custom-text editor. The overview and picker each have a search field; the ability editor has a third search for native/custom emotes, individual cooldown sliders, per-ability chance and enable/disable. The editor preserves custom IDs where possible when saving edited text. The actual UI has been used in-game by Babuni, but exhaustive UI/combat states are not proven.
 
-## Protected PvP instance handling — 0.4.1-beta hotfix
+## Protected emote restrictions — experimental branch
 
-Both native and custom trigger paths resolve the configured spell through `ResolveAbility`. In the prepared patch, that function first calls Forever's `IsInInstance()`. When the instance type is `pvp` (battleground) or `arena`, it returns immediately: no `DoEmote`, no custom chat, and no cooldown consumption. Saved settings are not erased. This is a precaution based on a reported `ADDON_ACTION_BLOCKED` for protected `PerformEmote()`; real in-game verification is still needed.
+The public `v0.4.1-beta` tag still calls deprecated `DoEmote` from `UNIT_SPELLCAST_SUCCEEDED`. A subsequent BugGrabber report caught the same protected `PerformEmote()` call, demonstrating that checking only `IsInInstance()` for `pvp` and `arena` is insufficient.
 
-## Native and custom trigger paths
+The experimental implementation never registers `UNIT_SPELLCAST_SUCCEEDED` or calls the native emote API from an asynchronous event. Native and custom emotes share direct player `UseAction`, `CastSpellByID` and `C_Spell.CastSpell` hooks where supported.
 
 ```text
-Player action-button/spell press (UseAction, CastSpellByID, C_Spell.CastSpell hooks)
-  -> resolve configured ability, enabled/chance/cooldown checks
-  -> choose eligible emote
-  -> custom `c:id`: send chat EMOTE immediately, record token timestamp
-  -> native token: store pending emote for matching successful spellcast
+Player ability press -> identify action spell -> resolve configured ability
+  -> IsInInstance: suppress pvp/arena
+  -> C_ChatInfo.InChatMessagingLockdown: suppress during chat security state
+  -> C_RestrictedActions.GetAddOnRestrictionState:
+       suppress Chat/PvPMatch/Map/Encounter/ChallengeMode when activating or active
+  -> check ability enabled, emote pool, per-emote cooldown, and chance
+  -> custom c:id: send EMOTE chat message in the press context
+  -> native token: C_ChatInfo.PerformEmote(token) in the press context
+  -> consume token cooldown only when the native API reports success
 
-UNIT_SPELLCAST_SUCCEEDED(unit="player", spellID)
-  -> complete matching pending native selection if within the press window
-  -> else, choose eligible native emote and call DoEmote(token)
-  -> record per-ability/per-token last fire in session memory
+SPELLS_CHANGED -> refresh spellbook picker data when applicable
+UNIT_SPELLCAST_SUCCEEDED -> not registered, never dispatches an emote
 ```
 
-This difference is important: a native `DoEmote` follows reported cast success, **not confirmed damage**, while a custom chat `/e` may precede a successful cast and can occur on a failed or interrupted attempt. The press hooks use `hooksecurefunc` where available. Their secure-chat behavior on every Forever build, macro and combat state is not exhaustively verified.
+**Behavioral limitation:** an action press may not complete a successful spellcast, yet the experimental implementation may already have played an emote. A cast through a path not intercepted by the configured hooks may not trigger a flourish. The switch from cast-success timing is therefore an open creative decision, not a silently approved behavior change.
 
-Cooldown timers are per ability **and** emote token, and reset on a reload/relog. A first eligible emote is never throttled by a fabricated zero timestamp. The engine does not cast combat spells itself, send addon messages, or poll a game state timer.
+The modern `C_ChatInfo.PerformEmote` API is documented for Forever 1.60.1 with restrictions, but whether it actually succeeds in all relevant hardware-press/combat contexts remains **unverified in-game**. The guards are preventative, not circumventions. They cannot guarantee that all `ADDON_ACTION_BLOCKED` situations disappear. No deferred retries, synthetic clicks or protected API bypasses were added.
+
+Cooldown timers are per ability and emote token; last-fired timestamps live only in session memory and reset on reload. Failure to send a native emote does not consume cooldown. Character SavedVariables and the expanded interface are otherwise unchanged.
 
 ## Automated and in-game evidence
 
