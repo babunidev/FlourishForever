@@ -1,5 +1,9 @@
 # Flourish Forever — human–AI collaboration and attribution
 
+## 5 November 2026 — general in-game confirmation and release preparation
+
+Babuni installed the hardware-action experiment and reported that it works like the previous version, without a noticeable difference, then directed a public release. AI prepared the `0.4.2-beta` version metadata, release notes, documentation and package checks. The change to action-press timing is explicit. A successful battleground-specific retest has not been reported, and publication requires the separately pushed tag and CurseForge verification.
+
 ## 5 November 2026 — second protected-action investigation
 
 Babuni reported another `PerformEmote()` block after the first PvP hotfix. AI compared source line numbers, researched Forever's chat restriction APIs, and implemented an experimental hardware-action native emote path with stricter chat/PvP restrictions and mocked regressions. This changes native trigger semantics from cast success to action press and is **not yet approved as the permanent gameplay design**. Neither game-client success nor publication is claimed.

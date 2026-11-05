@@ -2,7 +2,7 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev.  
 **Platform:** World of Warcraft: Forever, TOC interface 16001 (expanded build tested in-game on November 5, 2026; specific edge cases remain open).  
-**Latest confirmed Git tag:** v0.4.1-beta · **Experimental fix:** hardware-press native emotes (not a released design).
+**Latest confirmed Git tag:** v0.4.1-beta · **Prepared patch:** 0.4.2-beta (awaiting tag).
 
 ## A flourish of personality at the moment of action
 
@@ -18,11 +18,11 @@ An emote on every cast may become repetitive or irritating. The design gives eac
 
 Once a configured cast passes those checks, the program chooses uniformly from the enabled emote tokens. The player can select a single reliable signature gesture or a larger pool for surprise. **ROAR** is the default *allowed emote* when a spell is first added; it is not a hardcoded requirement, and the default ability list is empty.
 
-The expanded editor offers both the game's native emote-token vocabulary and player-written `/e` lines. The latter are ordinary chat emotes, not custom animations or new sound files. In the public version, native emotes are attempted after cast-success and custom text during the player's button press. The experimental security fix instead triggers both on a real action press, with the possibility of emotes on failed casts. That trade-off has not been approved as a permanent creative decision.
+The expanded editor offers both the game's native emote-token vocabulary and player-written `/e` lines. The latter are ordinary chat emotes, not custom animations or new sound files. In the public version, native emotes are attempted after cast-success and custom text during the player's button press. The experimental security fix instead triggers both on a real action press, with the possibility of emotes on failed casts. Babuni reported the revised behavior working as before and requested the patch; the failed-cast timing trade-off is documented.
 
 ## Honor the boundaries of player agency
 
-Originally the native-emote trigger was the player's **reported successful spellcast event**, not an actual hit. Custom text is generated at the button press. The experimental 0.4.1-beta-dev implementation attempts both emote types on user action instead, never automatically casts a spell, and remains subject to Forever's security restrictions. This change of timing is under evaluation, not an approved replacement for the original behavior.
+Originally the native-emote trigger was the player's **reported successful spellcast event**, not an actual hit. Custom text is generated at the button press. The experimental 0.4.1-beta-dev implementation attempts both emote types on user action instead, never automatically casts a spell, and remains subject to Forever's security restrictions. The timing change is prepared for release following the positive general in-game report; the original cast-success version remains part of the recorded history.
 
 Character settings are isolated by **character GUID**, consistent with the realmless Forever naming environment. The existing source contains migration logic for previously name-keyed profiles, but the full historical ROARitFOREVER design conversation isn't present in the inspected Git repository. That conditional migration path isn't evidence a separate realm model applies.
 

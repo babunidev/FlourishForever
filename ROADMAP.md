@@ -1,8 +1,17 @@
 # Flourish Forever — roadmap and verification status
 
 **Creative decision authority:** Babuni · **Game:** WoW Forever 1.60.1 / Interface 16001  
-**Latest confirmed Git tag:** `v0.4.1-beta` · **Experimental source version:** `0.4.1-beta-dev` (no publishing tag).  
+**Latest confirmed Git tag:** `v0.4.1-beta` · **Prepared version:** `0.4.2-beta` (not yet tagged).  
 **Development:** Expanded UI restored from Babuni's older local archive and committed to `dev/expanded-ui-merge`. Preparation occurs separately; no public release tag was created.
+
+## 0.4.2-beta hotfix release gate
+
+- [x] Remove delayed native `DoEmote` and add player-action native emotes and security checks.
+- [x] Development-branch CI passed Lua/UI mocks and no-upload ZIP validation.
+- [x] Babuni installed the experiment in-game and reported no noticeable difference, requesting publication.
+- [ ] Verify the candidate commit and six-file packaging checks.
+- [ ] Specific live battleground/arena protected-action retest remains unconfirmed; do not invent that result.
+- [ ] Push only the approved `v0.4.2-beta` tag and verify its CurseForge file, flavor and Beta classification.
 
 ## Urgent investigation — protected native emotes persist
 
@@ -12,7 +21,7 @@
 - [x] Update offline mocks for no delayed native emote calls, native return failure, chance/cooldown, custom emotes, and restriction transitions.
 - [ ] Run exact-commit GitHub CI and real packager ZIP dry-run; verify preserved Lua syntax and packaging.
 - [ ] Verify in-game: ordinary attack buttons, custom and native output, failed casts, cooldowns, action bar vs macro vs spellbook, combat and battleground restriction transitions. Observe BugGrabber errors.
-- [ ] Decide explicitly whether changing native emotes from cast-success to press-time is an acceptable product behavior. **No new release tag or public version is approved.**
+- [x] Babuni found the revised trigger behavior acceptable in general use and requested release preparation; detailed PvP testing remains open.
 
 ## Current bugfix work — PvP emote restrictions
 

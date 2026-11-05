@@ -1,5 +1,9 @@
 # Flourish Forever — recorded design decisions and open alternatives
 
+## 5 November 2026 — release decision for action-triggered emotes
+
+After installing `0.4.1-beta-dev`, Babuni reported that the new emote behavior looked and worked like the old version, and requested its public release. The prepared successor is `0.4.2-beta`. Both native and custom emotes now originate at the player-action hook to avoid the protected delayed cast-success call. This may produce an emote for a failed attempted cast or miss activations outside the hooked paths. That trade-off is documented for players. The user did **not** specifically confirm a successful battleground retest; automated security mocks cannot substitute for it.
+
 ## 5 November 2026 — experimental change after recurring protected-action error
 
 The `v0.4.1-beta` hotfix did not eliminate the blocked `PerformEmote()` call: Babuni supplied a second BugGrabber trace with the new source-line numbers. `IsInInstance()` alone could not account for the restriction. Forever's API notes establish hardware-event requirements for custom `EMOTE` messages, and its native `C_ChatInfo.PerformEmote` API is marked as restricted.

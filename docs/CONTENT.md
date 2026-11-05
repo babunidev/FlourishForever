@@ -1,7 +1,7 @@
 # Flourish Forever — emote content, character settings and assets
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** World of Warcraft Forever / interface 16001.  
-**Public baseline:** v0.4.1-beta · **Experimental source:** 0.4.1-beta-dev. The expanded interface was generally tested in game; the new emote security path has not been.
+**Public baseline:** v0.4.1-beta · **Prepared patch:** 0.4.2-beta. The new emote path was tested in general gameplay, not specifically confirmed in a battleground.
 
 ## Content sources
 
@@ -51,7 +51,7 @@ Custom emotes have `c:`-prefixed saved references and text entries under `custom
 ## Commands and actual output
 
 - `/flourish`, `/flourishforever`, `/rit`, `/ffsh` open the UI; `/flourish status` gives the current diagnostic summary.
-- **Native emotes (experimental):** attempted with `C_ChatInfo.PerformEmote(token)` only from a player-action hook. The public 0.4.1-beta instead calls `DoEmote` from cast-success, which has produced blocked-action errors.
+- **Native emotes (0.4.2-beta candidate):** attempted with `C_ChatInfo.PerformEmote(token)` only from a player-action hook. The public 0.4.1-beta instead calls `DoEmote` from cast-success, which has produced blocked-action errors.
 - **Custom text:** sent as an `EMOTE` chat message during eligible player action-button hooks. It may fire even if the cast ultimately fails or is interrupted.
 - The status diagnostic may print a character GUID. Do not post identifiable profile information in public examples.
 

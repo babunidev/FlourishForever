@@ -2,14 +2,15 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** WoW Forever 1.60.1 / Interface 16001.
 
-## Unreleased experimental development — hardware-native emotes (2026-11-05)
+## 0.4.2-beta — protected native emotes (prepared; not yet published)
 
-- **Follow-up bug report:** `v0.4.1-beta` still generated `ADDON_ACTION_BLOCKED` at `PerformEmote()` from the `UNIT_SPELLCAST_SUCCEEDED` native-emote path, proving the location-only mitigation insufficient.
-- Remove all native `DoEmote` calls from asynchronous cast-success events. Attempt native `C_ChatInfo.PerformEmote` only from player action hooks; custom `/e` stays on those hooks. Do not replay native messages after a later cast.
-- Add guards for chat messaging lockdown and active/activating addon restrictions (PvP match, chat, map, encounter, challenge), alongside existing PvP/arena instance checks.
-- Preserve cooldowns when native calls return failure or output is suppressed. Add mocked tests for event silence, deduplication, expiry and restriction transitions.
-- **Trade-off:** native emotes are now press-time, so failed casts may emote; other activation paths may be missed. This is an **unapproved experimental implementation**, not a public design decision or confirmed secure-API fix.
-- **Evidence:** GitHub mocked tests/ZIP preview are pending for the new branch. No live in-game confirmation or public release.
+- Stop calling `DoEmote` from delayed `UNIT_SPELLCAST_SUCCEEDED` events, which continued to trigger protected `PerformEmote()` errors after the 0.4.1-beta PvP guard.
+- Attempt native `C_ChatInfo.PerformEmote` and custom `/e` only during direct player-action hooks, without deferred native replay.
+- Respect battleground/arena, chat messaging lockdown, and active/activating chat, PvP, map, encounter and challenge restrictions.
+- Preserve configuration, chance, cooldowns and the expanded interface; failed native send results do not consume cooldowns.
+- **Behavioral trade-off:** native emotes may happen on failed attempted casts and may not trigger for unhooked spell activation paths.
+- **Verification:** Babuni installed the development build in Forever and observed no noticeable difference in ordinary use. This does **not** explicitly verify a successful battleground retest or every secure-action condition. The final candidate must pass automated checks and package dry run.
+- **Release status:** candidate only; publication requires the approved new tag and confirmed CurseForge file.
 
 ## 0.4.1-beta — PvP protected-emote hotfix (Git tag pushed; CurseForge upload observed processing)
 

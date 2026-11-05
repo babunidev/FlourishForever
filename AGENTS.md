@@ -2,7 +2,7 @@
 
 **Human creative and final decision-maker:** Babuni. **Portfolio:** babuni.dev. **Historical project credit:** Babunigaming.  
 **Game:** World of Warcraft **Forever only**, client 1.60.1 / interface 16001. Recheck after each game update.  
-**Current tagged baseline:** `v0.4.1-beta` · **Experimental branch:** `fix/hardware-native-emotes` / `0.4.1-beta-dev` (not published).
+**Current tagged baseline:** `v0.4.1-beta` · **Prepared version:** `0.4.2-beta` (not yet tagged/published).
 
 ## Creative boundaries
 
@@ -17,7 +17,7 @@ The expanded interface and custom `/e` text are now part of the approved develop
 - Configured abilities remain keyed by lowercased, trimmed **spell name**. Ranks/localization or duplicate names can affect matching. Profiles are not dungeon-instance-scoped.
 - Each ability has `enabled`, `chance` (0–100), and selected `emotes`. Each selected native/custom token stores `{ cooldown = 0..120 }`. The old ability-level `cfg.cooldown` stays for migration/defaults; older `true` token values migrate using that cooldown. An empty emote pool is intentionally silent.
 - **Published 0.4.1-beta PvP guard:** the reported Forever client blocked protected `PerformEmote()` during a battleground cast-success event. For safety, both native and custom addon-driven emotes are suppressed in `IsInInstance()` types `pvp` and `arena`; normal settings are preserved. This is supported by mocked checks but has not yet had a live battleground retest; record that limitation even if an urgently approved public hotfix is distributed.
-- **Experimental, not approved for publication:** native emotes now use `C_ChatInfo.PerformEmote` directly from player ability-action hooks, and no native emotes are attempted from `UNIT_SPELLCAST_SUCCEEDED`. This sacrifices cast-success timing and may miss non-action-bar spell activations. The design requires Babuni's acceptance and live Forever verification before replacing the public cast-success model. Never route a protected call through a delayed event/timer or attempt to bypass its security.
+- **Prepared and approved for release testing:** native emotes now use `C_ChatInfo.PerformEmote` directly from player ability-action hooks, and no native emotes are attempted from `UNIT_SPELLCAST_SUCCEEDED`. This sacrifices cast-success timing and may miss non-action-bar spell activations. Babuni reported no noticeable difference during general in-game use and requested publication; a specific successful battleground retest remains unconfirmed. Never route a protected call through a delayed event/timer or attempt to bypass its security.
 - First presses must not be throttled by a synthetic zero timestamp; runtime cooldown timestamps are session-only. Failed API returns must not consume cooldown.
 - Custom `/e` text uses `c:id` tokens and is attempted during player button-press hooks (`UseAction`, `CastSpellByID`, `C_Spell.CastSpell` where available). It can trigger **before cast success**, including on failed/aborted casts. Preserve this distinction and verify secure-chat restrictions in Forever before claiming complete compatibility.
 - Spellbook selection excludes passive, future, off-spec and non-spell entries. Actual modern API availability must be verified on the target Forever build, not guessed from an interface number.

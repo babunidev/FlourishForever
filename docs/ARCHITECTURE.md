@@ -1,7 +1,7 @@
 # Flourish Forever — technical architecture
 
 **Target:** World of Warcraft Forever 1.60.1, interface 16001.  
-**Public baseline:** `v0.4.1-beta` · **Experimental branch:** `fix/hardware-native-emotes` / `0.4.1-beta-dev`.  
+**Public baseline:** `v0.4.1-beta` · **Prepared patch:** `0.4.2-beta` (not yet published).  
 **Evidence:** current Lua source, package configuration, mocked test suites and Babuni's November 5, 2026 general in-game confirmation.
 
 ## Runtime files and load order
@@ -31,11 +31,11 @@ Spellbook data is discovered using the Forever client's `C_SpellBook` family, wi
 
 `CreateUI` constructs an 810×676 movable window with four pages: configured-ability overview, spellbook picker, ability editor and custom-text editor. The overview and picker each have a search field; the ability editor has a third search for native/custom emotes, individual cooldown sliders, per-ability chance and enable/disable. The editor preserves custom IDs where possible when saving edited text. The actual UI has been used in-game by Babuni, but exhaustive UI/combat states are not proven.
 
-## Protected emote restrictions — experimental branch
+## Protected emote restrictions — 0.4.2-beta candidate
 
 The public `v0.4.1-beta` tag still calls deprecated `DoEmote` from `UNIT_SPELLCAST_SUCCEEDED`. A subsequent BugGrabber report caught the same protected `PerformEmote()` call, demonstrating that checking only `IsInInstance()` for `pvp` and `arena` is insufficient.
 
-The experimental implementation never registers `UNIT_SPELLCAST_SUCCEEDED` or calls the native emote API from an asynchronous event. Native and custom emotes share direct player `UseAction`, `CastSpellByID` and `C_Spell.CastSpell` hooks where supported.
+The release candidate never registers `UNIT_SPELLCAST_SUCCEEDED` or calls the native emote API from an asynchronous event. Native and custom emotes share direct player `UseAction`, `CastSpellByID` and `C_Spell.CastSpell` hooks where supported.
 
 ```text
 Player ability press -> identify action spell -> resolve configured ability
@@ -52,7 +52,7 @@ SPELLS_CHANGED -> refresh spellbook picker data when applicable
 UNIT_SPELLCAST_SUCCEEDED -> not registered, never dispatches an emote
 ```
 
-**Behavioral limitation:** an action press may not complete a successful spellcast, yet the experimental implementation may already have played an emote. A cast through a path not intercepted by the configured hooks may not trigger a flourish. The switch from cast-success timing is therefore an open creative decision, not a silently approved behavior change.
+**Behavioral limitation:** an action press may not complete a successful spellcast, yet the experimental implementation may already have played an emote. A cast through a path not intercepted by the configured hooks may not trigger a flourish. Babuni reported no noticeable difference in ordinary gameplay and requested release; this timing change and its limitations are documented explicitly.
 
 The modern `C_ChatInfo.PerformEmote` API is documented for Forever 1.60.1 with restrictions, but whether it actually succeeds in all relevant hardware-press/combat contexts remains **unverified in-game**. The guards are preventative, not circumventions. They cannot guarantee that all `ADDON_ACTION_BLOCKED` situations disappear. No deferred retries, synthetic clicks or protected API bypasses were added.
 
