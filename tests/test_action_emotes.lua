@@ -161,6 +161,7 @@ assert(#played == 4, "rejected call did not consume token cooldown")
 FlourishForeverDB.instances.strike.emotes = {}
 press(1, 300)
 assert(#played == 4, "intentional empty pool")
+FlourishForeverDB.instances.strike.cooldown = 0 -- recovery inherits the saved ability-level default
 FlourishForeverDB.instances.strike.emotes = "corrupt"
 press(1, 301)
 assert(#played == 5 and played[5] == "ROAR", "corrupt pool restored")
