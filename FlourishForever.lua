@@ -1,6 +1,7 @@
 SLASH_FLOURISHFOREVER1 = "/flourish"
 SLASH_FLOURISHFOREVER2 = "/flourishforever"
 SLASH_FLOURISHFOREVER3 = "/rit"
+SLASH_FLOURISHFOREVER4 = "/ffsh"
 
 SlashCmdList.FLOURISHFOREVER = function(msg)
     msg = string.lower((msg or ""):match("^%s*(.-)%s*$"))
@@ -26,5 +27,5 @@ SlashCmdList.FLOURISHFOREVER = function(msg)
         return
     end
 
-    print("Flourish Forever: /flourish | /flourish status | /flourish config")
+    print("Flourish Forever: /flourish | /ffsh | /flourish status | /flourish config")
 end
