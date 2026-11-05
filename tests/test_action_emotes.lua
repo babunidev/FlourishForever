@@ -15,11 +15,27 @@ UseAction = function() end
 CastSpellByID = function() end
 local now = 1
 GetTime = function() return now end
+local chatLockdown = false
+local restrictionStates = {}
+local nativeAllowed = true
+C_ChatInfo = {
+    PerformEmote = function(token)
+        if nativeAllowed then
+            played[#played + 1] = token
+            return true
+        end
+        return false
+    end,
+    InChatMessagingLockdown = function() return chatLockdown end,
+}
+C_RestrictedActions = {
+    GetAddOnRestrictionState = function(kind) return restrictionStates[kind] or 0 end,
+}
 local currentInstanceType = "none"
 IsInInstance = function()
     return currentInstanceType ~= "none", currentInstanceType
 end
-DoEmote = function(token) played[#played + 1] = token end
+DoEmote = function() error("deprecated DoEmote path must never run") end
 SendChatMessage = function(message, channel)
     assert(channel == "EMOTE")
     sent[#sent + 1] = message
@@ -34,7 +50,11 @@ C_Spell = {
     IsSpellPassive = function(id) return id == 101 end,
     IsSpellUsable = function(id) return true end,
 }
-Enum = { SpellBookSpellBank = { Player = 0 }, SpellBookItemType = { Spell = 1, FutureSpell = 2, Flyout = 3, PetAction = 4 } }
+Enum = {
+    SpellBookSpellBank = { Player = 0 },
+    SpellBookItemType = { Spell = 1, FutureSpell = 2, Flyout = 3, PetAction = 4 },
+    AddOnRestrictionType = { Combat = 0, Encounter = 1, ChallengeMode = 2, PvPMatch = 3, Map = 4, Chat = 5 },
+}
 local items = {
     { itemType = 1, spellID = 100, name = "Strike" },
     { itemType = 1, spellID = 100, name = "Strike" },
@@ -62,7 +82,8 @@ _G.EMOTE2_TOKEN = "CHEER"
 assert(loadfile("FlourishForever_ActionEmotes.lua"))()
 assert(#frames == 1)
 local frame=frames[1]
-assert(frame.events.UNIT_SPELLCAST_SUCCEEDED and frame.events.SPELLS_CHANGED)
+assert(not frame.events.UNIT_SPELLCAST_SUCCEEDED and frame.events.SPELLS_CHANGED,
+    "do not listen for delayed cast-success emotes")
 local event=frame.scripts.OnEvent
 local function cast(id,t,unit)
     now=t
@@ -97,114 +118,128 @@ end
 columns=collect()
 assert(#columns==1 and #columns[1].abilities==1 and columns[1].abilities[1].spellID==100,"legacy selection")
 
--- First emote is never throttled by a fake zero timestamp, even at t=1.
-cast(100,1)
-assert(#played==1 and played[1]=="ROAR","first emote at one second")
-assert(type(FlourishForeverDB.instances.strike.emotes.ROAR)=="table","boolean emote migration")
-assert(FlourishForeverDB.instances.strike.emotes.ROAR.cooldown==120,"legacy 120s migrated")
-local savedEmoteTable = FlourishForeverDB.instances.strike.emotes
-local savedEntry = savedEmoteTable.ROAR
-cast(100,2)
-assert(FlourishForeverDB.instances.strike.emotes == savedEmoteTable and
-       savedEmoteTable.ROAR == savedEntry,
-       "routine casts must not reconstruct emote settings")
-assert(#played==1,"per-emote cooldown")
-cast(200,2)
-assert(#played==2 and played[2]=="CHEER","independent ability")
-cast(100,120)
-assert(#played==2,"cooldown not expired")
-cast(100,121)
-assert(#played==3,"cooldown expired")
-cast(100,122,"target")
-assert(#played==3,"foreign unit ignored")
+-- No automatic native emotes from delayed events: the old crash path is gone.
+local function press(slot, t)
+    now = t
+    hooks.UseAction(slot)
+end
+assert(type(hooks.UseAction) == "function", "player action hook registered")
+cast(100, 1)
+assert(#played == 0, "delayed cast event never performs a protected emote")
+press(1, 1)
+assert(#played == 1 and played[1] == "ROAR", "first native emote on player press")
+assert(type(FlourishForeverDB.instances.strike.emotes.ROAR) == "table", "boolean migrated")
+assert(FlourishForeverDB.instances.strike.emotes.ROAR.cooldown == 120, "legacy cooldown migrated")
+local settings = FlourishForeverDB.instances.strike.emotes
+local savedEntry = settings.ROAR
+press(1, 2)
+assert(settings == FlourishForeverDB.instances.strike.emotes
+    and settings.ROAR == savedEntry, "normal presses do not rebuild emote selection")
+assert(#played == 1, "independent native token cooldown")
+press(2, 2)
+assert(#played == 2 and played[2] == "CHEER", "second ability independent")
+press(1, 120)
+assert(#played == 2, "cooldown not expired")
+press(1, 121)
+assert(#played == 3, "cooldown expired")
+cast(100, 122)
+assert(#played == 3, "no asynchronous native fallback")
 
--- Invalid config is safe and malformed records aren't silently deleted.
+-- Chance failures and native API rejection must not consume emote cooldown.
+FlourishForeverDB.instances.strike.emotes.ROAR.cooldown = 0
+FlourishForeverDB.instances.strike.chance = 0
+press(1, 200)
+assert(#played == 3, "zero chance silent")
+FlourishForeverDB.instances.strike.chance = 100
+nativeAllowed = false
+press(1, 201)
+assert(#played == 3, "rejected native emote silent")
+nativeAllowed = true
+press(1, 202)
+assert(#played == 4, "rejected call did not consume token cooldown")
+
+FlourishForeverDB.instances.strike.emotes = {}
+press(1, 300)
+assert(#played == 4, "intentional empty pool")
+FlourishForeverDB.instances.strike.emotes = "corrupt"
+press(1, 301)
+assert(#played == 5 and played[5] == "ROAR", "corrupt pool restored")
+
+-- Invalid settings are bounded, and unknown records remain recoverable.
 FlourishForeverDB.instances[5] = { emotes = {} }
 FlourishForeverDB.instances.corrupt = "invalid"
-FlourishForeverDB.actionEmotesEnabled="not-a-boolean"
-FlourishForeverDB.instances.strike.chance=0/0
-FlourishForeverDB.instances.strike.emotes.ROAR.cooldown=math.huge
-cast(100,500)
-assert(FlourishForeverDB.actionEmotesEnabled==false,"malformed master switch disabled")
-assert(FlourishForeverDB.instances.strike.chance==100,"NaN chance default")
-assert(FlourishForeverDB.instances.strike.emotes.ROAR.cooldown==120,"infinite cooldown clamp")
-assert(FlourishForeverDB.instances.corrupt=="invalid" and FlourishForeverDB.instances[5],"bad records preserved")
-assert(select(2,FlourishForever_ActionStatus())==2,"status excludes malformed keys")
+FlourishForeverDB.actionEmotesEnabled = "invalid"
+FlourishForeverDB.instances.strike.chance = 0 / 0
+FlourishForeverDB.instances.strike.emotes.ROAR.cooldown = math.huge
+press(1, 400)
+assert(FlourishForeverDB.actionEmotesEnabled == false, "malformed master safely disabled")
+assert(FlourishForeverDB.instances.strike.chance == 100, "NaN chance reset")
+assert(FlourishForeverDB.instances.strike.emotes.ROAR.cooldown == 120, "infinite cooldown clamped")
+assert(FlourishForeverDB.instances.corrupt == "invalid" and FlourishForeverDB.instances[5],
+    "unrecognized saved entries kept")
+assert(select(2, FlourishForever_ActionStatus()) == 2, "status excludes invalid configs")
+assert(#played == 5, "malformed master remains silent")
 
--- A genuine action-button hook sends custom text from its press, not a delayed cast.
-FlourishForeverDB.actionEmotesEnabled=true
-FlourishForeverDB.customEmotes={{id="1",text="shakes her head"}}
-FlourishForeverDB.customEmoteSeq=1
-FlourishForeverDB.instances.strike.emotes={ ["c:1"]={cooldown=30} }
-FlourishForeverDB.instances.strike.chance=100
-assert(type(hooks.UseAction)=="function","press hook registered")
-now=1000
-hooks.UseAction(1)
-assert(#sent==1 and sent[1]=="shakes her head","custom /e on press")
-cast(100,1000.1)
-assert(#played==3,"custom must not trigger DoEmote after cast")
-now=1001
-hooks.UseAction(1)
-assert(#sent==1,"custom per-token cooldown")
-now=1031
-hooks.UseAction(1)
-assert(#sent==2,"custom cooldown expiry")
-
--- After a press hook selects a standard emote it plays on confirmed cast success.
-FlourishForeverDB.instances.strike.emotes={ ROAR={cooldown=0} }
-now=1100
-hooks.UseAction(1)
-assert(#played==3,"native emote waits for succeeded event")
-cast(100,1100.1)
-assert(#played==4 and played[4]=="ROAR","native press->success")
-cast(100,1100.2)
-assert(#played==4,"duplicate success event suppressed")
--- Chance zero stays silent without consuming the cooldown.
-FlourishForeverDB.instances.strike.emotes = { ROAR = {cooldown=0} }
-FlourishForeverDB.instances.strike.chance = 0
-cast(100,1200)
-assert(#played==4,"chance zero remains silent")
+-- Custom /e is also pressed directly, never sent from delayed event.
+FlourishForeverDB.actionEmotesEnabled = true
+FlourishForeverDB.customEmotes = { { id = "1", text = "shakes her head" } }
+FlourishForeverDB.customEmoteSeq = 1
+FlourishForeverDB.instances.strike.emotes = { ["c:1"] = { cooldown = 30 } }
 FlourishForeverDB.instances.strike.chance = 100
-cast(100,1200)
-assert(#played==5,"chance failure does not consume cooldown")
+press(1, 1000)
+assert(#sent == 1 and sent[1] == "shakes her head", "custom emote on press")
+cast(100, 1000.1)
+assert(#played == 5, "delayed event silent after custom emote")
+press(1, 1001)
+assert(#sent == 1, "custom token cooldown")
+press(1, 1031)
+assert(#sent == 2, "custom token cooldown expiry")
 
--- Empty emote pool is intentionally silent; corrupted pool restores ROAR.
-FlourishForeverDB.instances.strike.emotes = {}
-cast(100,1300)
-assert(#played==5,"intentional empty pool")
-FlourishForeverDB.instances.strike.emotes = "malformed"
-cast(100,1400)
-assert(#played==6 and played[6]=="ROAR","malformed pool recovers")
-
--- PvP can block the protected PerformEmote action. Suppress both native
--- cast-success and custom press-time output, preserving cooldown state.
-local nativeCount, customCount = #played, #sent
+-- Native emote now fires on a genuine action, not the subsequent cast.
 FlourishForeverDB.instances.strike.emotes = { ROAR = { cooldown = 0 } }
+press(1, 1100)
+assert(#played == 6, "native performed synchronously from hardware press")
+cast(100, 1100.1)
+assert(#played == 6, "successful cast does not duplicate emote")
+press(1, 1100.05)
+assert(#played == 6, "rapid duplicate hardware hook suppressed")
+
+-- PvP silence works even when IsInInstance does not yet say pvp.
+local nativeCount, customCount = #played, #sent
 for _, instanceType in ipairs({ "pvp", "arena" }) do
     currentInstanceType = instanceType
-    now = now + 10
-    hooks.UseAction(1)
-    cast(100, now + 0.1)
+    press(1, 1200)
+    cast(100, 1200.1)
     assert(#played == nativeCount and #sent == customCount,
-        "no native or custom emotes in " .. instanceType)
+        "native and custom silent in " .. instanceType)
 end
-FlourishForeverDB.instances.strike.emotes = { ["c:1"] = { cooldown = 0 } }
-currentInstanceType = "pvp"
-now = 1500
-hooks.UseAction(1)
-cast(100, 1500.1)
-assert(#sent == customCount, "custom /e suppressed in battleground")
 currentInstanceType = "none"
-now = 1550
-hooks.UseAction(1)
-assert(#sent == customCount + 1, "custom /e resumes outside battleground")
+restrictionStates[Enum.AddOnRestrictionType.PvPMatch] = 1 -- Activating
+press(1, 1201)
+assert(#played == nativeCount, "PvP restriction blocks during transition")
+restrictionStates[Enum.AddOnRestrictionType.PvPMatch] = 2 -- Active
+press(1, 1202)
+assert(#played == nativeCount, "PvP restriction blocks even if instance type is none")
+restrictionStates[Enum.AddOnRestrictionType.PvPMatch] = 0
+
+chatLockdown = true
+press(1, 1203)
+assert(#played == nativeCount, "chat lockdown blocks native emote")
+FlourishForeverDB.instances.strike.emotes = { ["c:1"] = { cooldown = 0 } }
+press(1, 1204)
+assert(#sent == customCount, "chat lockdown blocks custom /e")
+chatLockdown = false
+restrictionStates[Enum.AddOnRestrictionType.Chat] = 2
+press(1, 1205)
+assert(#sent == customCount, "chat restriction state blocks custom /e")
+restrictionStates[Enum.AddOnRestrictionType.Chat] = 0
+
+press(1, 1210)
+assert(#sent == customCount + 1, "custom /e resumes after restrictions")
 FlourishForeverDB.instances.strike.emotes = { ROAR = { cooldown = 0 } }
-now = 1551
-hooks.UseAction(1)
-cast(100, 1551.1)
-assert(#played == nativeCount + 1, "native emotes resume outside battleground")
-assert(FlourishForeverDB.instances.strike.enabled,
-    "PvP guard must preserve character ability settings")
+press(1, 1211)
+assert(#played == nativeCount + 1, "native emote resumes outside restrictions")
+assert(FlourishForeverDB.instances.strike.enabled, "temporary restriction preserves settings")
 
 -- Current storage module still migrates an existing name-keyed profile.
 local oldProfile = { actionEmotesEnabled = false, instances = {} }
@@ -219,4 +254,4 @@ assert(guid == "Player-TEST" and migrated == oldProfile,"old profile migrated")
 assert(FlourishForeverStorage.profiles.Tester == nil,"legacy profile removed after migration")
 assert(FlourishForeverStorage.profiles[guid] == oldProfile,"GUID profile retained")
 
-print("PASS: storage migration, spellbook, cooldowns, native/custom triggers, PvP emote guard")
+print("PASS: hardware-only native/custom emotes, cooldowns, migration, PvP/chat restrictions")
