@@ -4,6 +4,10 @@
 
 **Baseline:** current GitHub `main`, tagged `v0.3.2-beta` at `c15fe1bdc81563cc8f0a4215b706ca8c47daf0f6`. This development merge does not alter `main` or that public tag.
 
+## Follow-up — November 5, 2026
+
+Babuni installed the merged development build in WoW Forever and confirmed it works well in ordinary use. The exact scope of this in-game check was not itemized, so individual protected-chat paths, macros, migration across all profiles and RoarForever coexistence remain without recorded proof. A proposed `0.4.0-beta` release preparation now builds on the tested development branch. The earlier sections below document the original recovery stage; their "no tag" wording remains historically accurate for that stage.
+
 ## Restored features
 
 - Multi-page 810 × 676 GUI with scrollable configured-ability overview, icons and per-ability on/off toggles.

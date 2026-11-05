@@ -1,5 +1,13 @@
 # Flourish Forever — recorded design decisions and open alternatives
 
+## 5 November 2026 — approved expanded editor, next beta preparation
+
+Babuni installed the merged development version in the actual Forever client and reported that it works well, then explicitly asked to commit the upgrade and prepare it for players. The enlarged searchable editor, spellbook picker, custom `/e` text, individual token cooldowns and existing safety work therefore move from an earlier test-only proposal to an **approved implemented design**. The release candidate is named **0.4.0-beta** as a significant feature update after `v0.3.2-beta`; it is a proposed publishing version until Babuni authorizes the exact tag and commit.
+
+Native emotes remain cast-success triggered. Custom chat emotes use press-time hooks because ordinary chat sending is more restricted after the event; this intentionally means custom text can run for a cast that later fails. The broad in-game success report does not verify every secure-action case, SavedVariables migration or other addon interactions. This tradeoff is documented, not silently hidden.
+
+**Git development vs public release:** Committing or merging this work is not authorization for a new CurseForge file. Public publication remains behind a separate explicit release gate and verification.
+
 ## 5 November 2026 — recovered interface merged for testing
 
 Babuni directed the recovery of the more developed UI from a local archive, without changing the published release. A separate GitHub development branch now holds the restored features and safety reconciliation; no automatic public release is permitted. A custom `/e` may fire on a press even if the spell subsequently fails, unlike native success-event emotes. This is documented rather than silently changing the original design.
@@ -38,13 +46,13 @@ Version `0.3.2-beta` is prepared as a proposed patch-level beta increment from t
 
 **Name-key versus ID-key:** The event carries a spell ID and the UI lists spellbook IDs, but saved configurations are keyed by **normalized spell name**. This can make multiple ranks share one expressive identity, while risking same-name collisions and localization-induced mismatches.
 
-**Independent cooldowns versus global social volume:** Every configured ability has its own timestamp; there is no overall emote budget. That respects distinctive spell personalities but two different abilities can emote close together. Any future global throttling is a creator decision.
+**Independent cooldowns versus global social volume (original model):** The 0.3.x version gave every configured ability its own timestamp; there is no overall emote budget. That respects distinctive spell personalities but two different abilities can emote close together. Any future global throttling is a creator decision.
 
 **Cooldown only on a fired emote:** A failed chance check or empty emote pool doesn't consume it. Chance therefore determines frequency independently from the *last actual emote*, though the zero default timestamp may suppress a very early first attempt.
 
 **Transient runtime state versus persisted preferences:** Ability choices persist by GUID; timers reset on UI reload/relog. This is simpler but won't provide a durable anti-spam cooldown if a player logs in and out quickly.
 
-**Game-native emotes versus custom writing:** Native token discovery gives many options and localized game behavior, but does not let the player write unique roleplay lines or choose custom sounds. That keeps scope small.
+**Native emotes versus custom writing (revised in 0.4.0-beta):** The original scope was native token discovery only. The expanded version also supports player-written `/e` lines; they still do not create new sounds or animations, and must be triggered during a player-button press.
 
 **Legacy compatibility versus fully automatic migration:** Current source can adopt `ROARitFOREVERStorage` only when already loaded. It doesn't read an arbitrary old disk file. Name-realm legacy keys are not evidence of separate game realms on Forever.
 
