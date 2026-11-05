@@ -1,7 +1,7 @@
 # Flourish Forever — roadmap and verification status
 
 **Creative decision authority:** Babuni · **Game:** WoW Forever 1.60.1 / Interface 16001  
-**Last public Git tag:** `v0.3.2-beta` · **Next version prepared:** `0.4.0-beta` (not released).  
+**Last confirmed Git tag:** `v0.4.0-beta` · **Next version prepared:** `0.4.1-beta` (PvP hotfix, not yet tagged).  
 **Development:** Expanded UI restored from Babuni's older local archive and committed to `dev/expanded-ui-merge`. Preparation occurs separately; no public release tag was created.
 
 ## Current bugfix work — PvP emote restrictions
@@ -12,7 +12,9 @@
 - [ ] Retest entering a battleground, ability presses, combat, and leaving the battleground with BugGrabber enabled; verify no protected-action errors.
 - [ ] Confirm custom and native emotes still work in the overworld and ordinary party/raid instances.
 - [ ] Revisit PvP silence only if player experience demands it; do not bypass protected APIs or change trigger semantics without approval.
-- [ ] Choose and approve any new public hotfix version separately; no tag or CurseForge publication from this branch.
+- [x] Babuni requested prompt publication of the protected-action mitigation; `0.4.1-beta` is the prepared patch version.
+- [ ] Final candidate's Lua/UI mocks and no-upload ZIP checks pass, and the tagged commit matches the approved contents.
+- [ ] Push only the approved publishing tag, verify Beta classification and Forever `1.60.1` on CurseForge, then confirm final file approval.
 
 ## Completed implementation
 
@@ -25,7 +27,7 @@
 - [x] Lua 5.4 syntax and mocked gameplay/UI regression tests, static package inventory, and BigWigs no-upload packager dry run passed on `dev/expanded-ui-merge` (GitHub Actions).
 - [x] **General in-game confirmation:** Babuni installed and used `0.3.2-beta-dev` in WoW Forever on November 5 and reported it working well.
 
-## Release-preparation checklist — 0.4.0-beta
+## Historical release-preparation checklist — 0.4.0-beta
 
 - [ ] Final release candidate's Lua syntax, gameplay/UI mocked regressions, static inventory and real dry-run ZIP pass on its **exact commit**.
 - [ ] Actual preview ZIP contains the expected three Lua files, TOC, CHANGELOG and MIT LICENSE, with no project-only files.

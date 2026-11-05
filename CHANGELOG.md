@@ -2,12 +2,12 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** WoW Forever 1.60.1 / Interface 16001.
 
-## Unreleased development — PvP protected-emote guard (2026-11-05)
+## 0.4.1-beta — PvP protected-emote hotfix (prepared; not yet published)
 
 - Suppress addon-triggered native and custom emotes in battlegrounds (`pvp`) and arenas (`arena`) after a player-reported blocked `PerformEmote()` call on battleground entry.
 - Preserve SavedVariables, enabled abilities, and individual emote cooldown timestamps while PvP suppression is active. Ordinary world and dungeon emotes remain enabled.
 - Add offline mocked checks for both PvP instance types, both emote trigger paths and restoration outside PvP.
-- **Verification:** static/mocked checks only until the battleground and arena behavior is retested in WoW Forever. Development version `0.4.0-beta-dev`; no new public tag.
+- **Verification:** the fix passed offline Lua/UI mocks and a no-upload packaging dry run on the development branch. The exact release candidate must also pass CI; **no successful live battleground/arena retest has been reported**. Publication is not confirmed until the new tag is pushed and CurseForge processing is verified.
 
 ## 0.4.0-beta — expanded editor (tagged; CurseForge Beta upload observed processing)
 

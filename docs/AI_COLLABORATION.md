@@ -1,5 +1,9 @@
 # Flourish Forever — human–AI collaboration and attribution
 
+## 5 November 2026 — PvP protected-action hotfix preparation
+
+Babuni reported a protected-function error when entering a Forever battleground and then asked to publish a preventive fix. AI traced the report to the native emote dispatch, implemented the PvP/arena suppression guard, added mocked regression checks, and prepared a `0.4.1-beta` patch candidate and documentation. This work does not constitute a live battleground test or evidence of CurseForge publication. The public tag and subsequent file verification remain distinct steps.
+
 ## 5 November 2026 — in-game confirmation and 0.4.0-beta preparation
 
 Babuni reported the merged expanded UI functioning well when installed in the Forever client, and directed preparation of a public update. The feature concept and decision to restore the earlier editor belong to Babuni; AI's work comprises code reconciliation, SavedVariables migration safeguards, tests, package checks and documentation. This report is a real but general hands-on observation. No individual detailed combat, protected-chat, cross-character or RoarForever regression results were supplied.
