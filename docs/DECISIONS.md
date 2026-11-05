@@ -1,5 +1,17 @@
 # Flourish Forever — recorded design decisions and open alternatives
 
+## 5 November 2026 — group-play correction approved for distribution
+
+After installing the test branch, Babuni reported that Flourish seems to work fine again and requested that the correction be made available to other players. The next prepared version is `0.4.3-beta`. The actual change remains narrowly scoped: don't conflate Map, Encounter and ChallengeMode data restrictions with chat restrictions, but retain actual chat lockdown, Chat/PvPMatch restriction checks and battleground/arena suppression.
+
+This is a general player confirmation rather than a documented full party/dungeon/raid or protected-action test. Public distribution is approved in principle; the exact tag must be pushed and the CurseForge file verified separately.
+
+## 5 November 2026 — group play and security restriction scope
+
+After the action-triggered fix, Babuni reported that Flourish no longer appeared to emote while grouped. The subsequent code review found a plausible over-restriction: the dispatch guard blocked on `Map`, `Encounter` and `ChallengeMode` addon data restrictions in addition to actual chat and PvP restrictions.
+
+The test-branch correction permits ordinary parties, dungeon instances and raids despite those unrelated states, while retaining native/custom player-action timing and the real chat/PvP safeguards. This respects the priority of Flourish as a group-visible expression tool without attempting to bypass restricted chat APIs. The precise cause of Babuni's experience remains **inferred from the code**, not verified by runtime measurements. An in-game group retest is still required; no public tag has been approved.
+
 ## 5 November 2026 — release decision for action-triggered emotes
 
 After installing `0.4.1-beta-dev`, Babuni reported that the new emote behavior looked and worked like the old version, and requested its public release. The prepared successor is `0.4.2-beta`. Both native and custom emotes now originate at the player-action hook to avoid the protected delayed cast-success call. This may produce an emote for a failed attempted cast or miss activations outside the hooked paths. That trade-off is documented for players. The user did **not** specifically confirm a successful battleground retest; automated security mocks cannot substitute for it.

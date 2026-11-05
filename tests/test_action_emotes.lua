@@ -32,6 +32,9 @@ C_RestrictedActions = {
     GetAddOnRestrictionState = function(kind) return restrictionStates[kind] or 0 end,
 }
 local currentInstanceType = "none"
+local groupMode = "solo"
+IsInGroup = function() return groupMode ~= "solo" end
+IsInRaid = function() return groupMode == "raid" end
 IsInInstance = function()
     return currentInstanceType ~= "none", currentInstanceType
 end
@@ -242,6 +245,56 @@ press(1, 1211)
 assert(#played == nativeCount + 1, "native emote resumes outside restrictions")
 assert(FlourishForeverDB.instances.strike.enabled, "temporary restriction preserves settings")
 
+-- Group membership is not a chat restriction. Normal parties/raids may have
+-- Map/Encounter/ChallengeMode addon data restrictions without chat lockdown.
+-- Neither native gestures nor custom /e should be suppressed solely by them.
+local groupedCases = {
+    { group = "party", instance = "none" },
+    { group = "party", instance = "party" },
+    { group = "raid", instance = "raid" },
+}
+for i, case in ipairs(groupedCases) do
+    groupMode = case.group
+    currentInstanceType = case.instance
+    assert(IsInGroup(), "test actually models group membership")
+    restrictionStates[Enum.AddOnRestrictionType.Map] = 2
+    restrictionStates[Enum.AddOnRestrictionType.Encounter] = 2
+    restrictionStates[Enum.AddOnRestrictionType.ChallengeMode] = 2
+
+    FlourishForeverDB.instances.strike.emotes = { ROAR = { cooldown = 0 } }
+    local beforeNative = #played
+    press(1, 1300 + 10 * i)
+    assert(#played == beforeNative + 1, "native emote in " .. case.group .. "/" .. case.instance)
+
+    FlourishForeverDB.instances.strike.emotes = { ["c:1"] = { cooldown = 0 } }
+    local beforeCustom = #sent
+    press(1, 1301 + 10 * i)
+    assert(#sent == beforeCustom + 1, "custom emote in " .. case.group .. "/" .. case.instance)
+end
+for _, kind in ipairs({
+    Enum.AddOnRestrictionType.Map,
+    Enum.AddOnRestrictionType.Encounter,
+    Enum.AddOnRestrictionType.ChallengeMode,
+}) do
+    restrictionStates[kind] = 0
+end
+
+-- Even inside an ordinary party instance, actual chat lockdown must still
+-- win over the permissive group/encounter data restriction handling.
+currentInstanceType = "party"
+chatLockdown = true
+FlourishForeverDB.instances.strike.emotes = { ROAR = { cooldown = 0 } }
+local beforeNative = #played
+press(1, 1410)
+assert(#played == beforeNative, "party instance honors actual chat lockdown")
+chatLockdown = false
+restrictionStates[Enum.AddOnRestrictionType.Chat] = 1
+press(1, 1411)
+assert(#played == beforeNative, "party instance honors activating chat restrictions")
+restrictionStates[Enum.AddOnRestrictionType.Chat] = 0
+currentInstanceType = "none"
+groupMode = "solo"
+
 -- Current storage module still migrates an existing name-keyed profile.
 local oldProfile = { actionEmotesEnabled = false, instances = {} }
 ROARitFOREVERStorage = nil
@@ -255,4 +308,4 @@ assert(guid == "Player-TEST" and migrated == oldProfile,"old profile migrated")
 assert(FlourishForeverStorage.profiles.Tester == nil,"legacy profile removed after migration")
 assert(FlourishForeverStorage.profiles[guid] == oldProfile,"GUID profile retained")
 
-print("PASS: hardware-only native/custom emotes, cooldowns, migration, PvP/chat restrictions")
+print("PASS: hardware emotes, group/party/raid play, PvP/chat guards, cooldowns and migration")

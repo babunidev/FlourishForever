@@ -1,9 +1,17 @@
 # FlourishForever
 
-**WoW Forever only** · **Interface:** `16001` · **Prepared update:** `0.4.2-beta` (not yet published)  
-**Previous Git tag:** `v0.4.1-beta` · **Creative:** Babuni · **Portfolio:** [babuni.dev](https://babuni.dev)
+**WoW Forever only** · **Interface:** `16001` · **Next version prepared:** `0.4.3-beta` (not yet published)  
+**Latest confirmed Git tag:** `v0.4.2-beta` · **Creative:** Babuni · **Portfolio:** [babuni.dev](https://babuni.dev)
 
 Flourish Forever links player-selected abilities to native or custom emotes, with per-ability chance, per-emote cooldowns and per-character settings. It does not cast abilities automatically.
+
+## Group-play emotes restored — 0.4.3-beta
+
+A player report after `v0.4.2-beta` found that Flourish was silent while grouped. Review found an overly broad restriction check: the addon treated `Map`, `Encounter` and `ChallengeMode` *addon data restrictions* as a blanket prohibition on player-triggered emotes. The 0.4.3-beta candidate allows emotes in outdoor parties, party dungeons and raids while those unrelated restriction types are active.
+
+**Security remains enforced:** the addon still suppresses output when Forever reports actual chat messaging lockdown, an activating/active `Chat` or `PvPMatch` restriction, or a battleground/arena instance. It does not attempt to bypass protected actions. If the game reports genuine chat lockdown while grouped, automatic emotes remain silent rather than causing another blocked-action error.
+
+The same settings, action-press native/custom emotes and cooldowns are retained. Mocked tests cover party/raid scenarios. **Babuni reports that the updated build now seems to work fine in-game.** The report does not identify every tested group or instance type, and exhaustive dungeon/raid security cases remain unverified. A disabled addon, individual ability settings, unavailable action hooks or server rejection may also cause silence, and cannot be ruled out from the report alone.
 
 ## What's changing in 0.4.2-beta
 
@@ -26,7 +34,7 @@ The 810×676 configuration window provides a searchable overview of configured a
 | `/flourish status` | Print current profile status |
 | `/flourishforever`, `/rit`, `/ffsh` | Aliases |
 
-Install from [CurseForge](https://www.curseforge.com/wow/addons/flourishforever) when the tagged Forever release is available. The game addon directory `_forever_/Interface/AddOns/FlourishForever/` must contain `FlourishForever.toc`, `FlourishForever_Storage.lua`, `FlourishForever.lua`, and `FlourishForever_ActionEmotes.lua`.
+Install the latest available Forever file from [CurseForge](https://www.curseforge.com/wow/addons/flourishforever). Version `0.4.3-beta` is prepared but has not yet been confirmed there. The game addon directory `_forever_/Interface/AddOns/FlourishForever/` must contain `FlourishForever.toc`, `FlourishForever_Storage.lua`, `FlourishForever.lua`, and `FlourishForever_ActionEmotes.lua`.
 
 Settings persist in `FlourishForeverStorage`, indexed by character GUID. Older boolean emote selections are migrated; actual last-fired timestamps reset on reload.
 
