@@ -473,7 +473,20 @@ local function SpellPressCanFire(spellID)
     return true
 end
 
+-- Native and custom automatic emotes may be restricted in Forever PvP
+-- instances. Check before either press-time or cast-success emote logic.
+local function IsRestrictedPvPInstance()
+    if not IsInInstance then
+        return false
+    end
+    local _, instanceType = IsInInstance()
+    return instanceType == "pvp" or instanceType == "arena"
+end
+
 local function ResolveAbility(spellID)
+    if IsRestrictedPvPInstance() then
+        return
+    end
     EnsureDB()
 
     if not db.actionEmotesEnabled then
