@@ -1,7 +1,7 @@
 # Flourish Forever — visual and interaction design
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** Forever interface 16001.  
-**Current release candidate:** 0.4.0-beta (unpublished). The previous public 0.3.2-beta used a smaller 620×520 layout.
+**Current public tag:** v0.4.1-beta · **Prepared patch:** 0.4.2-beta. The earlier 0.3.2-beta used a smaller 620×520 layout.
 
 ## Expanded configuration window
 
@@ -20,7 +20,7 @@ The character-wide switch can silence all configured flourishes; each ability ca
 - Displayed spells originate in the player's spellbook, not from a hand-maintained class roster.
 - **ROAR** remains the initial native selection for a newly configured ability; other native emotes and custom lines are optional.
 - Each selected emote has its own cooldown, rather than forcing one shared delay on an entire ability.
-- Native emotes use cast-success; custom `/e` text is issued during a player-button press and can precede a failed cast.
+- Public 0.4.1-beta native emotes use cast-success, while custom `/e` text runs on a player action. The 0.4.2-beta candidate attempts both on the press to avoid protected delayed calls; this may emote on failed casts. Babuni reported no noticeable difference during general in-game use.
 
 ## Verification and accessibility
 

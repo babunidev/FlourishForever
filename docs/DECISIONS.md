@@ -1,5 +1,17 @@
 # Flourish Forever — recorded design decisions and open alternatives
 
+## 5 November 2026 — release decision for action-triggered emotes
+
+After installing `0.4.1-beta-dev`, Babuni reported that the new emote behavior looked and worked like the old version, and requested its public release. The prepared successor is `0.4.2-beta`. Both native and custom emotes now originate at the player-action hook to avoid the protected delayed cast-success call. This may produce an emote for a failed attempted cast or miss activations outside the hooked paths. That trade-off is documented for players. The user did **not** specifically confirm a successful battleground retest; automated security mocks cannot substitute for it.
+
+## 5 November 2026 — experimental change after recurring protected-action error
+
+The `v0.4.1-beta` hotfix did not eliminate the blocked `PerformEmote()` call: Babuni supplied a second BugGrabber trace with the new source-line numbers. `IsInInstance()` alone could not account for the restriction. Forever's API notes establish hardware-event requirements for custom `EMOTE` messages, and its native `C_ChatInfo.PerformEmote` API is marked as restricted.
+
+AI has **proposed and implemented on a separate, unreleased test branch** a different trigger model: native emotes join custom `/e` on direct player action hooks; the delayed cast-success listener cannot call the protected function. The branch also checks active/activating chat, match and encounter restrictions. This is a material trade-off: an emote can occur on a failed attempted cast, and some spell activation paths might not be observed. The original cast-success behavior remains the public design until Babuni accepts the alternative.
+
+No in-game testing, approval of that trade-off, or publishing tag has been recorded.
+
 ## 5 November 2026 — urgent hotfix publication decision
 
 After seeing the protected `PerformEmote()` error from a battleground, Babuni explicitly requested that the conservative PvP suppression fix be released promptly rather than remain only in a test branch. The next proposed patch version is `0.4.1-beta`, following the existing `v0.4.0-beta` tag. This permits release preparation, with the actual publishing tag remaining a separate step on the exact verified commit. The known tradeoff is deliberate silence of both native and custom automatic emotes in battlegrounds/arenas; the fix has passed mocked tests but not an actual battleground retest.

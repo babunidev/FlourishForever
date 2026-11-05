@@ -1,58 +1,36 @@
 # FlourishForever
 
-**World of Warcraft: Forever only** · **Interface:** `16001` · **Prepared hotfix:** `0.4.1-beta` (not yet tagged)  
-**Last confirmed Git tag:** `v0.4.0-beta` · **Creative direction:** Babuni · **Portfolio:** [babuni.dev](https://babuni.dev) · **Historical credit:** Babunigaming
+**WoW Forever only** · **Interface:** `16001` · **Prepared update:** `0.4.2-beta` (not yet published)  
+**Previous Git tag:** `v0.4.1-beta` · **Creative:** Babuni · **Portfolio:** [babuni.dev](https://babuni.dev)
 
-Flourish Forever adds character expression to abilities the player chooses. An ability may trigger a random native WoW emote or a player-written `/e` emote, subject to configurable chance and individual emote cooldowns. It never casts spells on the player's behalf.
+Flourish Forever links player-selected abilities to native or custom emotes, with per-ability chance, per-emote cooldowns and per-character settings. It does not cast abilities automatically.
 
-## 0.4.1-beta — battleground and arena protected-emote safeguard
+## What's changing in 0.4.2-beta
 
-A player-reported `ADDON_ACTION_BLOCKED` occurred after entering a Forever battleground: a cast-success `DoEmote` call reached protected `PerformEmote()`. In this prepared hotfix, automatic Flourish emotes are intentionally **silent in battlegrounds and arenas**, detected via `IsInInstance()` (`pvp`/`arena`). The guard covers both native `DoEmote` and player-written `/e`, without deleting settings or consuming cooldowns. It leaves normal world and dungeon behavior unchanged. This is a preventive workaround, not a bypass of protected APIs, and **has not been retested in a live battleground**. This mitigation is being prepared for prompt distribution because the current release can generate protected-action errors; remaining compatibility uncertainty must remain visible. Manual player emotes are not changed.
+- Replaces the delayed `UNIT_SPELLCAST_SUCCEEDED` -> `DoEmote` route that still caused protected `PerformEmote()` errors in `0.4.1-beta`.
+- Native `C_ChatInfo.PerformEmote` and custom `/e` attempts now run during eligible player ability-action hooks, with **no delayed native-emote retry**.
+- Suppresses addon-triggered emotes during battleground/arena or relevant chat/match/map/encounter restrictions.
+- Retains existing character configurations, ability overview, emote pools, chance and individual cooldowns.
 
-## What's new in 0.4.0-beta
+**Trigger trade-off:** An emote can occur on an attempted spell even if that spell later fails; abilities outside the observed player-action hooks may not trigger an emote. These are deliberate changes to avoid the protected delayed-call path.
 
-The expanded interface recovered from Babuni's earlier local work is now prepared for its first public release:
+**Testing:** Babuni installed and used the development build `0.4.1-beta-dev` on November 5, 2026 and said it appears to work as before, with no noticeable difference. This is a general in-game report, **not** explicit confirmation of the previously failing battleground situation. Lua/UI mock tests and packaging validation support the code but cannot prove every Forever protected-action state.
 
-- An **810×676** multi-page window with an overview of configured abilities, spell icons, summaries and individual enable/disable switches.
-- A **categorized spellbook-style ability picker** with search; search also works in the configured-ability overview and the emote selection list.
-- An **emote editor** with native client emotes, custom `/e` text and a separate **0–120-second cooldown for each selected emote**.
-- Retained per-ability chance (0–100%), character-wide enable switch and additional `/ffsh` command.
-- Migration from older boolean emote selections and the previously fixed first-cast cooldown, saved-data validation and spellbook filtering.
+## Features and controls
 
-## Current status and compatibility
+The 810×676 configuration window provides a searchable overview of configured abilities, categorized spellbook picker with search, individual enable switches, native/custom emote search and selection, an editable custom `/e` list, independent **0–120-second cooldowns per emote**, and **0–100% chance per ability**. New characters start with no configured abilities.
 
-- **In-game report (November 5, 2026):** Babuni installed and used the expanded development build in WoW Forever and confirmed that it works well. This is a general hands-on confirmation, **not an exhaustive test report** for failed casts, every secure action path, character switching or all other addon combinations.
-- **Automated checks:** GitHub runs Lua syntax and mocked gameplay/UI regressions, static package inventory, and an **upload-disabled** packager ZIP inspection. Tests are not substitutes for the game client.
-- **Publication:** `v0.4.0-beta` was tagged and its CurseForge Beta upload was observed Processing. Final approval was not independently rechecked here. The PvP guard is prepared for `v0.4.1-beta`, not part of the previously tagged `v0.4.0-beta`. A new tag and CurseForge file have not yet been verified.
-- **Target:** Forever `1.60.1` / interface `16001`. No Retail, Classic or other client is supported.
-
-## Installation and controls
-
-Install from [FlourishForever on CurseForge](https://www.curseforge.com/wow/addons/flourishforever) when a Forever-specific file is available, or put the following runtime files into `World of Warcraft/_forever_/Interface/AddOns/FlourishForever/`:
-
-```text
-FlourishForever/
-├── FlourishForever.toc
-├── FlourishForever_Storage.lua
-├── FlourishForever.lua
-└── FlourishForever_ActionEmotes.lua
-```
-
-Restart WoW when first installing; open the configuration with `/flourish`. New characters have no configured abilities, so the addon does not emote automatically until the player selects one.
-
-| Command | Purpose |
+| Command | Function |
 | --- | --- |
-| `/flourish`, `/flourish config`, `/flourish ui` | Open or close the expanded editor |
-| `/flourish status` | Inspect current profile and configured ability count |
-| `/flourishforever`, `/rit`, `/ffsh` | Alternative aliases |
+| `/flourish`, `/flourish ui`, `/flourish config` | Toggle editor |
+| `/flourish status` | Print current profile status |
+| `/flourishforever`, `/rit`, `/ffsh` | Aliases |
 
-### How emote triggers differ
+Install from [CurseForge](https://www.curseforge.com/wow/addons/flourishforever) when the tagged Forever release is available. The game addon directory `_forever_/Interface/AddOns/FlourishForever/` must contain `FlourishForever.toc`, `FlourishForever_Storage.lua`, `FlourishForever.lua`, and `FlourishForever_ActionEmotes.lua`.
 
-**Native emotes** use the player's `UNIT_SPELLCAST_SUCCEEDED` event and `DoEmote`, so they follow reported successful casts, not confirmed target hits. **Custom `/e` text** is attempted from the player's action-button/spell press using a chat API; it can therefore appear even if the following cast is interrupted or fails. This tradeoff is preserved from the recovered implementation and requires care when testing different action bindings and macros.
+Settings persist in `FlourishForeverStorage`, indexed by character GUID. Older boolean emote selections are migrated; actual last-fired timestamps reset on reload.
 
-Each enabled emote has its own cooldown; the chosen emote's timestamp is kept in memory and resets after `/reload` or relog. Chance is per configured ability. Character profiles use `UnitGUID("player")` within account-wide `FlourishForeverStorage`; older boolean emote selections are converted to cooldown entries. **Back up SavedVariables before switching between the old and expanded versions**, as the saved configuration format differs.
-
-## Development and verification
+## Development checks
 
 ```bash
 luac -p FlourishForever_Storage.lua
@@ -63,10 +41,8 @@ lua tests/test_ui_mock.lua
 python3 tests/check_package_layout.py
 ```
 
-The GitHub pull-request workflow also performs a BigWigs packager dry run (`-d -g 1.60.1`) and verifies the resulting ZIP through `tests/check_packaged_zip.py`. The expected packaged content is three Lua modules, one TOC, the changelog and MIT license; development docs, tests and portfolio artwork are excluded. The ZIP and actual CurseForge publication are separate checks.
+GitHub CI also creates an **upload-disabled** BigWigs packager preview for Forever `1.60.1` and validates its six files: TOC, three Lua modules, changelog and MIT license. Do not treat a dry run or a Git tag as proof of CurseForge approval.
 
-## License and project history
+Original source is [MIT licensed](LICENSE); Blizzard game assets are not. Babuni directs the creative concept, historical Babunigaming attribution is preserved, and AI technical work is recorded separately.
 
-Source code is covered by the [MIT license](LICENSE). WoW game content remains Blizzard's property. Babuni provides creative direction, earlier Babunigaming credit is preserved, and AI technical contributions are recorded separately.
-
-[Concept](CONCEPT.md) · [Roadmap](ROADMAP.md) · [Changelog](CHANGELOG.md) · [Architecture](docs/ARCHITECTURE.md) · [Design](docs/DESIGN.md) · [Decisions](docs/DECISIONS.md) · [Development journal](docs/DEVLOG.md) · [Recovery notes](docs/EXPANDED_UI_MERGE.md) · [Project instructions](AGENTS.md)
+[Concept](CONCEPT.md) · [Changelog](CHANGELOG.md) · [Roadmap](ROADMAP.md) · [Architecture](docs/ARCHITECTURE.md) · [Design](docs/DESIGN.md) · [Decisions](docs/DECISIONS.md) · [Development journal](docs/DEVLOG.md)

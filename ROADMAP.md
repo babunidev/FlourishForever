@@ -1,8 +1,27 @@
 # Flourish Forever — roadmap and verification status
 
 **Creative decision authority:** Babuni · **Game:** WoW Forever 1.60.1 / Interface 16001  
-**Last confirmed Git tag:** `v0.4.0-beta` · **Next version prepared:** `0.4.1-beta` (PvP hotfix, not yet tagged).  
+**Latest confirmed Git tag:** `v0.4.1-beta` · **Prepared version:** `0.4.2-beta` (not yet tagged).  
 **Development:** Expanded UI restored from Babuni's older local archive and committed to `dev/expanded-ui-merge`. Preparation occurs separately; no public release tag was created.
+
+## 0.4.2-beta hotfix release gate
+
+- [x] Remove delayed native `DoEmote` and add player-action native emotes and security checks.
+- [x] Development-branch CI passed Lua/UI mocks and no-upload ZIP validation.
+- [x] Babuni installed the experiment in-game and reported no noticeable difference, requesting publication.
+- [ ] Verify the candidate commit and six-file packaging checks.
+- [ ] Specific live battleground/arena protected-action retest remains unconfirmed; do not invent that result.
+- [ ] Push only the approved `v0.4.2-beta` tag and verify its CurseForge file, flavor and Beta classification.
+
+## Urgent investigation — protected native emotes persist
+
+- [x] Confirm second player's `ADDON_ACTION_BLOCKED` stack matches the still-present native `DoEmote` call on the asynchronous cast-success handler in `v0.4.1-beta`.
+- [x] Research Forever's hardware-event chat requirements, modern `C_ChatInfo.PerformEmote` and `C_ChatInfo.InChatMessagingLockdown`, plus `C_RestrictedActions.GetAddOnRestrictionState`.
+- [x] **Implement for experimental testing only:** native `C_ChatInfo.PerformEmote` during ability press, remove delayed native-emote dispatch and add chat/PvP/encounter/map restriction checks.
+- [x] Update offline mocks for no delayed native emote calls, native return failure, chance/cooldown, custom emotes, and restriction transitions.
+- [ ] Run exact-commit GitHub CI and real packager ZIP dry-run; verify preserved Lua syntax and packaging.
+- [ ] Verify in-game: ordinary attack buttons, custom and native output, failed casts, cooldowns, action bar vs macro vs spellbook, combat and battleground restriction transitions. Observe BugGrabber errors.
+- [x] Babuni found the revised trigger behavior acceptable in general use and requested release preparation; detailed PvP testing remains open.
 
 ## Current bugfix work — PvP emote restrictions
 

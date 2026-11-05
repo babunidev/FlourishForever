@@ -446,12 +446,19 @@ local function ReadyEmotes(cfg, now, fired)
     return ready
 end
 
--- Forever allows an addon /e only while the player's button press or slash
--- command is still running. UNIT_SPELLCAST_SUCCEEDED is later, so sending
--- there shows "Interface action failed because of an AddOn". DoEmote is a
--- different call and is still allowed from that event.
+-- Native and custom emotes may invoke restricted chat APIs. They are only
+-- attempted in direct player action hooks, never from later spellcast events.
+-- Pending native emotes are intentionally not queued or replayed on success.
 local pressStamp = {}
-local pendingStandard = {}
+local restrictedKinds = {}
+if Enum and Enum.AddOnRestrictionType then
+    local kinds = Enum.AddOnRestrictionType
+    for _, name in ipairs({ "Chat", "PvPMatch", "Map", "Encounter", "ChallengeMode" }) do
+        if type(kinds[name]) == "number" then
+            restrictedKinds[#restrictedKinds + 1] = kinds[name]
+        end
+    end
+end
 
 local function IsCustomToken(token)
     return type(token) == "string" and string.sub(token, 1, 2) == "c:"
@@ -473,18 +480,35 @@ local function SpellPressCanFire(spellID)
     return true
 end
 
--- Native and custom automatic emotes may be restricted in Forever PvP
--- instances. Check before either press-time or cast-success emote logic.
-local function IsRestrictedPvPInstance()
-    if not IsInInstance then
-        return false
+-- PvP instance types are not enough: lockdown can start during a transition
+-- or apply in other restricted maps/encounters. Consult the Forever chat and
+-- addon restriction state APIs, including an activating restriction.
+local function IsRestrictedEmoteContext()
+    if IsInInstance then
+        local _, instanceType = IsInInstance()
+        if instanceType == "pvp" or instanceType == "arena" then
+            return true
+        end
     end
-    local _, instanceType = IsInInstance()
-    return instanceType == "pvp" or instanceType == "arena"
+
+    if C_ChatInfo and C_ChatInfo.InChatMessagingLockdown
+        and C_ChatInfo.InChatMessagingLockdown() then
+        return true
+    end
+
+    if C_RestrictedActions and C_RestrictedActions.GetAddOnRestrictionState then
+        for _, kind in ipairs(restrictedKinds) do
+            local state = C_RestrictedActions.GetAddOnRestrictionState(kind)
+            if type(state) == "number" and state ~= 0 then
+                return true
+            end
+        end
+    end
+    return false
 end
 
 local function ResolveAbility(spellID)
-    if IsRestrictedPvPInstance() then
+    if IsRestrictedEmoteContext() then
         return
     end
     EnsureDB()
@@ -549,7 +573,6 @@ local function TryAbilityEmoteFromPress(spellID)
     end
 
     pressStamp[key] = now
-    pendingStandard[key] = nil
 
     local ready = ReadyEmotes(cfg, now, lastFireByAbility[key])
     if #ready == 0 then
@@ -569,49 +592,14 @@ local function TryAbilityEmoteFromPress(spellID)
         return
     end
 
-    pendingStandard[key] = {
-        token = token,
-        spellID = spellID,
-        expires = now + 2,
-    }
-end
-
-local function TryAbilityEmote(spellID)
-    local key, cfg = ResolveAbility(spellID)
-    if not key then
-        return
-    end
-
-    local now = GetTime()
-    if pressStamp[key] and (now - pressStamp[key]) < 2 then
-        local pending = pendingStandard[key]
-        pendingStandard[key] = nil
-        if pending and pending.spellID == spellID and now <= pending.expires then
-            lastFireByAbility[key][pending.token] = now
-            DoEmote(pending.token)
-        end
-        return
-    end
-
-    local ready = {}
-    for _, token in ipairs(ReadyEmotes(cfg, now, lastFireByAbility[key])) do
-        if not IsCustomToken(token) then
-            ready[#ready + 1] = token
+    -- Forever's native emote API is restricted when called from delayed
+    -- UNIT_SPELLCAST_SUCCEEDED. This hook is reached during a player action.
+    -- A failed attempt does not spend the emote cooldown.
+    if C_ChatInfo and C_ChatInfo.PerformEmote then
+        if C_ChatInfo.PerformEmote(token) then
+            lastFireByAbility[key][token] = now
         end
     end
-
-    if #ready == 0 then
-        return
-    end
-
-    local chance = tonumber(cfg.chance) or DEFAULT_CHANCE
-    if math.random(1, 100) > chance then
-        return
-    end
-
-    local token = ready[math.random(1, #ready)]
-    lastFireByAbility[key][token] = now
-    DoEmote(token)
 end
 
 local function SpellIDFromActionSlot(slot)
@@ -1765,13 +1753,8 @@ function FlourishForever_ActionStatus()
     return db.actionEmotesEnabled, count
 end
 
-eventFrame:SetScript("OnEvent", function(self, event, ...)
-    if event == "UNIT_SPELLCAST_SUCCEEDED" then
-        local unit, _, spellID = ...
-        if unit == "player" and spellID then
-            TryAbilityEmote(spellID)
-        end
-    elseif event == "SPELLS_CHANGED" then
+eventFrame:SetScript("OnEvent", function(self, event)
+    if event == "SPELLS_CHANGED" then
         if ui then
             ui.spellColumns = nil
             if ui:IsShown() and ui.page == "picker" then
@@ -1781,5 +1764,4 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
     end
 end)
 
-eventFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
 eventFrame:RegisterEvent("SPELLS_CHANGED")

@@ -2,7 +2,17 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** WoW Forever 1.60.1 / Interface 16001.
 
-## 0.4.1-beta — PvP protected-emote hotfix (prepared; not yet published)
+## 0.4.2-beta — protected native emotes (prepared; not yet published)
+
+- Stop calling `DoEmote` from delayed `UNIT_SPELLCAST_SUCCEEDED` events, which continued to trigger protected `PerformEmote()` errors after the 0.4.1-beta PvP guard.
+- Attempt native `C_ChatInfo.PerformEmote` and custom `/e` only during direct player-action hooks, without deferred native replay.
+- Respect battleground/arena, chat messaging lockdown, and active/activating chat, PvP, map, encounter and challenge restrictions.
+- Preserve configuration, chance, cooldowns and the expanded interface; failed native send results do not consume cooldowns.
+- **Behavioral trade-off:** native emotes may happen on failed attempted casts and may not trigger for unhooked spell activation paths.
+- **Verification:** Babuni installed the development build in Forever and observed no noticeable difference in ordinary use. This does **not** explicitly verify a successful battleground retest or every secure-action condition. The final candidate must pass automated checks and package dry run.
+- **Release status:** candidate only; publication requires the approved new tag and confirmed CurseForge file.
+
+## 0.4.1-beta — PvP protected-emote hotfix (Git tag pushed; CurseForge upload observed processing)
 
 - Suppress addon-triggered native and custom emotes in battlegrounds (`pvp`) and arenas (`arena`) after a player-reported blocked `PerformEmote()` call on battleground entry.
 - Preserve SavedVariables, enabled abilities, and individual emote cooldown timestamps while PvP suppression is active. Ordinary world and dungeon emotes remain enabled.

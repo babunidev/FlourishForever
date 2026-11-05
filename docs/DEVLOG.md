@@ -1,5 +1,17 @@
 # Flourish Forever — creative and technical development journal
 
+## 5 November 2026 — preparing the safer emote trigger for everyone
+
+The revised Flourish build behaved much like the version I was used to when I tried it in Forever. Its native emotes no longer wait for the delayed cast-success callback that caused the protected-action errors. The timing may differ when a spell fails, but the change was not noticeable during my ordinary use.
+
+With that experience, `0.4.2-beta` is prepared for public distribution. My AI assistant updated the release metadata, documentation and automated checks. The precise battleground regression remains unconfirmed, and a public release is not complete until the new CurseForge file is verified.
+
+## 5 November 2026 — a second blocked emote
+
+Another protected-emote error appeared after the battleground hotfix, and its new line numbers showed the fix had loaded but hadn't solved the underlying issue. The old design still asked the game to perform a native emote after the ability's cast-success event, when the player's button press was already over.
+
+A different approach is now being tested: both native gestures and custom lines can originate from the button press itself, while restricted chat and encounter states remain silent. My AI assistant prepared this as an experimental GitHub branch rather than another hurried public tag. It changes an important detail of when a flourish occurs, so the final creative decision is still open, and live testing has not yet confirmed whether Forever permits it.
+
 ## 5 November 2026 — protected emotes inside a battleground
 
 After the expanded version went to CurseForge, a battleground exposed a restriction that the ordinary interface tests hadn't caught. The game blocked a native emote from the cast-success handler. Rather than force an insecure call, the development fix keeps Flourish silent in battlegrounds and arenas while preserving the settings and timing for the rest of the game.
