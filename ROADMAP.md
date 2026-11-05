@@ -1,18 +1,21 @@
 # Flourish Forever — roadmap and verification status
 
 **Creative decision authority:** Babuni · **Game:** WoW Forever 1.60.1 / Interface 16001  
-**Latest confirmed Git tag:** `v0.4.2-beta` · **Unpublished development:** `0.4.2-beta-dev` group-play fix.  
+**Latest confirmed Git tag:** `v0.4.2-beta` · **Prepared group-play update:** `0.4.3-beta` (not tagged yet).  
 **Development:** Expanded UI restored from Babuni's older local archive and committed to `dev/expanded-ui-merge`. Preparation occurs separately; no public release tag was created.
 
-## Group-play regression — development fix
+## Group-play regression — 0.4.3-beta release preparation
 
 - [x] Inspect the `0.4.2-beta` trigger code and identify overbroad `Map`, `Encounter` and `ChallengeMode` restriction-state suppression.
 - [x] Keep genuine chat lockdown, `Chat`/`PvPMatch` restrictions, and battleground/arena safeguards while allowing ordinary party/raid action-press emotes.
 - [x] Add mocked tests for outdoor party, party dungeon and raid states, both native and custom text, and actual chat lockdown.
-- [ ] Confirm GitHub Lua/UI checks and no-upload packaged ZIP checks on the exact development commit.
-- [ ] Verify directly in-game: outdoor party, dungeon group, raid, combat, login/reload, custom and native emotes, and no new BugGrabber protected-action errors.
+- [x] Development-branch Lua/UI and six-file no-upload ZIP checks passed.
+- [ ] Confirm final release-candidate checks on the exact commit before tagging.
+- [x] Babuni reports that the group-play fix seems to work fine in-game (general observation, not a detailed scenario log).
+- [ ] Explicitly verify outdoor party, dungeon, raid, combat and chat-restriction edge cases without protected-action errors.
 - [ ] If still silent in a group, inspect real `IsInInstance`, chat lockdown and restriction-state values before changing safety policy.
-- [ ] No public release is authorized for this change; existing `v0.4.2-beta` tag must remain unchanged.
+- [x] Babuni requested public distribution of the group-play fix.
+- [ ] Push only the approved new `v0.4.3-beta` annotated tag; do not modify `v0.4.2-beta`. Verify the resulting CurseForge Beta file and approval.
 
 ## 0.4.2-beta hotfix release gate
 

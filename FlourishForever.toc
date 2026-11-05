@@ -2,7 +2,7 @@
 ## Title: Flourish Forever
 ## Notes: Play a random emote when you cast a configured ability. /flourish
 ## Author: Babuni.dev
-## Version: 0.4.2-beta-dev
+## Version: 0.4.3-beta
 ## SavedVariables: FlourishForeverStorage
 
 FlourishForever_Storage.lua

@@ -1,5 +1,11 @@
 # Flourish Forever — creative and technical development journal
 
+## 5 November 2026 — the group fix is ready for everyone
+
+After trying the revised build, Flourish seems to behave properly in groups again. That matters more than a small interface improvement: the point of these emotes is to give the character some presence around other players, including those sharing an adventure.
+
+The revised restrictions now distinguish actual chat limitations from unrelated map and encounter data limits. My AI assistant prepared the next patch and its release checks without changing the earlier tagged versions. There has been no comprehensive dungeon or raid test report, so those cases remain to be verified after the update reaches players.
+
 ## 5 November 2026 — getting Flourish back into group play
 
 After the protected-action fix, Flourish seemed to go quiet whenever I was in a group. That undermines the purpose of the addon: a flourish should give other players a glimpse of the character, not disappear when company arrives.

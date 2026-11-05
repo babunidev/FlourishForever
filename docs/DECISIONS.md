@@ -1,5 +1,11 @@
 # Flourish Forever — recorded design decisions and open alternatives
 
+## 5 November 2026 — group-play correction approved for distribution
+
+After installing the test branch, Babuni reported that Flourish seems to work fine again and requested that the correction be made available to other players. The next prepared version is `0.4.3-beta`. The actual change remains narrowly scoped: don't conflate Map, Encounter and ChallengeMode data restrictions with chat restrictions, but retain actual chat lockdown, Chat/PvPMatch restriction checks and battleground/arena suppression.
+
+This is a general player confirmation rather than a documented full party/dungeon/raid or protected-action test. Public distribution is approved in principle; the exact tag must be pushed and the CurseForge file verified separately.
+
 ## 5 November 2026 — group play and security restriction scope
 
 After the action-triggered fix, Babuni reported that Flourish no longer appeared to emote while grouped. The subsequent code review found a plausible over-restriction: the dispatch guard blocked on `Map`, `Encounter` and `ChallengeMode` addon data restrictions in addition to actual chat and PvP restrictions.

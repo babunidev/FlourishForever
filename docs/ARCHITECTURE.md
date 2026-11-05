@@ -1,7 +1,7 @@
 # Flourish Forever — technical architecture
 
 **Target:** World of Warcraft Forever 1.60.1, interface 16001.  
-**Latest confirmed Git tag:** `v0.4.2-beta` · **Group-play development branch:** `fix/group-emote-restrictions`.  
+**Latest confirmed Git tag:** `v0.4.2-beta` · **Prepared group-play hotfix:** `0.4.3-beta` (unpublished).  
 **Evidence:** current Lua source, package configuration, mocked test suites and Babuni's November 5, 2026 general in-game confirmation.
 
 ## Runtime files and load order
@@ -31,13 +31,13 @@ Spellbook data is discovered using the Forever client's `C_SpellBook` family, wi
 
 `CreateUI` constructs an 810×676 movable window with four pages: configured-ability overview, spellbook picker, ability editor and custom-text editor. The overview and picker each have a search field; the ability editor has a third search for native/custom emotes, individual cooldown sliders, per-ability chance and enable/disable. The editor preserves custom IDs where possible when saving edited text. The actual UI has been used in-game by Babuni, but exhaustive UI/combat states are not proven.
 
-## Group-play guard refinement (development only)
+## Group-play guard refinement — 0.4.3-beta candidate
 
 The `0.4.2-beta` player-action handler incorrectly treated `Map`, `Encounter` and `ChallengeMode` restriction states as reasons to skip every emote. These states signal restrictions on addon information and features, not necessarily a restriction on the player-triggered chat APIs. When active during group/instance play, this policy could suppress Flourish without a chat failure.
 
-On `fix/group-emote-restrictions`, `IsRestrictedEmoteContext()` instead checks only explicitly relevant conditions: `IsInInstance()` reporting `pvp` or `arena`, `C_ChatInfo.InChatMessagingLockdown()`, and `GetAddOnRestrictionState` for `Chat` and `PvPMatch` (including `Activating`). Normal party/raid membership and `Map`/`Encounter`/`ChallengeMode` data restrictions are not automatic reasons to suppress a player-action emote. Native and custom emotes share this check. No deferred chat retries or protected-function bypasses exist.
+In the 0.4.3-beta candidate, `IsRestrictedEmoteContext()` instead checks only explicitly relevant conditions: `IsInInstance()` reporting `pvp` or `arena`, `C_ChatInfo.InChatMessagingLockdown()`, and `GetAddOnRestrictionState` for `Chat` and `PvPMatch` (including `Activating`). Normal party/raid membership and `Map`/`Encounter`/`ChallengeMode` data restrictions are not automatic reasons to suppress a player-action emote. Native and custom emotes share this check. No deferred chat retries or protected-function bypasses exist.
 
-These conditions preserve security checks but cannot prove the client allows a particular emote. The new group behavior has mocked coverage, not direct group/raid gameplay verification.
+These conditions preserve security checks but cannot prove the client allows a particular emote. The new group behavior has mocked coverage, and Babuni reported the development version seems to work fine in-game. Specific dungeon, raid and protected-action scenarios remain unverified.
 
 ## Protected emote restrictions — 0.4.2-beta candidate
 
