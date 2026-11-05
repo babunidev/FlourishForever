@@ -1,15 +1,20 @@
 # Flourish Forever — dated changelog and development evidence
 
-## Unreleased development — expanded UI recovery (2026-11-05)
+**Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** WoW Forever 1.60.1 / Interface 16001.
 
-- Restored the ZIP-sourced expanded ability overview, spellbook-style picker, custom `/e` editor, ability enable/disable, per-emote cooldown and `/ffsh`.
-- Added searches for configured abilities and selectable spellbook abilities, alongside the existing emote search.
-- Integrated the current first-cast fix, bounded SavedVariables values, passive/off-spec spell filtering and conservative migration from boolean emote selections.
-- Kept valid emote configuration tables in place during normalization to avoid routine allocations on cast events.
-- Added mocked gameplay and UI regression tests; in-game behavior is **unverified**. Version `0.3.2-beta-dev` applies to this development branch only, with no publishing tag.
+## 0.4.0-beta — expanded editor (prepared; not yet published)
 
+- **New overview:** a larger 810×676 configuration window with spell icons, configured ability summaries and individual enable/disable switches.
+- **Find abilities faster:** a categorized, spellbook-style picker plus search fields for both available and configured abilities.
+- **More emote choices:** search native emotes; create and edit custom `/e` lines, then assign them to individual abilities.
+- **Finer timing:** separate 0–120-second cooldown settings for each selected emote, alongside the existing per-ability chance control.
+- **Compatibility:** `/ffsh` joins the existing slash commands; previously configured native emotes migrate from boolean selections into cooldown records. Preserves saved character profiles, first-cast cooldown safety and spellbook filtering.
+- **Forever behavior:** native emotes still fire on reported successful casts; custom chat emotes are attempted from an ability button press and may appear even if the later cast fails.
+- **Distribution:** existing six-file packaging structure and MIT license remain unchanged.
 
-**Creative direction:** Babuni · **Portfolio:** babuni.dev. **Interface:** WoW: Forever 16001.
+**Verification:** Babuni installed and used the expanded development build in the Forever game client on November 5, 2026 and reported it working well. Offline Lua logic/UI tests and package checks were previously successful; final release-candidate CI is required separately. This confirmation does not establish complete coverage of protected custom chat, failed casts, all profile migrations or addon interactions.
+
+**Release status:** This section is prepared release copy, not evidence of a published `v0.4.0-beta` tag or CurseForge file.
 
 ## 0.3.2-beta — World of Warcraft: Forever
 
