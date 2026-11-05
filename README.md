@@ -1,6 +1,11 @@
 # FlourishForever
 
-**World of Warcraft: Forever only** · **TOC interface:** `16001` · **Prepared version:** `0.3.2-beta` (not yet published)  
+## Expanded interface — GitHub development only
+
+**Test branch:** `dev/expanded-ui-merge` · **TOC:** `0.3.2-beta-dev` · **Public release:** `v0.3.2-beta` (unchanged). The recovered interface includes the larger overview, configured-ability search, categorized spellbook picker with search, native/custom emote search, per-emote cooldown sliders, custom `/e` editor, per-ability enable switches, and `/ffsh`. Older boolean selections migrate into cooldown records. Custom `/e` messages are attempted during an ability-button press and may occur even when the cast later fails; native `DoEmote` remains on player `UNIT_SPELLCAST_SUCCEEDED`. This requires real Forever game-client verification, particularly chat restrictions and SavedVariables persistence. See [merge notes](docs/EXPANDED_UI_MERGE.md). **No public release has been made from this branch.**
+
+
+**World of Warcraft: Forever only** · **TOC interface:** `16001` · **Latest public version:** `0.3.2-beta`  
 **Creative direction:** Babuni · **Portfolio:** [babuni.dev](https://babuni.dev) · **Earlier project credit:** Babunigaming
 
 FlourishForever lets a character express themselves through ordinary ability casts. Choose a spellbook ability, select the game-native emotes it may trigger, and configure that ability's chance and cooldown. The addon listens for a **successful cast event**, not a confirmed damage hit. It never casts an ability for the player.

@@ -1,5 +1,10 @@
 # Flourish Forever — development and AI collaboration rules
 
+## Expanded UI development branch
+
+`dev/expanded-ui-merge` combines the uploaded older expanded UI with the safety fixes from current public `v0.3.2-beta`. In this branch, emote selections use token-keyed `{ cooldown = N }` tables; older boolean choices migrate using the prior ability cooldown, and malformed records remain recoverable. Custom text hooks are press-time, while native emotes use `UNIT_SPELLCAST_SUCCEEDED`. Custom-chat behavior is not in-game verified. **Do not tag or publish this development work without a separate, version-specific approval.**
+
+
 **Human creative / final decision-maker:** Babuni.  
 **Latest GitHub release:** 0.3.1-beta · **Prepared candidate:** 0.3.2-beta (unpublished) / WoW: Forever 16001. **Prior development credit:** Babunigaming.
 

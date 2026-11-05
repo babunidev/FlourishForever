@@ -1,5 +1,10 @@
 # Flourish Forever — technical architecture
 
+## Expanded UI development architecture
+
+On the experimental branch, `FlourishForever_ActionEmotes.lua` manages four pages (overview, spellbook picker, ability editor and custom emotes) and cached spellbook results for search filtering. Old boolean selections are migrated to per-emote cooldown tables. Valid saved emote tables are updated in place rather than copied on each spellcast. Custom text is sent during action-button hooks, whereas native `DoEmote` is handled only for player cast-success. These differing trigger times are deliberate compatibility constraints requiring in-game tests. See [merge notes](EXPANDED_UI_MERGE.md).
+
+
 **Baseline:** October 27, 2026 source inspection of the original public beta, subsequently confirmed working by Babuni. The prepared but unpublished `0.3.2-beta` branch integrates the first-cast, saved-data and spellbook improvements from draft PR #2, which passed prior GitHub and Nobara mocked tests. Gameplay API calls and character storage layout are retained.
 
 ## Installed load sequence

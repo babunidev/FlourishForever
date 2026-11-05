@@ -1,5 +1,13 @@
 # Flourish Forever — verified baseline and roadmap
 
+## Development branch — expanded UI testing
+
+- **Implemented in `dev/expanded-ui-merge` only:** expanded overview/picker, three searches, custom text, individual emote cooldowns, ability toggles and data migration.
+- **Offline:** run `lua tests/test_action_emotes.lua`, `lua tests/test_ui_mock.lua`, `python3 tests/check_package_layout.py`; mocked tests are not live Forever tests.
+- **In-game still needed:** GUI creation, combat/secure interactions, failed casts vs custom text, character profile migration and persistence, slash aliases, UI scale, RoarForever coexistence.
+- **Publication:** no release tag, CurseForge file or public version change from this branch.
+
+
 **Creative decision authority:** Babuni. **Release candidate:** 0.3.2-beta (not tagged or published). **Latest GitHub Release:** 0.3.1-beta. **Latest confirmed CurseForge file:** 0.3.0-beta (October 22, 2026).  
 **Status:** Current `main` contains the packaging and documentation updates; the release-preparation branch integrates the tested gameplay safety fixes. Tasks distinguish offline verification from in-game proof.
 

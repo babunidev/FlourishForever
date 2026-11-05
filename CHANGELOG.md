@@ -1,5 +1,14 @@
 # Flourish Forever — dated changelog and development evidence
 
+## Unreleased development — expanded UI recovery (2026-11-05)
+
+- Restored the ZIP-sourced expanded ability overview, spellbook-style picker, custom `/e` editor, ability enable/disable, per-emote cooldown and `/ffsh`.
+- Added searches for configured abilities and selectable spellbook abilities, alongside the existing emote search.
+- Integrated the current first-cast fix, bounded SavedVariables values, passive/off-spec spell filtering and conservative migration from boolean emote selections.
+- Kept valid emote configuration tables in place during normalization to avoid routine allocations on cast events.
+- Added mocked gameplay and UI regression tests; in-game behavior is **unverified**. Version `0.3.2-beta-dev` applies to this development branch only, with no publishing tag.
+
+
 **Creative direction:** Babuni · **Portfolio:** babuni.dev. **Interface:** WoW: Forever 16001.
 
 ## 0.3.2-beta — World of Warcraft: Forever

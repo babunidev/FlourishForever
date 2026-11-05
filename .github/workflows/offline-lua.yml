@@ -22,7 +22,9 @@ jobs:
           luac5.4 -p FlourishForever.lua
           luac5.4 -p FlourishForever_ActionEmotes.lua
       - name: Mocked logic regressions
-        run: lua5.4 tests/test_action_emotes.lua
+        run: |
+          lua5.4 tests/test_action_emotes.lua
+          lua5.4 tests/test_ui_mock.lua
       - name: Static installable file inventory
         run: python3 tests/check_package_layout.py
 

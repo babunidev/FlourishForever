@@ -1,5 +1,10 @@
 # Flourish Forever — recorded design decisions and open alternatives
 
+## 5 November 2026 — recovered interface merged for testing
+
+Babuni directed the recovery of the more developed UI from a local archive, without changing the published release. A separate GitHub development branch now holds the restored features and safety reconciliation; no automatic public release is permitted. A custom `/e` may fire on a press even if the spell subsequently fails, unlike native success-event emotes. This is documented rather than silently changing the original design.
+
+
 **Creative decision authority:** Babuni · **Portfolio:** babuni.dev. **Evidence:** initial October 22 source commit, beta packaging change, README, project conversation context and October 26 attribution/docs. Missing early discussion and game tests are not invented.
 
 ## Implemented decisions

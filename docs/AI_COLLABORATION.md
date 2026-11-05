@@ -1,5 +1,10 @@
 # Flourish Forever — human–AI collaboration and attribution
 
+## 5 November 2026 — local-archive feature recovery
+
+Babuni supplied the expanded addon archive and requested the recovered features be developed through GitHub. AI integrated the expanded interface, saved-setting migration, searches and tests with current release safeguards on a separate branch. Offline tests do not prove Forever-client compatibility or protected custom-emote behavior. No public release was created.
+
+
 **Original idea, creative direction and final decisions:** Babuni · **Portfolio:** babuni.dev.  
 **Earlier public developer identity:** Babunigaming, preserved from the original October 22 README/TOC.  
 **Retrospective date:** October 27, 2026.

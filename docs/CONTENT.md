@@ -1,5 +1,10 @@
 # Flourish Forever — emote vocabulary, character settings and assets
 
+## Expanded UI development content
+
+Search covers configured ability names, spellbook names, and native/custom emote labels. User-defined emote text is kept in per-character storage using stable `c:` token IDs. No third-party assets or new runtime dependencies were added in this branch. See [merge notes](EXPANDED_UI_MERGE.md).
+
+
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Platform:** WoW: Forever interface 16001.  
 **Evidence:** `FlourishForever_ActionEmotes.lua`, storage module, TOC and release records.
 

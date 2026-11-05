@@ -1,5 +1,12 @@
 # Flourish Forever — creative and technical development journal
 
+## 5 November 2026 — recovering the expanded editor
+
+An older local ZIP turned out to contain the fuller ability editor I had already developed. Rather than replace the current addon with an old checkout, the test branch brings its ability overview, searchable pickers, custom emotes and individual cooldowns together with the more recent safety fixes.
+
+My AI assistant handled the source reconciliation and offline checks. The recovered interface is committed for development testing, not released; the live Forever UI and custom chat behavior still need verification.
+
+
 **Human creative:** Babuni · **Portfolio:** babuni.dev · **Historical public identity:** Babunigaming  
 **Historical source:** October 22 and 26, 2026 Git commits; three Lua files; README and metadata; Babuni's recorded October conversation about project previews and descriptions. This is a **source-supported retrospective**, not a reconstruction of private messages which were not available.
 
