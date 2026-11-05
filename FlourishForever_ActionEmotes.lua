@@ -450,10 +450,14 @@ end
 -- attempted in direct player action hooks, never from later spellcast events.
 -- Pending native emotes are intentionally not queued or replayed on success.
 local pressStamp = {}
+-- Addon restriction types such as Map, Encounter and ChallengeMode describe
+-- information lockdown, not necessarily a ban on player-initiated emotes.
+-- Do not silence ordinary parties or dungeon/raid encounters for those states.
+-- Chat and PvPMatch are retained alongside explicit chat/PvP guards below.
 local restrictedKinds = {}
 if Enum and Enum.AddOnRestrictionType then
     local kinds = Enum.AddOnRestrictionType
-    for _, name in ipairs({ "Chat", "PvPMatch", "Map", "Encounter", "ChallengeMode" }) do
+    for _, name in ipairs({ "Chat", "PvPMatch" }) do
         if type(kinds[name]) == "number" then
             restrictedKinds[#restrictedKinds + 1] = kinds[name]
         end
@@ -480,9 +484,9 @@ local function SpellPressCanFire(spellID)
     return true
 end
 
--- PvP instance types are not enough: lockdown can start during a transition
--- or apply in other restricted maps/encounters. Consult the Forever chat and
--- addon restriction state APIs, including an activating restriction.
+-- Keep chat/PvP security checks, without equating Map/Encounter/ChallengeMode
+-- restriction states with a prohibition on ordinary player-triggered emotes.
+-- Group membership and normal party/raid instances never suppress Flourish.
 local function IsRestrictedEmoteContext()
     if IsInInstance then
         local _, instanceType = IsInInstance()
