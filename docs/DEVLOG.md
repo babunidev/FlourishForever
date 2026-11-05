@@ -1,5 +1,18 @@
 # Flourish Forever — creative and technical development journal
 
+## 5 November 2026 — the larger editor becomes the next version
+
+The recovered Flourish editor is finally back where it belongs. After installing the merged build in Forever, the larger ability overview, searchable selection and finer emote controls worked well enough that I chose to bring them forward for everyone rather than leave them in a private test branch. The work also restores the custom little gestures that make individual characters feel more like themselves.
+
+My AI assistant handled the merge from the old archive, preserved the safety fixes, and prepared the next version's documentation and packaging checks. With that substantial expansion, `0.4.0-beta` is a more fitting release step than another tiny patch. The public version is still a separate decision: no publishing tag has been authorized in this preparation.
+
+## 5 November 2026 — recovering the expanded editor
+
+An older local ZIP turned out to contain the fuller ability editor I had already developed. Rather than replace the current addon with an old checkout, the test branch brings its ability overview, searchable pickers, custom emotes and individual cooldowns together with the more recent safety fixes.
+
+My AI assistant handled the source reconciliation and offline checks. The recovered interface is committed for development testing, not released; the live Forever UI and custom chat behavior still need verification.
+
+
 **Human creative:** Babuni · **Portfolio:** babuni.dev · **Historical public identity:** Babunigaming  
 **Historical source:** October 22 and 26, 2026 Git commits; three Lua files; README and metadata; Babuni's recorded October conversation about project previews and descriptions. This is a **source-supported retrospective**, not a reconstruction of private messages which were not available.
 

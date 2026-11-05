@@ -1,5 +1,16 @@
 # Flourish Forever — human–AI collaboration and attribution
 
+## 5 November 2026 — in-game confirmation and 0.4.0-beta preparation
+
+Babuni reported the merged expanded UI functioning well when installed in the Forever client, and directed preparation of a public update. The feature concept and decision to restore the earlier editor belong to Babuni; AI's work comprises code reconciliation, SavedVariables migration safeguards, tests, package checks and documentation. This report is a real but general hands-on observation. No individual detailed combat, protected-chat, cross-character or RoarForever regression results were supplied.
+
+For the next version AI prepared `0.4.0-beta` release copy, the updated manifest, and technical documentation while preserving attribution, the original Git history and the MIT license. Preparation and merging are development work; publishing requires explicit version-specific approval and a separate CurseForge file check.
+
+## 5 November 2026 — local-archive feature recovery
+
+Babuni supplied the expanded addon archive and requested the recovered features be developed through GitHub. AI integrated the expanded interface, saved-setting migration, searches and tests with current release safeguards on a separate branch. Offline tests do not prove Forever-client compatibility or protected custom-emote behavior. No public release was created.
+
+
 **Original idea, creative direction and final decisions:** Babuni · **Portfolio:** babuni.dev.  
 **Earlier public developer identity:** Babunigaming, preserved from the original October 22 README/TOC.  
 **Retrospective date:** October 27, 2026.
@@ -27,7 +38,7 @@ This was **repository inspection, technical/historical analysis and documentatio
 
 ## November 4, 2026 — verified work and authority
 
-Babuni confirmed using FlourishForever successfully on the Forever beta and directed selective improvements without speculative API replacement. AI implemented first-cast, SavedVariables and spellbook safeguards in draft PR #2, with mocked Lua checks passed on GitHub and Nobara. These changes are now integrated into the **release-preparation branch**, not merged into `main` or publicly released; launch-client verification remains outstanding. In parallel, the approved packaging work was merged into `main` without modifying gameplay Lua.
+Babuni confirmed using FlourishForever successfully on the Forever beta and directed selective improvements without speculative API replacement. AI implemented first-cast, SavedVariables and spellbook safeguards in draft PR #2, with mocked Lua checks passed on GitHub and Nobara. At the time of this November 4 checkpoint the changes were in a **release-preparation branch**; they were subsequently merged to `main` and tagged as `v0.3.2-beta`. The later expanded-interface testing is recorded above. In parallel, the approved packaging work was merged into `main` without modifying gameplay Lua.
 
 The public CurseForge project was already labeled MIT before this review. The repository now contains the corresponding license and package directive. Documentation distinguishes Babuni (human creative), babuni.dev (portfolio), historical Babunigaming credit and AI technical contributions. This is not authorization to release a new public version.
 

@@ -1,45 +1,39 @@
 # Flourish Forever — development and AI collaboration rules
 
-**Human creative / final decision-maker:** Babuni.  
-**Latest GitHub release:** 0.3.1-beta · **Prepared candidate:** 0.3.2-beta (unpublished) / WoW: Forever 16001. **Prior development credit:** Babunigaming.
+**Human creative and final decision-maker:** Babuni. **Portfolio:** babuni.dev. **Historical project credit:** Babunigaming.  
+**Game:** World of Warcraft **Forever only**, client 1.60.1 / interface 16001. Recheck after each game update.  
+**Current tagged baseline:** `v0.3.2-beta` · **Prepared next version:** `0.4.0-beta` (not yet tagged/published).
 
-## Preserve the human-directed expression concept
+## Creative boundaries
 
-The creative's idea is **automatic random native-game emotes on selected ability casts**, with individual ability chance, cooldown and curated emote pools. Do not reimagine it as a chat spam bot, combat spell automation, AI-generated roleplay dialogue, or universal “every ability emotes” feature without explicit creative approval.
+Flourish Forever gives a player control over expressive emotes associated with **chosen character abilities**. Never cast an ability for the player, automatically configure every ability, or create unsolicited chat spam. A fresh character starts with no configured abilities; enabling the master switch alone does not trigger emotes.
 
-The player must choose eligible non-passive abilities; a fresh character's configured ability list is empty. The default enabled switch alone does not cause unsolicited emotes. Respect per-character autonomy and the `DoEmote` pipeline.
+The expanded interface and custom `/e` text are now part of the approved development direction, recovered from an earlier local version. The original native-emote-only design remains documented as history, not a restriction on the approved new version.
 
-## Source invariants and implementation risks
+## Current runtime invariants
 
-- The TOC order is **Storage.lua → FlourishForever.lua → ActionEmotes.lua**, with account-wide `FlourishForeverStorage`.
-- Character profiles are keyed by **`UnitGUID("player")`**. Forever's model is realmless; name-realm keys occur only in the **legacy migration fallback**, not as a cross-realm identity feature.
-- `EnsureDB()` binds on access; it can create a temporary local profile when the GUID isn't ready. Test early actions and verify persistence after login.
-- `ROARitFOREVERStorage` is adopted **only if the old global has been loaded** and new root doesn't exist; avoid claiming automatic disk migration from a deleted previous addon.
-- Per-name `instances` store `name`, `spellID`, `chance`, `cooldown`, `emotes`. Spell **names** are normalized by trim/lowercase; event spell IDs are resolved back to names, so ranks/locale changes may collide or lose match.
-- Trigger event is **player `UNIT_SPELLCAST_SUCCEEDED`**, not combat-log proof that a spell hit. Failed casts shouldn't be described as landed or as the event source.
-- Default chance **100%**, cooldown **6 seconds**, default allowed token **ROAR**; UI bounds chance 0–100 and cooldown 0–120. The prepared candidate clamps malformed saved numeric values to the supported ranges.
-- **Cooldown is consumed only on an actual successful emote selection**; a failed probability check or empty pool does not spend it. Runtime timestamps live in `lastFireByAbility`, **not SavedVariables**.
-- The prepared candidate checks for an actual prior emote timestamp, so an unseen ability's first cast is not throttled by a synthetic zero. This passed earlier mocked tests but remains unverified in-game.
-- Emote list is discovered from `EMOTE*_TOKEN` globals, with ROAR fallback; `DoEmote(token)` executes client behavior. No custom chat strings/sounds.
-- Slash commands `/flourish`, `/flourishforever`, `/rit`; `status` currently exposes a character GUID in chat—redact when sharing.
-- The repository contains an MIT `LICENSE` aligned to CurseForge's declaration and included via `.pkgmeta` `license-output`. The release candidate integrates both the package inventory test and the mocked Lua regression suite; the dry-run packager check verifies a generated ZIP, not CurseForge publishing. In-game checks remain separate.
+- Keep TOC load order: `FlourishForever_Storage.lua`, `FlourishForever.lua`, `FlourishForever_ActionEmotes.lua`.
+- `FlourishForeverStorage` is account-wide, with character profiles keyed by `UnitGUID("player")`; earlier name or name-realm keys are migration only. `ROARitFOREVERStorage` can be adopted **only when already loaded**.
+- Configured abilities remain keyed by lowercased, trimmed **spell name**. Ranks/localization or duplicate names can affect matching. Profiles are not dungeon-instance-scoped.
+- Each ability has `enabled`, `chance` (0–100), and selected `emotes`. Each selected native/custom token stores `{ cooldown = 0..120 }`. The old ability-level `cfg.cooldown` stays for migration/defaults; older `true` token values migrate using that cooldown. An empty emote pool is intentionally silent.
+- The native `DoEmote` path uses **player `UNIT_SPELLCAST_SUCCEEDED`**, not combat-hit proof. First casts must not be throttled by a synthetic zero timestamp; runtime cooldown timestamps are session-only.
+- Custom `/e` text uses `c:id` tokens and is attempted during player button-press hooks (`UseAction`, `CastSpellByID`, `C_Spell.CastSpell` where available). It can trigger **before cast success**, including on failed/aborted casts. Preserve this distinction and verify secure-chat restrictions in Forever before claiming complete compatibility.
+- Spellbook selection excludes passive, future, off-spec and non-spell entries. Actual modern API availability must be verified on the target Forever build, not guessed from an interface number.
+- `EnsureDB` validates saved data; keep backward migration compatible and avoid unnecessary allocations on routine casts. Preserve malformed/unknown saved records for possible recovery when safe.
+- The UI uses an 810×676 multi-page editor with searchable overview, categorized spellbook picker, emote search, per-token cooldowns, custom-emote editor and per-ability enable switches.
+- Slash commands: `/flourish`, `/flourishforever`, `/rit`, `/ffsh`, plus `status` and `config`. `status` may print the player's GUID; redact public screenshots/logs.
+- MIT `LICENSE` and `.pkgmeta` package policy are authoritative; do not ship project docs, tests or portfolio assets with the addon.
 
-## Development protocol
+## Repository and documentation protocol
 
-1. Inspect the live source and Git history; preserve README, concept, architecture, design, decisions and DEVLOG as the shared specification.
-2. Record **creative direction**, assistant proposal, alternatives and constraints separately. Do not claim an AI proposal was accepted unless Babuni explicitly approved it.
-3. Record actual implementation files, dates, commit and release metadata; note that version 0.3.1 updated packaging/version text without runtime changes.
-4. For code changes, test client event signatures, abilities/spellbook enumeration, native emote output, per-character saved profiles, cooldown edge cases, reloads and compatibility with other emote addons.
-5. Distinguish source review, a mocked Lua test and real in-game proof. The historical October 27 audit ran no tests, but Babuni later confirmed beta gameplay and passed offline Lua checks for draft PR #2 on Nobara. Neither validates the altered code on the launch client.
-6. Keep private chat/character GUIDs out of public portfolio examples. Respect third-party WoW assets and the existing declared MIT licensing; preserve Babuni's and historical Babunigaming's credit.
-7. Update README, CONCEPT, ROADMAP, CHANGELOG, AGENTS, docs/ARCHITECTURE, DESIGN, CONTENT, DECISIONS, DEVLOG, AI_COLLABORATION for material changes.
+1. **Read this file and [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md) first**, then inspect README, CONCEPT, ROADMAP, CHANGELOG, relevant source, TOC, `.pkgmeta`, docs and repository state before modifying anything.
+2. Preserve Babuni's approved concept, history, attribution, existing license, SavedVariables and unrelated changes. Discuss materially different gameplay designs instead of silently substituting them.
+3. Make small, maintainable edits. Validate inputs, handle absent APIs, avoid excessive allocations, chat output, sound repetition, unnecessary hooks and addon communications.
+4. Run Lua syntax checks, mocked gameplay and UI tests, static package inventory, and an upload-disabled real packager ZIP preview for release candidates. Record exact results and limitations. **Do not claim mocked tests prove in-game behavior.**
+5. Babuni reported the installed expanded development build working in WoW Forever on November 5, 2026. This is real hands-on confirmation at a general level, but does **not** establish complete verification of protected custom chat, every macro path, migration across characters, reloads or interactions with RoarForever.
+6. Keep README, CHANGELOG, ROADMAP, CONCEPT, architectural/design decisions and DEVLOG accurate, distinguishing proposals, implementation, testing, release and publication. Public first-person journals follow the repository documentation standard.
+7. Ordinary `feat:`, `fix:`, `docs:`, `test:`, `refactor:` and `chore:` commits are **development checkpoints**. No publication tag, GitHub Release or CurseForge upload without Babuni's explicit version-specific authorization. Confirm CurseForge's untagged-commit/Alpha behavior and target flavor before a publishing tag; verify actual public file separately.
 
-The earlier documentation-only audit did not authorize code changes; subsequent Babuni instructions explicitly authorized targeted code maintenance and separate lean-package work. Merge and release authorization must still be distinguished; never publish a public version without specific approval.
+## Related history
 
-## Related projects and provenance
-
-Review [the expressive-addon family history](docs/EMOTE_FAMILY_HISTORY.md) when documenting this addon. Do not conflate the older button-press hooks, the guild's user-registered token table, Flourish Forever's spellbook/client-token selection, or Roar Forever's voice-restoration purpose. A successful cast event does not imply a successful target hit. Respect first-person creative authorship and evidence limitations.
-
-## Repository-local documentation standard
-
-Before writing or changing project documentation, read [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md). These rules travel with this repository and do not depend on the babuni.dev ChatGPT Project. Preserve all project-specific technical, creative, canon, safety, licensing, and historical rules in this file; follow the linked standard for public first-person narrative, human–AI attribution, concise development journals, decision records, and evidence-based verification. **Babuni** is the human creative; **babuni.dev** is the website/portfolio, not the person. Preserve third-party credits and historical legal notices. References above to a dated “documentation-only audit” describe that past task, not a permanent ban on later authorized implementation.
+The October 2026 original implementation began as native-emote-only ability expression. The November 2026 recovered UI introduced more extensive selection and custom text. Do not confuse this project with the action-slot emote family or [Roar Forever](https://github.com/babunidev/RoarForever) audio restoration. See [the family history](docs/EMOTE_FAMILY_HISTORY.md) and [expanded merge technical notes](docs/EXPANDED_UI_MERGE.md).

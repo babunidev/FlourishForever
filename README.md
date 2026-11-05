@@ -1,20 +1,30 @@
 # FlourishForever
 
-**World of Warcraft: Forever only** · **TOC interface:** `16001` · **Prepared version:** `0.3.2-beta` (not yet published)  
-**Creative direction:** Babuni · **Portfolio:** [babuni.dev](https://babuni.dev) · **Earlier project credit:** Babunigaming
+**World of Warcraft: Forever only** · **Interface:** `16001` · **Next version prepared:** `0.4.0-beta` (not yet published)  
+**Last tagged version:** `v0.3.2-beta` · **Creative direction:** Babuni · **Portfolio:** [babuni.dev](https://babuni.dev) · **Historical credit:** Babunigaming
 
-FlourishForever lets a character express themselves through ordinary ability casts. Choose a spellbook ability, select the game-native emotes it may trigger, and configure that ability's chance and cooldown. The addon listens for a **successful cast event**, not a confirmed damage hit. It never casts an ability for the player.
+Flourish Forever adds character expression to abilities the player chooses. An ability may trigger a random native WoW emote or a player-written `/e` emote, subject to configurable chance and individual emote cooldowns. It never casts spells on the player's behalf.
 
-## Current status
+## What's new in 0.4.0-beta
 
-- **Beta-tested:** Babuni used the existing addon successfully throughout the WoW Forever beta, including its intended features.
-- **Forever launch:** Blizzard announced November 4, 2026, at 23:00 UTC (November 5, 00:00 CET). Launch-client compatibility still requires confirmation; successful beta use is not a launch-client test.
-- **Public files:** [CurseForge](https://www.curseforge.com/wow/addons/flourishforever) currently lists `v0.3.0-beta` for Forever `1.60.1`. The latest [GitHub release](https://github.com/babunidev/FlourishForever/releases/tag/v0.3.1-beta) is `v0.3.1-beta` and has no attached binary ZIP.
-- **Release preparation:** `release/0.3.2-beta-prep` combines the merged packaging work with first-cast cooldown, SavedVariables and spellbook fixes originally tested on [draft PR #2](https://github.com/babunidev/FlourishForever/pull/2). The candidate is **not merged into `main`, tagged or publicly released**. It retains the existing cast-success event and native `DoEmote` API.
+The expanded interface recovered from Babuni's earlier local work is now prepared for its first public release:
 
-## Installation
+- An **810×676** multi-page window with an overview of configured abilities, spell icons, summaries and individual enable/disable switches.
+- A **categorized spellbook-style ability picker** with search; search also works in the configured-ability overview and the emote selection list.
+- An **emote editor** with native client emotes, custom `/e` text and a separate **0–120-second cooldown for each selected emote**.
+- Retained per-ability chance (0–100%), character-wide enable switch and additional `/ffsh` command.
+- Migration from older boolean emote selections and the previously fixed first-cast cooldown, saved-data validation and spellbook filtering.
 
-Install the Forever-specific file using the [CurseForge addon page](https://www.curseforge.com/wow/addons/flourishforever), or place these four files in `World of Warcraft/_forever_/Interface/AddOns/FlourishForever/`:
+## Current status and compatibility
+
+- **In-game report (November 5, 2026):** Babuni installed and used the expanded development build in WoW Forever and confirmed that it works well. This is a general hands-on confirmation, **not an exhaustive test report** for failed casts, every secure action path, character switching or all other addon combinations.
+- **Automated checks:** GitHub runs Lua syntax and mocked gameplay/UI regressions, static package inventory, and an **upload-disabled** packager ZIP inspection. Tests are not substitutes for the game client.
+- **Publication:** `v0.3.2-beta` was already tagged and a CurseForge Beta upload was observed processing. Final approval and public distribution status of that file were not independently rechecked here. **`0.4.0-beta` is only a prepared candidate** until explicitly approved and tagged.
+- **Target:** Forever `1.60.1` / interface `16001`. No Retail, Classic or other client is supported.
+
+## Installation and controls
+
+Install from [FlourishForever on CurseForge](https://www.curseforge.com/wow/addons/flourishforever) when a Forever-specific file is available, or put the following runtime files into `World of Warcraft/_forever_/Interface/AddOns/FlourishForever/`:
 
 ```text
 FlourishForever/
@@ -24,50 +34,35 @@ FlourishForever/
 └── FlourishForever_ActionEmotes.lua
 ```
 
-Restart the game, enable **Flourish Forever**, and enter `/flourish`.
-
-The GitHub **source archive is not an installable CurseForge package**: it also includes development documents, tests and portfolio artwork. The repository's [`.pkgmeta`](.pkgmeta) excludes those project-only files from **future generated CurseForge packages**. A changelog and [MIT license](LICENSE) may accompany the four runtime files. The [static package inventory test](tests/check_package_layout.py) checks this intended layout, but the actual next CurseForge ZIP still needs inspection.
-
-## Features and controls
-
-- Select non-passive abilities from the player's spellbook. A new character starts with **no abilities configured**; the master switch alone never causes unsolicited emotes.
-- Give each ability its own **chance (0–100%, default 100%)** and **emote cooldown (0–120 seconds, default 6 seconds)**. Cooldown applies between fired emotes and does not modify the spell's game cooldown.
-- Choose one or several built-in game emotes; one enabled token is selected randomly when a cast qualifies. A new ability initially allows **ROAR**, but that selection is editable. An empty emote pool stays silent.
-- Save settings separately for each character in the account-wide `FlourishForeverStorage` SavedVariables root. The runtime cooldown timer resets on `/reload` or a new session.
+Restart WoW when first installing; open the configuration with `/flourish`. New characters have no configured abilities, so the addon does not emote automatically until the player selects one.
 
 | Command | Purpose |
 | --- | --- |
-| `/flourish`, `/flourish config`, `/flourish ui` | Open/close settings |
-| `/flourish status` | Show profile and configuration status |
-| `/flourishforever`, `/rit` | Alternative command aliases |
+| `/flourish`, `/flourish config`, `/flourish ui` | Open or close the expanded editor |
+| `/flourish status` | Inspect current profile and configured ability count |
+| `/flourishforever`, `/rit`, `/ffsh` | Alternative aliases |
 
-**Important:** The success event `UNIT_SPELLCAST_SUCCEEDED` does not prove that a target was hit. Settings are keyed by normalized spell **name**; matching names or language changes can affect how configurations map to abilities. `/flourish status` can show the character GUID in chat; redact it from publicly shared screenshots.
+### How emote triggers differ
 
-## Compatibility and testing
+**Native emotes** use the player's `UNIT_SPELLCAST_SUCCEEDED` event and `DoEmote`, so they follow reported successful casts, not confirmed target hits. **Custom `/e` text** is attempted from the player's action-button/spell press using a chat API; it can therefore appear even if the following cast is interrupted or fails. This tradeoff is preserved from the recovered implementation and requires care when testing different action bindings and macros.
 
-The prepared `0.3.2-beta` candidate retains the beta-tested `DoEmote` and `UNIT_SPELLCAST_SUCCEEDED` behavior. Its cooldown, saved-data and spellbook changes match the earlier draft PR #2 implementation. GitHub Lua 5.4 regression checks passed for that earlier branch, and Babuni passed syntax and mocked regression checks on Nobara Linux. **The candidate's own full CI and packager dry run must also pass; mocks are not in-game proof.**
+Each enabled emote has its own cooldown; the chosen emote's timestamp is kept in memory and resets after `/reload` or relog. Chance is per configured ability. Character profiles use `UnitGUID("player")` within account-wide `FlourishForeverStorage`; older boolean emote selections are converted to cooldown entries. **Back up SavedVariables before switching between the old and expanded versions**, as the saved configuration format differs.
 
-The merged packaging check runs from the repository root using:
-
-```bash
-python3 tests/check_package_layout.py
-```
-
-On the release-preparation branch, the offline Lua checks can be run with:
+## Development and verification
 
 ```bash
 luac -p FlourishForever_Storage.lua
 luac -p FlourishForever.lua
 luac -p FlourishForever_ActionEmotes.lua
 lua tests/test_action_emotes.lua
+lua tests/test_ui_mock.lua
+python3 tests/check_package_layout.py
 ```
 
-Run `python3 tests/check_package_layout.py` to confirm the planned installed file list. The pull-request workflow additionally builds a **dry-run** archive using the BigWigs packager with `-d` (no upload), validated by `python3 tests/check_packaged_zip.py`. Neither check confirms CurseForge's private source integration or publishing settings.
+The GitHub pull-request workflow also performs a BigWigs packager dry run (`-d -g 1.60.1`) and verifies the resulting ZIP through `tests/check_packaged_zip.py`. The expected packaged content is three Lua modules, one TOC, the changelog and MIT license; development docs, tests and portfolio artwork are excluded. The ZIP and actual CurseForge publication are separate checks.
 
-In-game validation remains necessary for the development fixes, the config UI, multiplayer emotes and RoarForever coexistence. No publishing tag, GitHub Release or CurseForge upload has been created.
+## License and project history
 
-## License, history and project records
+Source code is covered by the [MIT license](LICENSE). WoW game content remains Blizzard's property. Babuni provides creative direction, earlier Babunigaming credit is preserved, and AI technical contributions are recorded separately.
 
-The addon source is distributed under the [MIT License](LICENSE), consistent with the existing CurseForge listing. WoW's emotes, animations, sounds and other Blizzard assets remain their respective owners' property. Historical credit to Babunigaming is preserved; Babuni is the human creative directing the project, while AI contributions are recorded separately.
-
-[Concept](CONCEPT.md) · [Roadmap](ROADMAP.md) · [Changelog](CHANGELOG.md) · [Architecture](docs/ARCHITECTURE.md) · [Decisions](docs/DECISIONS.md) · [Development journal](docs/DEVLOG.md) · [AI collaboration](docs/AI_COLLABORATION.md) · [Project instructions](AGENTS.md) · [Portfolio assets](assets/portfolio/README.md)
+[Concept](CONCEPT.md) · [Roadmap](ROADMAP.md) · [Changelog](CHANGELOG.md) · [Architecture](docs/ARCHITECTURE.md) · [Design](docs/DESIGN.md) · [Decisions](docs/DECISIONS.md) · [Development journal](docs/DEVLOG.md) · [Recovery notes](docs/EXPANDED_UI_MERGE.md) · [Project instructions](AGENTS.md)

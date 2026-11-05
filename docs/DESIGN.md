@@ -1,43 +1,31 @@
 # Flourish Forever — visual and interaction design
 
-**Creative direction:** Babuni · **Portfolio:** babuni.dev.  
-**Source:** current 0.3.1-beta UI Lua. The initial audit found no artwork; Babuni-supplied portfolio artwork was added on October 27, 2026.
+**Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** Forever interface 16001.  
+**Current release candidate:** 0.4.0-beta (unpublished). The previous public 0.3.2-beta used a smaller 620×520 layout.
 
-## A stage manager for a character's gestures
+## Expanded configuration window
 
-The player isn't authoring a new combat effect. They're deciding **how their character reacts to moments already happening in game**. That implies a configuration tool which stays out of combat most of the time.
+The player opens a movable Blizzard-style **810×676** window using `/flourish` or an alias. The four UI pages guide a player from a general overview to selecting an ability, assigning emotes and managing custom text:
 
-Flourish Forever uses a Blizzard-style inset window rather than floating new action buttons over the battlefield. The approximately **620×520-pixel** panel can be dragged and closed; its content is plainly divided between the spell that triggers a flourish and the actions the character might perform afterward.
+1. **Ability overview:** scrollable rows with spell icons, ability names, emote summaries and per-ability enable switches. A search field filters configured abilities.
+2. **Spellbook picker:** categorized spellbook-style columns for available abilities, with search across spell names. Non-spell/passive/off-spec entries are filtered from the available set.
+3. **Ability editor:** selected spell icon and title, 0–100% chance slider, searchable list of native and custom emotes with selection checkboxes and independent 0–120-second cooldown sliders.
+4. **Custom emotes:** a multiline editor for player-authored `/e` text. Saving retains identifiers where possible so existing assignments survive edits.
 
-The player opens it with **/flourish**, while `/flourish config`, `ui`, `/flourishforever`, and `/rit` are other entry points. Because the UI is built lazily, nothing has to stay onscreen during a fight.
+The character-wide switch can silence all configured flourishes; each ability can also be individually disabled without removing its preferences. A new character starts with an empty ability list.
 
-## Progressive choices inside the panel
+## Experience and design principles
 
-At the top, one **Enable ability emotes** checkbox acts as the character's master switch. This doesn't erase the spell configurations and is initially enabled but silent when no abilities are added.
+- The interface is built with game-native frames, icons, sliders, scroll surfaces, fonts and checkboxes; portfolio artwork is not loaded by the addon.
+- Displayed spells originate in the player's spellbook, not from a hand-maintained class roster.
+- **ROAR** remains the initial native selection for a newly configured ability; other native emotes and custom lines are optional.
+- Each selected emote has its own cooldown, rather than forcing one shared delay on an entire ability.
+- Native emotes use cast-success; custom `/e` text is issued during a player-button press and can precede a failed cast.
 
-Immediately below, **Add ability** opens a dropdown populated from the character's spellbook, excluding known passive spells. The configured abilities occupy a scrollable list on the left. Choosing an item reveals its controls in the editor on the right; removing it removes both its saved settings and session cooldown entry.
+## Verification and accessibility
 
-The right editor answers three approachable questions:
-- **How often?** Chance from 0% to 100%, in 1% increments.
-- **How soon again?** Cooldown from 0 to 120 seconds, in whole seconds.
-- **What can happen?** A scrollable list of native WoW emote tokens with independent checkboxes. One enabled token gets picked at random.
+Babuni confirmed the installed expanded development build works well in-game on November 5, 2026. Automated UI mocks passed, but this does not establish thorough testing of every button, UI scale, screen-reader/keyboard behavior, macro or protected custom chat condition. Those remain explicit release follow-ups.
 
-No random emote plays when the player leaves the pool empty. A spell added for the first time starts at 100% chance, 6-second cooldown and ROAR checked; those are starter values, not an immutable character identity.
+## History
 
-## Visual vocabulary
-
-The addon uses the existing game UI templates: `BasicFrameTemplateWithInset`, `UICheckButtonTemplate`, `OptionsSliderTemplate`, `UIDropDownMenuTemplate`, `UIPanelButtonTemplate`, native scroll frames and standard fonts. There are **no runtime sprites, custom fonts, emote previews or animation assets**. Promotional artwork lives separately in `assets/portfolio/`. The actual flourish comes from `DoEmote` and the client/race's built-in result.
-
-This restraint makes the addon an expressive tool rather than an art asset mod. In-game character personality is created by **selection and timing**, not new textures.
-
-## Interaction details worth testing
-
-The ability selector sorts spellbook results alphabetically, with ID ordering for equal names. Its *stored* key is a lowercase name, however, so rank variants may share settings; the UI could show multiple entries that edit one configuration. The scrollable emote list can be long and inherits the client's token availability.
-
-There is currently **no built-in preview button**, no separate custom text authoring, no emote-scene editor and no UI control for keeping cooldowns through logout. These are potential future decisions, not overlooked documentation of existing functionality.
-
-Possible accessibility/UX questions include slider readability at small scales, a visible warning that actual emotes may appear in normal chat, filtering unavailable tokens, and avoiding too many repeated noises in group content. None has been verified through an in-game test in this documentation audit.
-
-## Related development history
-
-Flourish Forever is the October 2026 WoW Forever expression of the action-emote idea. Unlike the earlier action-slot hooks, it responds to the player’s **reported successful spellcast** event and lets the player select spellbook abilities and existing client-native emotes in a GUI. Each new ability initially has ROAR selected, but the player may choose other available emote tokens. This is client-token selection rather than creation of arbitrary new emotes, and cast success does not prove a landed hit. See the [source-grounded expressive-addon timeline](EMOTE_FAMILY_HISTORY.md) for related projects and historical boundaries.
+The original 0.3.0–0.3.2 implementation used a roughly 620×520 editor with a simpler spell dropdown and a single shared cooldown per ability. The expanded interface was recovered from an earlier local source ZIP and integrated into the current Forever codebase, preserving compatible stored data and current safety fixes.
