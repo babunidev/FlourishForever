@@ -1,5 +1,13 @@
 # Flourish Forever — recorded design decisions and open alternatives
 
+## 5 November 2026 — urgent hotfix publication decision
+
+After seeing the protected `PerformEmote()` error from a battleground, Babuni explicitly requested that the conservative PvP suppression fix be released promptly rather than remain only in a test branch. The next proposed patch version is `0.4.1-beta`, following the existing `v0.4.0-beta` tag. This permits release preparation, with the actual publishing tag remaining a separate step on the exact verified commit. The known tradeoff is deliberate silence of both native and custom automatic emotes in battlegrounds/arenas; the fix has passed mocked tests but not an actual battleground retest.
+
+## 5 November 2026 — battleground protected-emote bug and temporary guard
+
+After uploading `v0.4.0-beta`, Babuni reported BugGrabber's `ADDON_ACTION_BLOCKED` when entering a battleground. Source code confirmed the call path from cast-success to `DoEmote` and protected `PerformEmote()`. A conservative **development-only** guard now suppresses automatic native and custom flourishes in battlegrounds and arenas, instead of attempting an insecure workaround. This changes automatic PvP behavior, but keeps saved player choices and normal-world emotes. It remains open whether this should be the final PvP design; real battleground confirmation has not yet been reported.
+
 ## 5 November 2026 — approved expanded editor, next beta preparation
 
 Babuni installed the merged development version in the actual Forever client and reported that it works well, then explicitly asked to commit the upgrade and prepare it for players. The enlarged searchable editor, spellbook picker, custom `/e` text, individual token cooldowns and existing safety work therefore move from an earlier test-only proposal to an **approved implemented design**. The release candidate is named **0.4.0-beta** as a significant feature update after `v0.3.2-beta`; it is a proposed publishing version until Babuni authorizes the exact tag and commit.

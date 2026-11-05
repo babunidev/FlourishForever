@@ -2,7 +2,14 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** WoW Forever 1.60.1 / Interface 16001.
 
-## 0.4.0-beta — expanded editor (prepared; not yet published)
+## 0.4.1-beta — PvP protected-emote hotfix (prepared; not yet published)
+
+- Suppress addon-triggered native and custom emotes in battlegrounds (`pvp`) and arenas (`arena`) after a player-reported blocked `PerformEmote()` call on battleground entry.
+- Preserve SavedVariables, enabled abilities, and individual emote cooldown timestamps while PvP suppression is active. Ordinary world and dungeon emotes remain enabled.
+- Add offline mocked checks for both PvP instance types, both emote trigger paths and restoration outside PvP.
+- **Verification:** the fix passed offline Lua/UI mocks and a no-upload packaging dry run on the development branch. The exact release candidate must also pass CI; **no successful live battleground/arena retest has been reported**. Publication is not confirmed until the new tag is pushed and CurseForge processing is verified.
+
+## 0.4.0-beta — expanded editor (tagged; CurseForge Beta upload observed processing)
 
 - **New overview:** a larger 810×676 configuration window with spell icons, configured ability summaries and individual enable/disable switches.
 - **Find abilities faster:** a categorized, spellbook-style picker plus search fields for both available and configured abilities.
@@ -14,7 +21,7 @@
 
 **Verification:** Babuni installed and used the expanded development build in the Forever game client on November 5, 2026 and reported it working well. Offline Lua logic/UI tests and package checks were previously successful; final release-candidate CI is required separately. This confirmation does not establish complete coverage of protected custom chat, failed casts, all profile migrations or addon interactions.
 
-**Release status:** This section is prepared release copy, not evidence of a published `v0.4.0-beta` tag or CurseForge file.
+**Release status:** `v0.4.0-beta` is tagged and a matching CurseForge Beta upload was observed in Processing. Final approval was not independently confirmed.
 
 ## 0.3.2-beta — World of Warcraft: Forever
 

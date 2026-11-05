@@ -31,6 +31,10 @@ Spellbook data is discovered using the Forever client's `C_SpellBook` family, wi
 
 `CreateUI` constructs an 810×676 movable window with four pages: configured-ability overview, spellbook picker, ability editor and custom-text editor. The overview and picker each have a search field; the ability editor has a third search for native/custom emotes, individual cooldown sliders, per-ability chance and enable/disable. The editor preserves custom IDs where possible when saving edited text. The actual UI has been used in-game by Babuni, but exhaustive UI/combat states are not proven.
 
+## Protected PvP instance handling — 0.4.1-beta hotfix
+
+Both native and custom trigger paths resolve the configured spell through `ResolveAbility`. In the prepared patch, that function first calls Forever's `IsInInstance()`. When the instance type is `pvp` (battleground) or `arena`, it returns immediately: no `DoEmote`, no custom chat, and no cooldown consumption. Saved settings are not erased. This is a precaution based on a reported `ADDON_ACTION_BLOCKED` for protected `PerformEmote()`; real in-game verification is still needed.
+
 ## Native and custom trigger paths
 
 ```text

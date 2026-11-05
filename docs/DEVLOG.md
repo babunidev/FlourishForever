@@ -1,5 +1,11 @@
 # Flourish Forever — creative and technical development journal
 
+## 5 November 2026 — protected emotes inside a battleground
+
+After the expanded version went to CurseForge, a battleground exposed a restriction that the ordinary interface tests hadn't caught. The game blocked a native emote from the cast-success handler. Rather than force an insecure call, the development fix keeps Flourish silent in battlegrounds and arenas while preserving the settings and timing for the rest of the game.
+
+My AI assistant traced the error and added the guard and mocked regression coverage. To avoid shipping repeated blocked-action errors, I've chosen to prepare this guard as a prompt `0.4.1-beta` hotfix rather than leave it only on a test branch. The temporary silence in battlegrounds is an explicit tradeoff, and an in-game battleground retest remains outstanding. Publication itself still depends on the release tag and CurseForge file.
+
 ## 5 November 2026 — the larger editor becomes the next version
 
 The recovered Flourish editor is finally back where it belongs. After installing the merged build in Forever, the larger ability overview, searchable selection and finer emote controls worked well enough that I chose to bring them forward for everyone rather than leave them in a private test branch. The work also restores the custom little gestures that make individual characters feel more like themselves.

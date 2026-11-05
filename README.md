@@ -1,9 +1,13 @@
 # FlourishForever
 
-**World of Warcraft: Forever only** · **Interface:** `16001` · **Next version prepared:** `0.4.0-beta` (not yet published)  
-**Last tagged version:** `v0.3.2-beta` · **Creative direction:** Babuni · **Portfolio:** [babuni.dev](https://babuni.dev) · **Historical credit:** Babunigaming
+**World of Warcraft: Forever only** · **Interface:** `16001` · **Prepared hotfix:** `0.4.1-beta` (not yet tagged)  
+**Last confirmed Git tag:** `v0.4.0-beta` · **Creative direction:** Babuni · **Portfolio:** [babuni.dev](https://babuni.dev) · **Historical credit:** Babunigaming
 
 Flourish Forever adds character expression to abilities the player chooses. An ability may trigger a random native WoW emote or a player-written `/e` emote, subject to configurable chance and individual emote cooldowns. It never casts spells on the player's behalf.
+
+## 0.4.1-beta — battleground and arena protected-emote safeguard
+
+A player-reported `ADDON_ACTION_BLOCKED` occurred after entering a Forever battleground: a cast-success `DoEmote` call reached protected `PerformEmote()`. In this prepared hotfix, automatic Flourish emotes are intentionally **silent in battlegrounds and arenas**, detected via `IsInInstance()` (`pvp`/`arena`). The guard covers both native `DoEmote` and player-written `/e`, without deleting settings or consuming cooldowns. It leaves normal world and dungeon behavior unchanged. This is a preventive workaround, not a bypass of protected APIs, and **has not been retested in a live battleground**. This mitigation is being prepared for prompt distribution because the current release can generate protected-action errors; remaining compatibility uncertainty must remain visible. Manual player emotes are not changed.
 
 ## What's new in 0.4.0-beta
 
@@ -19,7 +23,7 @@ The expanded interface recovered from Babuni's earlier local work is now prepare
 
 - **In-game report (November 5, 2026):** Babuni installed and used the expanded development build in WoW Forever and confirmed that it works well. This is a general hands-on confirmation, **not an exhaustive test report** for failed casts, every secure action path, character switching or all other addon combinations.
 - **Automated checks:** GitHub runs Lua syntax and mocked gameplay/UI regressions, static package inventory, and an **upload-disabled** packager ZIP inspection. Tests are not substitutes for the game client.
-- **Publication:** `v0.3.2-beta` was already tagged and a CurseForge Beta upload was observed processing. Final approval and public distribution status of that file were not independently rechecked here. **`0.4.0-beta` is only a prepared candidate** until explicitly approved and tagged.
+- **Publication:** `v0.4.0-beta` was tagged and its CurseForge Beta upload was observed Processing. Final approval was not independently rechecked here. The PvP guard is prepared for `v0.4.1-beta`, not part of the previously tagged `v0.4.0-beta`. A new tag and CurseForge file have not yet been verified.
 - **Target:** Forever `1.60.1` / interface `16001`. No Retail, Classic or other client is supported.
 
 ## Installation and controls

@@ -15,6 +15,10 @@ UseAction = function() end
 CastSpellByID = function() end
 local now = 1
 GetTime = function() return now end
+local currentInstanceType = "none"
+IsInInstance = function()
+    return currentInstanceType ~= "none", currentInstanceType
+end
 DoEmote = function(token) played[#played + 1] = token end
 SendChatMessage = function(message, channel)
     assert(channel == "EMOTE")
@@ -172,6 +176,36 @@ FlourishForeverDB.instances.strike.emotes = "malformed"
 cast(100,1400)
 assert(#played==6 and played[6]=="ROAR","malformed pool recovers")
 
+-- PvP can block the protected PerformEmote action. Suppress both native
+-- cast-success and custom press-time output, preserving cooldown state.
+local nativeCount, customCount = #played, #sent
+FlourishForeverDB.instances.strike.emotes = { ROAR = { cooldown = 0 } }
+for _, instanceType in ipairs({ "pvp", "arena" }) do
+    currentInstanceType = instanceType
+    now = now + 10
+    hooks.UseAction(1)
+    cast(100, now + 0.1)
+    assert(#played == nativeCount and #sent == customCount,
+        "no native or custom emotes in " .. instanceType)
+end
+FlourishForeverDB.instances.strike.emotes = { ["c:1"] = { cooldown = 0 } }
+currentInstanceType = "pvp"
+now = 1500
+hooks.UseAction(1)
+cast(100, 1500.1)
+assert(#sent == customCount, "custom /e suppressed in battleground")
+currentInstanceType = "none"
+now = 1550
+hooks.UseAction(1)
+assert(#sent == customCount + 1, "custom /e resumes outside battleground")
+FlourishForeverDB.instances.strike.emotes = { ROAR = { cooldown = 0 } }
+now = 1551
+hooks.UseAction(1)
+cast(100, 1551.1)
+assert(#played == nativeCount + 1, "native emotes resume outside battleground")
+assert(FlourishForeverDB.instances.strike.enabled,
+    "PvP guard must preserve character ability settings")
+
 -- Current storage module still migrates an existing name-keyed profile.
 local oldProfile = { actionEmotesEnabled = false, instances = {} }
 ROARitFOREVERStorage = nil
@@ -185,4 +219,4 @@ assert(guid == "Player-TEST" and migrated == oldProfile,"old profile migrated")
 assert(FlourishForeverStorage.profiles.Tester == nil,"legacy profile removed after migration")
 assert(FlourishForeverStorage.profiles[guid] == oldProfile,"GUID profile retained")
 
-print("PASS: merged storage migration, spellbook filtering, first-cast, per-emote cooldowns, native/custom triggers")
+print("PASS: storage migration, spellbook, cooldowns, native/custom triggers, PvP emote guard")
