@@ -268,6 +268,13 @@ assert(#played == nativeBefore + 2, "world success behavior restored")
 currentInstanceType = "arena"
 press(1, 1112)
 assert(#played == nativeBefore + 3, "arena also uses PvP press fallback")
+nativeAllowed = false
+press(1, 1114)
+cast(100, 1114.1, "arena-later-event")
+local pvpDiagnostic = FlourishForever_EmoteDiagnostics()
+assert(pvpDiagnostic:find("lastDispatch=native emote API returned false for ROAR", 1, true),
+    "later PvP cast event must not erase the native send refusal")
+nativeAllowed = true
 chatLockdown = true
 press(1, 1113)
 assert(#played == nativeBefore + 3, "PvP press fallback respects true chat lockdown")
