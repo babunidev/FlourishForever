@@ -131,6 +131,7 @@ end
 assert(FlourishForeverDB.instances.strike.emotes.ROAR.cooldown == 47
     and reopenedRoar and reopenedRoar.slider:GetValue() == 47,
     "edited ROAR cooldown survives reopening without assuming row order")
+ui.search:SetText("roar") -- reopening the editor intentionally resets the search
 assert(tokenRows.CHEER and not tokenRows.CHEER:IsShown(),
     "search hides unrelated /hurrah command")
 ui.search:SetText("hurrah")
