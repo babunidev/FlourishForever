@@ -1,5 +1,9 @@
 # Flourish Forever — human–AI collaboration and attribution
 
+## 6 November 2026 — native emote search and PvP observability
+
+Babuni reported a missing Roar search result and no emote activity in a battleground while testing the new selectable trigger system. AI identified and corrected the native-token search omission, removed unnecessary spell-usability gating for press-triggered behavior, added mocked UI/gameplay cases, and implemented a manual `/flourish debug` status report with no player-identifying data. Current battleground restrictions remain under investigation. Tests and packaging status are recorded separately; no successful live PvP test or public distribution is claimed.
+
 ## 6 November 2026 — per-ability trigger design
 
 Babuni supplied the new design: a Triggered by dropdown next to Chance offering Success as the default, Button press and Failure, with battleground/arena Success falling back to Button press rather than producing protected-action errors. AI reviewed the Forever spellcast events and restricted chat behavior, implemented per-ability stored preferences, event filtering, the UI and automated regressions. The native outcome path and press fallback remain pending local in-game verification, and no release was authorized. Custom `/e` requires hardware input and cannot honestly be represented as a guaranteed success/failure event response.

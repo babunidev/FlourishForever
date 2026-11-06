@@ -1,5 +1,13 @@
 # Flourish Forever — creative and technical development journal
 
+## 6 November 2026 — looking for the missing roar
+
+During the first trigger-menu test, searching for Roar failed to find the emote, and the battleground remained completely quiet. Both problems matter for an addon built around expressive play. The search was plainly relying on whichever slash command the client displayed rather than the underlying ROAR token, so the filter now recognizes either name.
+
+The battleground silence required more care. My AI assistant found that an ability-usability check could stop a genuine button press from counting, but Forever's native emote API also has protected states that cannot simply be ignored. Instead of pretending the restrictions were fully understood, we added a small `/flourish debug` report to tell us whether the press hook fired, whether chat was locked down and whether an emote was actually accepted. A simple `/reload` is sufficient for a normal Lua update; restarting the game need not be a requirement.
+
+The search and press-time correction are in a development branch. There is no claimed battleground success and no new public release.
+
 ## 6 November 2026 — choosing when a flourish belongs
 
 After the security fixes, it became clear that moving every native emote to the button press had changed an important part of Flourish's character. A flourish that follows a successful action is different from one that marks an attempt, and a failed spell might deserve an expression of its own.

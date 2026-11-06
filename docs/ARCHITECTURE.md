@@ -4,6 +4,16 @@
 **Latest confirmed Git tag:** `v0.4.3-beta` · **Unreleased work:** `feat/ability-trigger-modes`.  
 **Evidence:** current Lua source, package configuration, mocked test suites and Babuni's November 5, 2026 general in-game confirmation.
 
+## Search and PvP observability (development only)
+
+Search rows store the displayed slash-command label for the UI, but their case-insensitive search index now concatenates the underlying native token with that label. This permits finding `ROAR` even if an alias or localization makes the displayed command different. The saved token remains unchanged.
+
+For `press`, `TryAbilityEmoteFromPress` no longer rejects attempts when `C_Spell.IsSpellUsable` (or its legacy equivalent) reports false. Usability is not a security permission, and the trigger is the player's action attempt rather than spell execution. The existing 0.2-second duplicate-press limit and per-token cooldown remain active.
+
+Session-only `debugState` tracks player-action hook calls, spell-outcome events, attempted emotes, reported API successes/refusals, last numeric spellID and a short reason. `FlourishForever_EmoteDiagnostics()` reads `IsInInstance()`, `InChatMessagingLockdown()`, and `GetAddOnRestrictionState` for `Chat`/`PvPMatch`, returning a concise status line for `/flourish debug`. No background polling, SavedVariables writes, player identifiers or automated output. A native API success boolean confirms only that the call was accepted, not that nearby players saw the emote.
+
+The new diagnostic tool is intended to distinguish an unobserved player-action hook from a game security denial. The presence of a PvP restriction **does not by itself** establish chat lockdown; the two states must be observed separately. Client enforcement of `C_ChatInfo.PerformEmote()` in battlegrounds is unverified.
+
 ## Trigger-mode engine (development only)
 
 `FlourishForever_ActionEmotes.lua` now validates `cfg.trigger` as `success` (default), `press`, or `failure` for each saved ability. The editor dropdown next to Chance updates only that ability's setting. No default is written to a different character's profile.

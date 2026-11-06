@@ -4,6 +4,17 @@
 **Latest confirmed Git tag:** `v0.4.3-beta` · **Current development:** per-ability trigger modes (unreleased, not tagged).  
 **Development:** Expanded UI restored from Babuni's older local archive and committed to `dev/expanded-ui-merge`. Preparation occurs separately; no public release tag was created.
 
+## Search bug and battleground silence — 6 November 2026
+
+- [x] Identify search indexing only a displayed slash-command label, not the canonical native emote token.
+- [x] Index both native token and displayed/localized slash alias, with a mock where ROAR displays as `/rawr`.
+- [x] Remove `IsSpellUsable` gating from the explicit Button press path and Success-to-press PvP fallback; chance/cooldowns still apply.
+- [x] Add `/flourish debug` as a manual, read-only, session-local report of security states, hook counts and emote API responses.
+- [ ] Run exact-commit Lua/UI tests and BigWigs no-upload ZIP dry run after docs changes.
+- [ ] Verify in-game in Forever: search for ROAR and alias, Button press while an ability is unavailable, group and overworld Success, and the same selected ability inside battlegrounds.
+- [ ] Inspect diagnostic output if PvP remains silent, distinguishing a hook not firing, a configured-mode mismatch, actual chat lockdown and native API refusal. Never bypass protected functions.
+- [ ] No public tag or CurseForge upload until the design is verified and separately approved.
+
 ## Per-ability trigger timing — 6 November 2026
 
 - [x] Babuni approved three choices per ability: Success (default), Button press and Failure, via a dropdown beside Chance.

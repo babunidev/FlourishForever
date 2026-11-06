@@ -4,6 +4,13 @@
 **Game:** World of Warcraft **Forever only**, client 1.60.1 / interface 16001. Recheck after each game update.  
 **Current tagged baseline:** `v0.4.3-beta` · **Unreleased feature branch:** `feat/ability-trigger-modes` (`0.4.3-beta-dev`).
 
+## Current development investigation — search and PvP
+
+- The native emote editor search must match both the canonical token (e.g. `ROAR`) and any displayed slash alias, without altering stored emotes or leaking display labels into API calls.
+- Explicit Button press mode and the Success-to-press PvP fallback must not be suppressed solely because `IsSpellUsable` is false. The player pressed the button; chance, emote cooldowns, chat security and duplicate-hook suppression remain separate controls.
+- `/flourish debug` is a manual, read-only report of session counters and the actual Forever chat/PvP restriction state. It does not report player names or GUIDs, generate chat spam, send protected actions or change settings. Use actual in-game observations before making further PvP behavior changes.
+- The prior `0.4.3-beta-dev` battleground test was reported silent, with no confirmed restriction reason. Do not claim this new investigation definitively fixes battlegrounds; actual chat lockdown or the restricted native API may still prohibit output. Public `v0.4.3-beta` remains unchanged.
+
 ## Creative boundaries
 
 Flourish Forever gives a player control over expressive emotes associated with **chosen character abilities**. Never cast an ability for the player, automatically configure every ability, or create unsolicited chat spam. A fresh character starts with no configured abilities; enabling the master switch alone does not trigger emotes.

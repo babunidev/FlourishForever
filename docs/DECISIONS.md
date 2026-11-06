@@ -1,5 +1,13 @@
 # Flourish Forever — recorded design decisions and open alternatives
 
+## 6 November 2026 — searchable native tokens and targeted PvP diagnosis
+
+Babuni reported that searching for Roar in the emote editor no longer found it, and that the new development build produced no Flourish emotes inside a battleground. Babuni also correctly noted that a game restart is usually unnecessary when an addon can be reloaded.
+
+The source review found a definite search weakness: it indexed displayed slash aliases but not canonical native tokens. The editor now indexes both. A second avoidable suppression was `IsSpellUsable` blocking a true press-triggered emote while an ability is on cooldown or otherwise unavailable; Button press is supposed to describe the action attempt, not spell usability.
+
+The remaining PvP silence is not diagnosed by the source alone. Instead of claiming battleground emotes are impossible or loosening protected APIs blindly, a small read-only `/flourish debug` report now exposes the actual chat lockdown, PvP match state, hook counts and send result from in-game conditions. A hard chat restriction is still respected; the user-facing behavior remains unverified until a live test.
+
 ## 6 November 2026 — configurable success, press and failure timing
 
 Babuni explicitly asked to restore success-triggered native emotes as the default and also make Button press and Failure available per ability in a small dropdown beside Chance. For battlegrounds and arenas, the default Success choice should temporarily fall back to Button press to avoid the earlier protected native-emote event. The choice remains saved and is not overwritten during zone changes.

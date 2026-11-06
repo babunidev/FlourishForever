@@ -5,6 +5,16 @@
 
 Flourish Forever links player-selected abilities to native or custom emotes, with per-ability chance, per-emote cooldowns and per-character settings. It does not cast abilities automatically.
 
+## 6 November 2026 — Emote search and battleground diagnostics (unreleased)
+
+A report identified that searching the emote editor for `ROAR` did not reliably find the emote when its displayed alias differed. Search now indexes **both the canonical emote token** (e.g. `ROAR`) **and the displayed slash command** (e.g. `/rawr`), without changing the label or stored choice. A mocked UI regression tests both queries and confirms unrelated entries are hidden.
+
+For the new **Button press** trigger and battleground Success-to-press fallback, an ability's usability check was too restrictive: cooldown, global cooldown and unavailable spells can report unusable although the player really pressed the button. Button press now follows the configured player action hook, while chance and per-emote cooldown continue to limit output.
+
+**Battleground behavior is not yet solved or confirmed.** Native `C_ChatInfo.PerformEmote` is restricted, and chat lockdown may prevent any addon-sent emote even on a hardware press. The development build now provides a read-only `/flourish debug` command showing the actual client instance type, chat-lockdown status, Chat/PvPMatch restriction states, press-hook/outcome counts, emote attempts, accepted/refused API calls and last suppression reason. No player GUID or name is included, the counters are session-only, and no automatic chat logging occurs. If actual chat lockdown is active, Flourish will stay silent rather than bypass the game's protections.
+
+**Testing:** This is an instrumented hypothesis and search correction, not a verified battleground workaround. Run `/flourish debug` after attempting a configured press-triggered ability in a battleground and compare with an overworld test. Addon Lua can normally be reloaded using `/reload` after files are copied; a full game restart is not generally required.
+
 ## Triggered by — per-ability timing (development)
 
 Each ability has a **Triggered by** dropdown beside the **Chance** slider:

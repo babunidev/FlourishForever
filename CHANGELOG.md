@@ -2,6 +2,14 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** WoW Forever 1.60.1 / Interface 16001.
 
+## Unreleased development — search and battleground diagnostics (2026-11-06)
+
+- Fix emote editor search to match canonical native tokens such as `ROAR` as well as displayed slash aliases/localized labels. Add a UI mock verifying search works with a nonmatching alias.
+- Remove `IsSpellUsable` from the press-trigger path: a real player press remains a press even if a spell is temporarily unusable or on cooldown. Preserve existing emote chance, per-token cooldowns and deduplication.
+- Add read-only `/flourish debug` showing instance type, chat lockdown and Chat/PvPMatch state, press/outcome counts, native/custom attempts and whether the emote API returned success. No identifiers, constant polling, persistent logs or chat spam.
+- **Caution:** the user's battleground test reported no emote output with the earlier development build. Actual restriction state and API rejection cause are not yet known. The new diagnostics do not bypass protected functions or guarantee PvP output.
+- Verify with mocked UI/gameplay tests and the no-upload packaging dry run; local Forever battleground and group retesting remain open.
+
 ## Unreleased development — configurable ability trigger modes (2026-11-06)
 
 - Add a per-ability **Triggered by** dropdown next to Chance, with Success (new/default for older saved configurations), Button press and Failure.
