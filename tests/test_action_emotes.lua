@@ -288,6 +288,7 @@ for i, case in ipairs({
     { group = "party", instance = "party" },
     { group = "raid", instance = "raid" },
 }) do
+    local timeBase = 1300 + (i - 1) * 100 -- event order must remain monotonic
     groupMode = case.group
     currentInstanceType = case.instance
     restrictionStates[Enum.AddOnRestrictionType.Map] = 2
@@ -295,15 +296,15 @@ for i, case in ipairs({
     restrictionStates[Enum.AddOnRestrictionType.ChallengeMode] = 2
     cfg.trigger = "success"
     local before = #played
-    cast(100, 1300 + i, "party-" .. i)
+    cast(100, timeBase + 1, "party-" .. i)
     assert(#played == before + 1, "success in group " .. case.group .. "/" .. case.instance)
     cfg.trigger = "press"
     before = #played
-    press(1, 1340 + i)
+    press(1, timeBase + 2)
     assert(#played == before + 1, "button press in group " .. case.group .. "/" .. case.instance)
     cfg.trigger = "failure"
     before = #played
-    fire("UNIT_SPELLCAST_FAILED", 100, 1380 + i, "party-fail-" .. i)
+    fire("UNIT_SPELLCAST_FAILED", 100, timeBase + 3, "party-fail-" .. i)
     assert(#played == before + 1, "failure in group " .. case.group .. "/" .. case.instance)
 end
 for _, kind in ipairs({
@@ -322,7 +323,7 @@ FlourishForeverDB.actionEmotesEnabled = "invalid"
 cfg.trigger = "unknown"
 cfg.chance = 0 / 0
 cfg.emotes = { ROAR = { cooldown = math.huge } }
-cast(100, 1500, "invalid-config")
+cast(100, 1700, "invalid-config")
 assert(FlourishForeverDB.actionEmotesEnabled == false, "invalid master disables safely")
 assert(cfg.trigger == "success", "bad trigger resets to success")
 assert(cfg.chance == 100 and cfg.emotes.ROAR.cooldown == 120, "malformed values clamped")
