@@ -461,7 +461,7 @@ assert(remaining[1]:find("selected=1 emotes", 1, true)
     "manual report identifies the configured 6s cooldown and active timer")
 press(1, 2400.5)
 press(1, 2401)
-press(1, 2405.9)
+press(1, 2405.7) -- leave >0.2s before expiry to avoid hook dedupe
 assert(#played == beforeSix + 1, "6s single-token cooldown blocks repeated presses")
 press(1, 2406)
 assert(#played == beforeSix + 2, "6s single-token cooldown expires")
