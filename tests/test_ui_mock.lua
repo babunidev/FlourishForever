@@ -124,9 +124,13 @@ assert(FlourishForeverDB.instances.strike.emotes.ROAR.cooldown == 47,
     "emote slider writes its own SavedVariables value")
 ui:ShowPage("home")
 ui:ShowPage("editor")
+local reopenedRoar
+for _, row in ipairs(ui.emoteRows) do
+    if row.check and row.check.token == "ROAR" then reopenedRoar = row end
+end
 assert(FlourishForeverDB.instances.strike.emotes.ROAR.cooldown == 47
-    and ui.emoteRows[1].slider:GetValue() == 47,
-    "edited cooldown survives leaving and reopening ability editor")
+    and reopenedRoar and reopenedRoar.slider:GetValue() == 47,
+    "edited ROAR cooldown survives reopening without assuming row order")
 assert(tokenRows.CHEER and not tokenRows.CHEER:IsShown(),
     "search hides unrelated /hurrah command")
 ui.search:SetText("hurrah")
