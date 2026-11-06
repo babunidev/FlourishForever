@@ -117,6 +117,16 @@ for _, row in ipairs(ui.emoteRows) do
 end
 assert(tokenRows.ROAR and tokenRows.ROAR:IsShown(),
     "ROAR token found even though displayed command is /rawr")
+local slider = tokenRows.ROAR.slider
+assert(slider:IsShown(), "selected emote exposes its cooldown slider")
+slider:SetValue(47)
+assert(FlourishForeverDB.instances.strike.emotes.ROAR.cooldown == 47,
+    "emote slider writes its own SavedVariables value")
+ui:ShowPage("home")
+ui:ShowPage("editor")
+assert(FlourishForeverDB.instances.strike.emotes.ROAR.cooldown == 47
+    and ui.emoteRows[1].slider:GetValue() == 47,
+    "edited cooldown survives leaving and reopening ability editor")
 assert(tokenRows.CHEER and not tokenRows.CHEER:IsShown(),
     "search hides unrelated /hurrah command")
 ui.search:SetText("hurrah")
@@ -132,4 +142,4 @@ ui:SaveCustomEmotes()
 assert(#FlourishForeverDB.customEmotes==1,"custom save")
 ui:ShowPage("home")
 assert(ui.homeRows[1]:IsShown(),"home restored")
-print("PASS: UI trigger selector, ROAR/token and localized alias search, picker, custom text")
+print("PASS: UI trigger selection, search, per-emote cooldown slider persistence, picker and custom text")

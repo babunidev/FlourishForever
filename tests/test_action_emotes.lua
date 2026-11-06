@@ -15,6 +15,8 @@ UseAction = function() end
 CastSpellByID = function() end
 local now = 1
 GetTime = function() return now end
+-- Epoch time is stable across UI reloads; GetTime is only process-local.
+GetServerTime = function() return 1730000000 + math.floor(now) end
 local chatLockdown = false
 local restrictionStates = {}
 local nativeAllowed = true
@@ -358,6 +360,89 @@ assert(diag:find("instance=none", 1, true)
     and diag:find("lastSpell=", 1, true)
     and diag:find("lastDispatch=", 1, true),
     "read-only diagnostics expose relevant client states without player identifiers")
+
+-- Focused cooldown regressions: per token, per ability, editable duration,
+-- API-rejection semantics, and surviving a simulated UI reload.
+FlourishForeverDB.actionEmotesEnabled = true
+cfg.enabled, cfg.chance, cfg.trigger = true, 100, "press"
+cfg.emotes = { ROAR = { cooldown = 60 } }
+local first = #played
+press(1, 2000)
+assert(#played == first + 1, "first press must fire")
+assert(type(cfg.emotes.ROAR.lastFiredAt) == "number", "successful native emote must save cooldown timestamp")
+press(1, 2001)
+press(1, 2059)
+assert(#played == first + 1, "60s ROAR timer blocks repeated presses")
+press(1, 2060)
+assert(#played == first + 2, "ROAR becomes ready at exactly 60 seconds")
+
+-- A reload rebuilds Lua locals, but should not allow a 60s emote instantly.
+now = 2061
+assert(loadfile("FlourishForever_ActionEmotes.lua"))()
+press(1, 2061)
+assert(#played == first + 2, "per-emote cooldown survives UI reload")
+cfg.emotes.ROAR.cooldown = 15
+press(1, 2074)
+assert(#played == first + 2, "changing slider cooldown still respects elapsed time")
+press(1, 2075)
+assert(#played == first + 3, "shorter cooldown applies to last successful emote")
+
+cfg.emotes.CHEER = { cooldown = 30 }
+press(1, 2076)
+assert(#played == first + 4 and played[#played] == "CHEER",
+    "another selected token remains eligible during ROAR cooldown")
+press(1, 2077)
+assert(#played == first + 4, "both tokens have independent running cooldowns")
+press(1, 2090)
+assert(#played == first + 5 and played[#played] == "ROAR",
+    "ROAR timer expires separately while CHEER stays blocked")
+cfg.emotes.ROAR.cooldown = 120
+press(1, 2106)
+assert(#played == first + 6 and played[#played] == "CHEER",
+    "CHEER cooldown expires independently")
+
+-- Reusing the ROAR token on another ability must not share its timer.
+local secondCfg = FlourishForeverDB.instances.second
+secondCfg.trigger, secondCfg.chance, secondCfg.enabled = "press", 100, true
+secondCfg.emotes = { ROAR = { cooldown = 120 } }
+press(2, 2107)
+assert(#played == first + 7 and played[#played] == "ROAR",
+    "different abilities have independent ROAR cooldowns")
+press(2, 2108)
+assert(#played == first + 7, "second ability respects its own timer")
+
+cfg.emotes = { ROAR = { cooldown = 0 } }
+press(1, 2110)
+press(1, 2110.3)
+assert(#played == first + 9, "zero-second timer permits repeated genuine presses")
+
+-- Native API failure does not spend or persist a timer.
+cfg.emotes = { ROAR = { cooldown = 120 } }
+nativeAllowed = false
+press(1, 2200)
+assert(cfg.emotes.ROAR.lastFiredAt == nil, "refused emote does not persist a cooldown")
+nativeAllowed = true
+press(1, 2201)
+assert(type(cfg.emotes.ROAR.lastFiredAt) == "number",
+    "successful retry starts its cooldown")
+
+-- Invalid saved timestamps cannot indefinitely silence a token.
+cfg.emotes.ROAR.lastFiredAt = math.huge
+press(1, 2202)
+assert(#played == first + 10, "malformed cooldown timestamp is rejected")
+
+-- Custom text has the same individual cooldown and survives UI reload.
+cfg.emotes = { ["c:1"] = { cooldown = 30 } }
+local beforeCustom = #sent
+press(1, 2300)
+assert(#sent == beforeCustom + 1, "custom emote fires")
+assert(type(cfg.emotes["c:1"].lastFiredAt) == "number", "custom send persists timer")
+now = 2301
+assert(loadfile("FlourishForever_ActionEmotes.lua"))()
+press(1, 2301)
+assert(#sent == beforeCustom + 1, "custom timer survives UI reload")
+press(1, 2330)
+assert(#sent == beforeCustom + 2, "custom cooldown eventually expires")
 
 -- Current storage module still migrates an existing name-keyed profile.
 local oldProfile = { actionEmotesEnabled = false, instances = {} }
