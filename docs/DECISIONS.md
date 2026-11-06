@@ -1,5 +1,14 @@
 # Flourish Forever — recorded design decisions and open alternatives
 
+## 6 November 2026 — configurable success, press and failure timing
+
+Babuni explicitly asked to restore success-triggered native emotes as the default and also make Button press and Failure available per ability in a small dropdown beside Chance. For battlegrounds and arenas, the default Success choice should temporarily fall back to Button press to avoid the earlier protected native-emote event. The choice remains saved and is not overwritten during zone changes.
+
+The implementation on `feat/ability-trigger-modes` registers the documented Forever player cast outcome events, preserves the established chance/cooldown behavior and limits native outcome dispatch to contexts where actual chat and PvP restrictions are not active. Explicit Failure remains a separate choice, not silently converted into press mode.
+
+**Known restriction:** Forever's custom `/e` messages require genuine player hardware input. Sending them on a later success/failure event would conflict with that restriction, so the development implementation limits asynchronous outcomes to native tokens and calls out the limitation in the UI. Whether native success/failure emissions are accepted in all outdoor and combat contexts remains unverified until the local test. This is implementation, not a published version; final release authorization must be separate.
+
+
 ## 5 November 2026 — group-play correction approved for distribution
 
 After installing the test branch, Babuni reported that Flourish seems to work fine again and requested that the correction be made available to other players. The next prepared version is `0.4.3-beta`. The actual change remains narrowly scoped: don't conflate Map, Encounter and ChallengeMode data restrictions with chat restrictions, but retain actual chat lockdown, Chat/PvPMatch restriction checks and battleground/arena suppression.

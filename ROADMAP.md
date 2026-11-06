@@ -1,9 +1,21 @@
 # Flourish Forever — roadmap and verification status
 
 **Creative decision authority:** Babuni · **Game:** WoW Forever 1.60.1 / Interface 16001  
-**Latest confirmed Git tag:** `v0.4.2-beta` · **Prepared group-play update:** `0.4.3-beta` (not tagged yet).  
+**Latest confirmed Git tag:** `v0.4.3-beta` · **Current development:** per-ability trigger modes (unreleased, not tagged).  
 **Development:** Expanded UI restored from Babuni's older local archive and committed to `dev/expanded-ui-merge`. Preparation occurs separately; no public release tag was created.
 
+## Per-ability trigger timing — 6 November 2026
+
+- [x] Babuni approved three choices per ability: Success (default), Button press and Failure, via a dropdown beside Chance.
+- [x] Implement per-ability SavedVariables migration/normalization, separate player cast-success/failure event listeners, duplicate-outcome guards and press-time selection.
+- [x] Implement Success-to-Button-press runtime fallback in battlegrounds/arenas without modifying settings, while keeping actual chat-lockdown suppression.
+- [x] Handle Forever's custom `/e` hardware-only rule by allowing custom text from press mode but never sending it from delayed success/failure events.
+- [x] Add mocked trigger, storage, PvP fallback, party/dungeon/raid and UI dropdown tests.
+- [ ] Exact-commit GitHub Lua/UI CI and real upload-disabled packager ZIP checks must pass.
+- [ ] Verify in the real Forever client: successful cast, failed/quiet failed cast, interruption, action press, selected native and custom text, dropdown persistence and chances/cooldowns.
+- [ ] Verify entering/leaving battlegrounds and arenas, real chat lockdown, and no `ADDON_ACTION_BLOCKED` errors. PvP button-press fallback cannot guarantee emote output under active chat restrictions.
+- [ ] Verify ordinary group/dungeon/raid triggers remain functional.
+- [ ] No new public version is approved or tagged; do not merge or publish before local testing.
 ## Group-play regression — 0.4.3-beta release preparation
 
 - [x] Inspect the `0.4.2-beta` trigger code and identify overbroad `Map`, `Encounter` and `ChallengeMode` restriction-state suppression.

@@ -1,9 +1,34 @@
 # Flourish Forever — technical architecture
 
 **Target:** World of Warcraft Forever 1.60.1, interface 16001.  
-**Latest confirmed Git tag:** `v0.4.2-beta` · **Prepared group-play hotfix:** `0.4.3-beta` (unpublished).  
+**Latest confirmed Git tag:** `v0.4.3-beta` · **Unreleased work:** `feat/ability-trigger-modes`.  
 **Evidence:** current Lua source, package configuration, mocked test suites and Babuni's November 5, 2026 general in-game confirmation.
 
+## Trigger-mode engine (development only)
+
+`FlourishForever_ActionEmotes.lua` now validates `cfg.trigger` as `success` (default), `press`, or `failure` for each saved ability. The editor dropdown next to Chance updates only that ability's setting. No default is written to a different character's profile.
+
+```text
+Player action hook:
+  configured mode=press -> native or custom emote immediately
+  mode=success + battleground/arena -> temporary press fallback (if chat allowed)
+  other modes -> no emote on press
+
+Player UNIT_SPELLCAST_SUCCEEDED:
+  mode=success + no PvP/chat restriction -> native eligible token only
+
+Player UNIT_SPELLCAST_FAILED / FAILED_QUIET / INTERRUPTED:
+  mode=failure + no PvP/chat restriction -> native eligible token only
+
+No outcome callback may send custom /e chat (Forever requires hardware input).
+Both paths retain per-ability chance and individual token cooldown.
+```
+
+PvP fallback is derived from `IsInInstance()` (`pvp`/`arena`) every time; it does not persist. Player-action dispatch checks actual `InChatMessagingLockdown()` and `Chat` restrictions; asynchronous outcomes additionally suppress PvP matches. `Map`/`Encounter`/`ChallengeMode` addon data restrictions do not block party/dungeon/raid expression. Restricted native APIs can still fail; this branch has no live game-client compatibility proof yet.
+
+Outcome reports are deduplicated by non-secret cast GUID when available, falling back to a short same-spell/event window. Failure includes interruptions and quiet failures. Not every invalid button attempt creates a cast-failure event. Successful cast is not a confirmed hit.
+
+The popup dropdown is a lightweight local frame with three choices, not a new dependency. It is contained inside the existing four-page UI; SaveVariables and runtime package layout remain unchanged.
 ## Runtime files and load order
 
 ```text

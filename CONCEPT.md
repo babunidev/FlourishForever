@@ -2,7 +2,7 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev.  
 **Platform:** World of Warcraft: Forever, TOC interface 16001 (expanded build tested in-game on November 5, 2026; specific edge cases remain open).  
-**Latest confirmed Git tag:** v0.4.1-beta · **Prepared patch:** 0.4.2-beta (awaiting tag).
+**Latest confirmed Git tag:** v0.4.3-beta · **New approved direction:** per-ability trigger timing, development only.
 
 ## A flourish of personality at the moment of action
 
@@ -12,6 +12,13 @@ The creative requirement is choice. The player decides *which* abilities deserve
 
 The October 22 creative discussion described the idea in terms of **automatic random emotes for selected abilities**. The updated implementation extends that principle with a searchable, categorized spellbook interface, a master switch, a curated spell list, per-ability chance, and independent cooldowns for each selected emote. The portfolio record credits Babuni's human direction without retroactively assigning its conception to an assistant.
 
+## Timing belongs to the player
+
+The original desired behavior remains the default: a flourish follows a **successful cast**, not merely a button press. Babuni also approved Button press and Failure as explicit per-ability timing choices beside the Chance control. This lets a Warrior's shout feel different from a spell that fizzles or an impatient gesture that comes before the action.
+
+Success uses the player's own cast-success report; Failure uses failed or interrupted cast events; Button press uses the player-action hook. A battleground/arena temporarily switches the default Success mode to Button press to avoid the previously observed protected native-emote callback, provided chat is not locked down. It never changes the saved preference.
+
+Forever's restrictions differ for native emotes and custom chat. Player-authored `/e` text requires direct input and cannot be promised on a later success/failure event. The implementation must say so in the editor rather than silently breaking protected-chat rules. The chosen emote pool, chance, cooldown, character identity and user agency remain unchanged.
 ## Variation without noise
 
 An emote on every cast may become repetitive or irritating. The design gives each ability its own **0–100% probability** while each selected emote has its own **0–120-second cooldown**. A dramatic gesture can remain rare even when another gesture is eligible for that same ability.

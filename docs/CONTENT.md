@@ -1,7 +1,7 @@
 # Flourish Forever — emote content, character settings and assets
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** World of Warcraft Forever / interface 16001.  
-**Public baseline:** v0.4.1-beta · **Prepared patch:** 0.4.2-beta. The new emote path was tested in general gameplay, not specifically confirmed in a battleground.
+**Public baseline:** v0.4.3-beta · **Development:** Success/press/failure choice per ability, pending in-game verification.
 
 ## Content sources
 
@@ -14,6 +14,11 @@
 | Per-emote cooldowns | Player configuration | Emote selection records |
 | Actual last-fired times | Session `GetTime()` | **Not saved** across reload/relog |
 
+## Per-ability trigger preference (development)
+
+Each configured ability may include `trigger = "success"`, `"press"`, or `"failure"`. Older and malformed records normalize to `"success"` without deleting saved emote preferences. The value is per ability and per character, rather than global. Battleground/arena fallback is computed at runtime and is never saved.
+
+Native tokens can be considered on success/failure events, but custom `c:id` /e text is only sent during a genuine hardware press. As a result, selecting only custom emotes with Success or Failure yields no automatic message in those contexts. The ability editor communicates this limitation; it is not evidence of a broken SavedVariables migration.
 ## Storage and defaults
 
 The TOC declares `SavedVariables: FlourishForeverStorage`. Profiles are isolated by `UnitGUID("player")`, and configured abilities are keyed by normalized spell name. The base data shape is:

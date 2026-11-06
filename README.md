@@ -1,10 +1,23 @@
 # FlourishForever
 
-**WoW Forever only** · **Interface:** `16001` · **Next version prepared:** `0.4.3-beta` (not yet published)  
-**Latest confirmed Git tag:** `v0.4.2-beta` · **Creative:** Babuni · **Portfolio:** [babuni.dev](https://babuni.dev)
+**WoW Forever only** · **Interface:** `16001` · **Unreleased development:** `0.4.3-beta-dev` trigger-selection branch  
+**Latest confirmed Git tag:** `v0.4.3-beta` · **Creative:** Babuni · **Portfolio:** [babuni.dev](https://babuni.dev)
 
 Flourish Forever links player-selected abilities to native or custom emotes, with per-ability chance, per-emote cooldowns and per-character settings. It does not cast abilities automatically.
 
+## Triggered by — per-ability timing (development)
+
+Each ability has a **Triggered by** dropdown beside the **Chance** slider:
+
+- **Success** (default, including existing saved abilities): attempts a native emote on the player's `UNIT_SPELLCAST_SUCCEEDED` event. A resisted hit can still be a successful cast.
+- **Button press:** attempts the emote during a player button/action hook, without waiting for a cast result.
+- **Failure:** attempts a native emote on player `UNIT_SPELLCAST_FAILED`, `UNIT_SPELLCAST_FAILED_QUIET` or `UNIT_SPELLCAST_INTERRUPTED`. Not every unusable button attempt yields a cast-failure event.
+
+**Battleground/arena safety:** an ability saved with Success temporarily uses Button press while `IsInInstance()` reports `pvp` or `arena`. The saved selection never changes. If Forever reports actual chat lockdown, no emote is sent. Explicit Failure remains Failure, but asynchronous failures are suppressed during PvP restrictions. A PvPMatch addon restriction by itself is not treated as chat lockdown for genuine player press; whether Forever permits a native emote in every PvP state must be tested in-game.
+
+**Custom `/e` limitation:** Forever requires a hardware event for custom chat emotes. Custom text is therefore available with **Button press** (also the automatic PvP fallback), but cannot be emitted from the asynchronous Success or Failure event. For outcome modes, the engine considers only selected native tokens, leaving custom selection and cooldown preferences intact. No delayed chat retry or protected-action bypass is attempted.
+
+The dropdown is character-specific per ability and does not change chance, cooldowns, emote lists or the recovered editor. It is **implemented for local testing only**; neither new public tag nor game-client verification exists yet.
 ## Group-play emotes restored — 0.4.3-beta
 
 A player report after `v0.4.2-beta` found that Flourish was silent while grouped. Review found an overly broad restriction check: the addon treated `Map`, `Encounter` and `ChallengeMode` *addon data restrictions* as a blanket prohibition on player-triggered emotes. The 0.4.3-beta candidate allows emotes in outdoor parties, party dungeons and raids while those unrelated restriction types are active.

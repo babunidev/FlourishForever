@@ -1,5 +1,14 @@
 # Flourish Forever — creative and technical development journal
 
+## 6 November 2026 — choosing when a flourish belongs
+
+After the security fixes, it became clear that moving every native emote to the button press had changed an important part of Flourish's character. A flourish that follows a successful action is different from one that marks an attempt, and a failed spell might deserve an expression of its own.
+
+The new design gives each ability a small Triggered by menu beside Chance: Success, Button press, or Failure. Success remains my default, while battlegrounds temporarily use a press-triggered fallback when the client permits chat. My AI assistant has implemented the state handling and tests on a separate development branch. Custom `/e` chat has stricter hardware restrictions and cannot be sent from the later outcome events; the interface now explains that limit.
+
+There is no new public version yet. The Forever client still needs to confirm that success and failure events permit native emotes without protected-action errors, and the battleground fallback must be tested before release.
+
+
 ## 5 November 2026 — the group fix is ready for everyone
 
 After trying the revised build, Flourish seems to behave properly in groups again. That matters more than a small interface improvement: the point of these emotes is to give the character some presence around other players, including those sharing an adventure.

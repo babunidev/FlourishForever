@@ -1,5 +1,10 @@
 # Flourish Forever — human–AI collaboration and attribution
 
+## 6 November 2026 — per-ability trigger design
+
+Babuni supplied the new design: a Triggered by dropdown next to Chance offering Success as the default, Button press and Failure, with battleground/arena Success falling back to Button press rather than producing protected-action errors. AI reviewed the Forever spellcast events and restricted chat behavior, implemented per-ability stored preferences, event filtering, the UI and automated regressions. The native outcome path and press fallback remain pending local in-game verification, and no release was authorized. Custom `/e` requires hardware input and cannot honestly be represented as a guaranteed success/failure event response.
+
+
 ## 5 November 2026 — group-play follow-up and release preparation
 
 Babuni reported that the tested group-emote correction now seems to work fine and directed publication for all players. AI updated the `0.4.3-beta` manifest, public notes, project decisions, verification roadmap and package test. The user's confirmation is general in-game feedback rather than proof of every raid, dungeon and combat restriction case. No publication is claimed until an approved tag is pushed and the resulting CurseForge file is verified.

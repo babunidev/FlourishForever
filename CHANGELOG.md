@@ -2,6 +2,14 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** WoW Forever 1.60.1 / Interface 16001.
 
+## Unreleased development — configurable ability trigger modes (2026-11-06)
+
+- Add a per-ability **Triggered by** dropdown next to Chance, with Success (new/default for older saved configurations), Button press and Failure.
+- Listen to `UNIT_SPELLCAST_SUCCEEDED`, `UNIT_SPELLCAST_FAILED`, `UNIT_SPELLCAST_FAILED_QUIET` and `UNIT_SPELLCAST_INTERRUPTED` for the player; deduplicate duplicate reports per cast where possible.
+- Temporarily resolve a saved Success trigger to Button press in battlegrounds/arenas without writing the fallback into SavedVariables. Keep genuine chat lockdown restrictions and suppress delayed native emotes during PvP restrictions.
+- Respect Forever's custom `/e` hardware-input restriction: outcome events send **native tokens only**, while custom `/e` stays on hardware press. No silent fallback for explicitly selected Failure.
+- Preserve existing character profiles, emote pools, independent chance/cooldowns and ordinary group/dungeon/raid behavior. Add mocked UI and gameplay coverage.
+- **Verification status:** code implemented on the `feat/ability-trigger-modes` development branch, pending exact-commit automated checks and local WoW Forever testing. No release tag or CurseForge upload.
 ## 0.4.3-beta — restore group-play emotes (prepared; not yet published)
 
 - Stop treating `Map`, `Encounter` and `ChallengeMode` addon data-restriction states as blanket emote bans. Normal outdoor parties, dungeons and raids can attempt native and custom emotes through existing player-action hooks.

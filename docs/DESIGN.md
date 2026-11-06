@@ -1,7 +1,7 @@
 # Flourish Forever — visual and interaction design
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** Forever interface 16001.  
-**Current public tag:** v0.4.1-beta · **Prepared patch:** 0.4.2-beta. The earlier 0.3.2-beta used a smaller 620×520 layout.
+**Current public tag:** v0.4.3-beta · **New development:** per-ability Triggered by selector. The earlier 0.3.2-beta used a smaller 620×520 layout.
 
 ## Expanded configuration window
 
@@ -22,6 +22,13 @@ The character-wide switch can silence all configured flourishes; each ability ca
 - Each selected emote has its own cooldown, rather than forcing one shared delay on an entire ability.
 - Public 0.4.1-beta native emotes use cast-success, while custom `/e` text runs on a player action. The 0.4.2-beta candidate attempts both on the press to avoid protected delayed calls; this may emote on failed casts. Babuni reported no noticeable difference during general in-game use.
 
+## Ability trigger control — development
+
+Beside the Chance slider on each ability's editor page is a compact **Triggered by** dropdown with three choices: Success, Button press, Failure. Its selected value persists for this character's selected ability and defaults to Success for existing as well as newly added abilities. The dropdown has no effect on the saved chance or cooldown choices. In battlegrounds/arenas, a saved Success choice temporarily uses Button press when chat is permitted; the selector still displays the saved Success value.
+
+A short inline description states that **custom /e requires button press** and that outcome-based triggers are native-only. This avoids suggesting an impossible automatic custom-chat action under Forever's hardware input rule. The option list is built inside the editor and does not add external UI dependencies.
+
+The new control has mocked UI checks but has not been visually or behaviorally verified in the game client.
 ## Verification and accessibility
 
 Babuni confirmed the installed expanded development build works well in-game on November 5, 2026. Automated UI mocks passed, but this does not establish thorough testing of every button, UI scale, screen-reader/keyboard behavior, macro or protected custom chat condition. Those remain explicit release follow-ups.
