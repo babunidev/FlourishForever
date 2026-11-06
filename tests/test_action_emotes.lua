@@ -419,16 +419,16 @@ assert(#played == first + 9, "zero-second timer permits repeated genuine presses
 -- Native API failure does not spend or persist a timer.
 cfg.emotes = { ROAR = { cooldown = 120 } }
 nativeAllowed = false
-press(1, 2200)
+press(1, 2240)
 assert(cfg.emotes.ROAR.lastFiredAt == nil, "refused emote does not persist a cooldown")
 nativeAllowed = true
-press(1, 2201)
+press(1, 2241)
 assert(type(cfg.emotes.ROAR.lastFiredAt) == "number",
     "successful retry starts its cooldown")
 
 -- Invalid saved timestamps cannot indefinitely silence a token.
 cfg.emotes.ROAR.lastFiredAt = math.huge
-press(1, 2202)
+press(1, 2242)
 assert(#played == first + 11, "malformed cooldown timestamp is rejected")
 
 -- Custom text has the same individual cooldown and survives UI reload.
