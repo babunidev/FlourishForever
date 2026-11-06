@@ -85,12 +85,20 @@ _G.EMOTE2_TOKEN = "CHEER"
 assert(loadfile("FlourishForever_ActionEmotes.lua"))()
 assert(#frames == 1)
 local frame=frames[1]
-assert(not frame.events.UNIT_SPELLCAST_SUCCEEDED and frame.events.SPELLS_CHANGED,
-    "do not listen for delayed cast-success emotes")
+for _, name in ipairs({
+    "SPELLS_CHANGED", "UNIT_SPELLCAST_SUCCEEDED",
+    "UNIT_SPELLCAST_FAILED", "UNIT_SPELLCAST_FAILED_QUIET",
+    "UNIT_SPELLCAST_INTERRUPTED",
+}) do
+    assert(frame.events[name], "register " .. name)
+end
 local event=frame.scripts.OnEvent
-local function cast(id,t,unit)
-    now=t
-    event(frame,"UNIT_SPELLCAST_SUCCEEDED",unit or "player","cast-id",id)
+local function fire(name, id, t, guid, unit)
+    now = t
+    event(frame, name, unit or "player", guid or ("cast-" .. tostring(t)), id)
+end
+local function cast(id, t, guid, unit)
+    fire("UNIT_SPELLCAST_SUCCEEDED", id, t, guid, unit)
 end
 local function upvalue(fn, wanted)
     for i=1,100 do
@@ -121,179 +129,206 @@ end
 columns=collect()
 assert(#columns==1 and #columns[1].abilities==1 and columns[1].abilities[1].spellID==100,"legacy selection")
 
--- No automatic native emotes from delayed events: the old crash path is gone.
+-- Each ability's default is success, including old SavedVariables records.
 local function press(slot, t)
     now = t
     hooks.UseAction(slot)
 end
-assert(type(hooks.UseAction) == "function", "player action hook registered")
-cast(100, 1)
-assert(#played == 0, "delayed cast event never performs a protected emote")
+assert(type(hooks.UseAction) == "function", "hardware press hook registered")
 press(1, 1)
-assert(#played == 1 and played[1] == "ROAR", "first native emote on player press")
-assert(type(FlourishForeverDB.instances.strike.emotes.ROAR) == "table", "boolean migrated")
-assert(FlourishForeverDB.instances.strike.emotes.ROAR.cooldown == 120, "legacy cooldown migrated")
-local settings = FlourishForeverDB.instances.strike.emotes
-local savedEntry = settings.ROAR
-press(1, 2)
-assert(settings == FlourishForeverDB.instances.strike.emotes
-    and settings.ROAR == savedEntry, "normal presses do not rebuild emote selection")
-assert(#played == 1, "independent native token cooldown")
-press(2, 2)
-assert(#played == 2 and played[2] == "CHEER", "second ability independent")
-press(1, 120)
+assert(#played == 0, "default success must not fire on press")
+cast(100, 1.1, "cast-success-a")
+assert(#played == 1 and played[1] == "ROAR", "first successful cast emotes")
+assert(FlourishForeverDB.instances.strike.trigger == "success", "old saved ability defaults to success")
+assert(type(FlourishForeverDB.instances.strike.emotes.ROAR) == "table", "boolean emote migration")
+assert(FlourishForeverDB.instances.strike.emotes.ROAR.cooldown == 120, "old 120s cooldown migrated")
+
+local savedEmotes = FlourishForeverDB.instances.strike.emotes
+local savedEntry = savedEmotes.ROAR
+cast(100, 1.2, "cast-success-a")
+cast(100, 2, "cast-success-b")
+assert(#played == 1, "duplicate event and per-token cooldown")
+assert(savedEmotes == FlourishForeverDB.instances.strike.emotes and savedEntry == savedEmotes.ROAR,
+    "normal casts preserve emote tables")
+cast(200, 2, "second")
+assert(#played == 2 and played[2] == "CHEER", "independent configured ability")
+cast(100, 120, "cast-success-c")
 assert(#played == 2, "cooldown not expired")
-press(1, 121)
-assert(#played == 3, "cooldown expired")
-cast(100, 122)
-assert(#played == 3, "no asynchronous native fallback")
+cast(100, 121.1, "cast-success-d")
+assert(#played == 3, "native emote after cooldown")
+fire("UNIT_SPELLCAST_FAILED", 100, 122, "failed-a")
+assert(#played == 3, "success mode ignores failed casts")
+cast(100, 123, "foreign", "target")
+assert(#played == 3, "other units ignored")
 
--- Chance failures and native API rejection must not consume emote cooldown.
-FlourishForeverDB.instances.strike.emotes.ROAR.cooldown = 0
-FlourishForeverDB.instances.strike.chance = 0
+-- Button-press mode is selectable independently for each ability.
+local cfg = FlourishForeverDB.instances.strike
+cfg.emotes = { ROAR = { cooldown = 0 } }
+cfg.trigger = "press"
 press(1, 200)
-assert(#played == 3, "zero chance silent")
-FlourishForeverDB.instances.strike.chance = 100
-nativeAllowed = false
+assert(#played == 4, "button-press mode fires immediately")
+cast(100, 200.1, "cast-press")
+assert(#played == 4, "button-press mode ignores cast success")
+press(1, 200.05)
+assert(#played == 4, "duplicate hook press suppressed")
 press(1, 201)
-assert(#played == 3, "rejected native emote silent")
-nativeAllowed = true
-press(1, 202)
-assert(#played == 4, "rejected call did not consume token cooldown")
+assert(#played == 5, "next genuine button press fires")
 
-FlourishForeverDB.instances.strike.emotes = {}
+-- Failure handles normal/quiet failures and interrupts, not success or presses.
+cfg.trigger = "failure"
 press(1, 300)
-assert(#played == 4, "intentional empty pool")
-FlourishForeverDB.instances.strike.cooldown = 0 -- recovery inherits the saved ability-level default
-FlourishForeverDB.instances.strike.emotes = "corrupt"
-press(1, 301)
-assert(#played == 5 and played[5] == "ROAR", "corrupt pool restored")
+cast(100, 300.1, "success-while-failure")
+assert(#played == 5, "failure mode ignores press and success")
+fire("UNIT_SPELLCAST_FAILED", 100, 301, "fail-one")
+assert(#played == 6, "failed cast triggers native emote")
+fire("UNIT_SPELLCAST_INTERRUPTED", 100, 301.01, "fail-one")
+assert(#played == 6, "same cast GUID cannot fire twice")
+fire("UNIT_SPELLCAST_FAILED_QUIET", 100, 302, "fail-two")
+assert(#played == 7, "quiet failed cast triggers")
+fire("UNIT_SPELLCAST_INTERRUPTED", 100, 303, "fail-three")
+assert(#played == 8, "interrupted cast triggers")
+fire("UNIT_SPELLCAST_FAILED", 100, 303.1, "fail-three")
+assert(#played == 8, "duplicate event ignored")
+fire("UNIT_SPELLCAST_FAILED", 100, 304, "other-unit", "target")
+assert(#played == 8, "foreign failures ignored")
 
--- Invalid settings are bounded, and unknown records remain recoverable.
-FlourishForeverDB.instances[5] = { emotes = {} }
-FlourishForeverDB.instances.corrupt = "invalid"
-FlourishForeverDB.actionEmotesEnabled = "invalid"
-FlourishForeverDB.instances.strike.chance = 0 / 0
-FlourishForeverDB.instances.strike.emotes.ROAR.cooldown = math.huge
-press(1, 400)
-assert(FlourishForeverDB.actionEmotesEnabled == false, "malformed master safely disabled")
-assert(FlourishForeverDB.instances.strike.chance == 100, "NaN chance reset")
-assert(FlourishForeverDB.instances.strike.emotes.ROAR.cooldown == 120, "infinite cooldown clamped")
-assert(FlourishForeverDB.instances.corrupt == "invalid" and FlourishForeverDB.instances[5],
-    "unrecognized saved entries kept")
-assert(select(2, FlourishForever_ActionStatus()) == 2, "status excludes invalid configs")
-assert(#played == 5, "malformed master remains silent")
+-- Failed native API send does not consume cooldown, and chance zero is silent.
+cfg.trigger = "success"
+cfg.chance = 0
+cast(100, 400, "chance-zero")
+assert(#played == 8, "zero chance blocks success")
+cfg.chance = 100
+cfg.emotes.ROAR.cooldown = 120
+nativeAllowed = false
+cast(100, 401, "blocked-native")
+assert(#played == 8, "failed native API response silent")
+nativeAllowed = true
+cast(100, 402, "allowed-native")
+assert(#played == 9, "failed API response did not consume cooldown")
 
--- Custom /e is also pressed directly, never sent from delayed event.
-FlourishForeverDB.actionEmotesEnabled = true
+cfg.emotes = {}
+cast(100, 550, "empty-pool")
+assert(#played == 9, "intentionally empty pool silent")
+cfg.cooldown = 0
+cfg.emotes = "corrupt"
+cast(100, 551, "restored-pool")
+assert(#played == 10, "corrupt pool recovered")
+
+-- Custom /e requires hardware input. Do not send it asynchronously on success or failure.
 FlourishForeverDB.customEmotes = { { id = "1", text = "shakes her head" } }
 FlourishForeverDB.customEmoteSeq = 1
-FlourishForeverDB.instances.strike.emotes = { ["c:1"] = { cooldown = 30 } }
-FlourishForeverDB.instances.strike.chance = 100
+cfg.emotes = { ["c:1"] = { cooldown = 30 } }
+cfg.trigger = "success"
 press(1, 1000)
-assert(#sent == 1 and sent[1] == "shakes her head", "custom emote on press")
-cast(100, 1000.1)
-assert(#played == 5, "delayed event silent after custom emote")
-press(1, 1001)
-assert(#sent == 1, "custom token cooldown")
-press(1, 1031)
-assert(#sent == 2, "custom token cooldown expiry")
+cast(100, 1000.1, "custom-success")
+assert(#sent == 0, "custom chat never sent from success event")
+cfg.trigger = "failure"
+fire("UNIT_SPELLCAST_FAILED", 100, 1001, "custom-failure")
+assert(#sent == 0, "custom chat never sent from failed event")
+cfg.trigger = "press"
+press(1, 1002)
+assert(#sent == 1 and sent[1] == "shakes her head", "custom /e on press")
+press(1, 1003)
+assert(#sent == 1, "custom per-token cooldown")
+press(1, 1032)
+assert(#sent == 2, "custom cooldown expires")
 
--- Native emote now fires on a genuine action, not the subsequent cast.
-FlourishForeverDB.instances.strike.emotes = { ROAR = { cooldown = 0 } }
+-- Success mode filters custom tokens rather than randomly selecting silence.
+cfg.trigger = "success"
+cfg.emotes = { ROAR = { cooldown = 0 }, ["c:1"] = { cooldown = 0 } }
+local sentBefore, nativeBefore = #sent, #played
+cast(100, 1050, "mixed-native")
+assert(#played == nativeBefore + 1 and #sent == sentBefore,
+    "success mode selects native token only")
+
+-- Battleground Success is resolved to Button press only at runtime; it does not
+-- modify SavedVariables. A PvP match restriction alone is not a chat lockdown.
+cfg.emotes = { ROAR = { cooldown = 0 } }
+currentInstanceType = "pvp"
+restrictionStates[Enum.AddOnRestrictionType.PvPMatch] = 2
+nativeBefore = #played
 press(1, 1100)
-assert(#played == 6, "native performed synchronously from hardware press")
-cast(100, 1100.1)
-assert(#played == 6, "successful cast does not duplicate emote")
-press(1, 1100.05)
-assert(#played == 6, "rapid duplicate hardware hook suppressed")
-
--- PvP silence works even when IsInInstance does not yet say pvp.
-local nativeCount, customCount = #played, #sent
-for _, instanceType in ipairs({ "pvp", "arena" }) do
-    currentInstanceType = instanceType
-    press(1, 1200)
-    cast(100, 1200.1)
-    assert(#played == nativeCount and #sent == customCount,
-        "native and custom silent in " .. instanceType)
-end
+assert(#played == nativeBefore + 1, "PvP success fallback uses hardware press")
+cast(100, 1100.1, "pvp-success")
+assert(#played == nativeBefore + 1, "PvP success never runs delayed emote")
+assert(cfg.trigger == "success", "PvP fallback must not overwrite saved mode")
+cfg.trigger = "failure"
+press(1, 1101)
+fire("UNIT_SPELLCAST_FAILED", 100, 1101.1, "pvp-failure")
+assert(#played == nativeBefore + 1, "explicit failure remains distinct and safely suppressed")
+cfg.trigger = "success"
 currentInstanceType = "none"
-restrictionStates[Enum.AddOnRestrictionType.PvPMatch] = 1 -- Activating
-press(1, 1201)
-assert(#played == nativeCount, "PvP restriction blocks during transition")
-restrictionStates[Enum.AddOnRestrictionType.PvPMatch] = 2 -- Active
-press(1, 1202)
-assert(#played == nativeCount, "PvP restriction blocks even if instance type is none")
 restrictionStates[Enum.AddOnRestrictionType.PvPMatch] = 0
+press(1, 1110)
+assert(#played == nativeBefore + 1, "world success mode no press emote")
+cast(100, 1110.1, "back-world")
+assert(#played == nativeBefore + 2, "world success behavior restored")
+currentInstanceType = "arena"
+press(1, 1112)
+assert(#played == nativeBefore + 3, "arena also uses PvP press fallback")
+currentInstanceType = "none"
 
+-- Any true chat restriction overrides both native and custom press dispatch.
 chatLockdown = true
-press(1, 1203)
-assert(#played == nativeCount, "chat lockdown blocks native emote")
-FlourishForeverDB.instances.strike.emotes = { ["c:1"] = { cooldown = 0 } }
-press(1, 1204)
-assert(#sent == customCount, "chat lockdown blocks custom /e")
+cfg.trigger = "press"
+nativeBefore = #played
+press(1, 1200)
+assert(#played == nativeBefore, "hardware press blocked under actual chat lockdown")
 chatLockdown = false
-restrictionStates[Enum.AddOnRestrictionType.Chat] = 2
-press(1, 1205)
-assert(#sent == customCount, "chat restriction state blocks custom /e")
+restrictionStates[Enum.AddOnRestrictionType.Chat] = 1
+press(1, 1201)
+assert(#played == nativeBefore, "activating chat restriction blocks press")
+cast(100, 1201.1, "chat-event")
+assert(#played == nativeBefore, "chat restriction blocks event")
 restrictionStates[Enum.AddOnRestrictionType.Chat] = 0
 
-press(1, 1210)
-assert(#sent == customCount + 1, "custom /e resumes after restrictions")
-FlourishForeverDB.instances.strike.emotes = { ROAR = { cooldown = 0 } }
-press(1, 1211)
-assert(#played == nativeCount + 1, "native emote resumes outside restrictions")
-assert(FlourishForeverDB.instances.strike.enabled, "temporary restriction preserves settings")
-
--- Group membership is not a chat restriction. Normal parties/raids may have
--- Map/Encounter/ChallengeMode addon data restrictions without chat lockdown.
--- Neither native gestures nor custom /e should be suppressed solely by them.
-local groupedCases = {
+-- Ordinary parties, dungeons and raids remain supported with addon DATA lockdown.
+for i, case in ipairs({
     { group = "party", instance = "none" },
     { group = "party", instance = "party" },
     { group = "raid", instance = "raid" },
-}
-for i, case in ipairs(groupedCases) do
+}) do
     groupMode = case.group
     currentInstanceType = case.instance
-    assert(IsInGroup(), "test actually models group membership")
     restrictionStates[Enum.AddOnRestrictionType.Map] = 2
     restrictionStates[Enum.AddOnRestrictionType.Encounter] = 2
     restrictionStates[Enum.AddOnRestrictionType.ChallengeMode] = 2
-
-    FlourishForeverDB.instances.strike.emotes = { ROAR = { cooldown = 0 } }
-    local beforeNative = #played
-    press(1, 1300 + 10 * i)
-    assert(#played == beforeNative + 1, "native emote in " .. case.group .. "/" .. case.instance)
-
-    FlourishForeverDB.instances.strike.emotes = { ["c:1"] = { cooldown = 0 } }
-    local beforeCustom = #sent
-    press(1, 1301 + 10 * i)
-    assert(#sent == beforeCustom + 1, "custom emote in " .. case.group .. "/" .. case.instance)
+    cfg.trigger = "success"
+    local before = #played
+    cast(100, 1300 + i, "party-" .. i)
+    assert(#played == before + 1, "success in group " .. case.group .. "/" .. case.instance)
+    cfg.trigger = "press"
+    before = #played
+    press(1, 1340 + i)
+    assert(#played == before + 1, "button press in group " .. case.group .. "/" .. case.instance)
+    cfg.trigger = "failure"
+    before = #played
+    fire("UNIT_SPELLCAST_FAILED", 100, 1380 + i, "party-fail-" .. i)
+    assert(#played == before + 1, "failure in group " .. case.group .. "/" .. case.instance)
 end
 for _, kind in ipairs({
-    Enum.AddOnRestrictionType.Map,
-    Enum.AddOnRestrictionType.Encounter,
+    Enum.AddOnRestrictionType.Map, Enum.AddOnRestrictionType.Encounter,
     Enum.AddOnRestrictionType.ChallengeMode,
 }) do
     restrictionStates[kind] = 0
 end
-
--- Even inside an ordinary party instance, actual chat lockdown must still
--- win over the permissive group/encounter data restriction handling.
-currentInstanceType = "party"
-chatLockdown = true
-FlourishForeverDB.instances.strike.emotes = { ROAR = { cooldown = 0 } }
-local beforeNative = #played
-press(1, 1410)
-assert(#played == beforeNative, "party instance honors actual chat lockdown")
-chatLockdown = false
-restrictionStates[Enum.AddOnRestrictionType.Chat] = 1
-press(1, 1411)
-assert(#played == beforeNative, "party instance honors activating chat restrictions")
-restrictionStates[Enum.AddOnRestrictionType.Chat] = 0
 currentInstanceType = "none"
 groupMode = "solo"
+
+-- Invalid values normalize to Success without altering unrelated saved records.
+FlourishForeverDB.instances[5] = { emotes = {} }
+FlourishForeverDB.instances.corrupt = "invalid"
+FlourishForeverDB.actionEmotesEnabled = "invalid"
+cfg.trigger = "unknown"
+cfg.chance = 0 / 0
+cfg.emotes = { ROAR = { cooldown = math.huge } }
+cast(100, 1500, "invalid-config")
+assert(FlourishForeverDB.actionEmotesEnabled == false, "invalid master disables safely")
+assert(cfg.trigger == "success", "bad trigger resets to success")
+assert(cfg.chance == 100 and cfg.emotes.ROAR.cooldown == 120, "malformed values clamped")
+assert(FlourishForeverDB.instances.corrupt == "invalid" and FlourishForeverDB.instances[5],
+    "unknown save records preserved")
+assert(select(2, FlourishForever_ActionStatus()) == 2, "status excludes malformed keys")
 
 -- Current storage module still migrates an existing name-keyed profile.
 local oldProfile = { actionEmotesEnabled = false, instances = {} }
@@ -308,4 +343,4 @@ assert(guid == "Player-TEST" and migrated == oldProfile,"old profile migrated")
 assert(FlourishForeverStorage.profiles.Tester == nil,"legacy profile removed after migration")
 assert(FlourishForeverStorage.profiles[guid] == oldProfile,"GUID profile retained")
 
-print("PASS: hardware emotes, group/party/raid play, PvP/chat guards, cooldowns and migration")
+print("PASS: success/press/failure trigger modes, PvP fallback, groups, chat guards, custom safety and migration")
