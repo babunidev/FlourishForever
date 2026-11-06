@@ -6,7 +6,7 @@ local DEFAULT_TRIGGER = "success"
 local TRIGGER_LABELS = { success = "Success", press = "Button press", failure = "Failure" }
 
 local function NormalizeTrigger(value)
-    return TRIGGER_LABELS[value] and value or DEFAULT_TRIGGER
+    return type(value) == "string" and TRIGGER_LABELS[value] and value or DEFAULT_TRIGGER
 end
 local WINDOW_W, WINDOW_H = 810, 676
 local PAGE_W, PAGE_H = 786, 632

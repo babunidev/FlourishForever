@@ -266,6 +266,10 @@ assert(#played == nativeBefore + 2, "world success behavior restored")
 currentInstanceType = "arena"
 press(1, 1112)
 assert(#played == nativeBefore + 3, "arena also uses PvP press fallback")
+chatLockdown = true
+press(1, 1113)
+assert(#played == nativeBefore + 3, "PvP press fallback respects true chat lockdown")
+chatLockdown = false
 currentInstanceType = "none"
 
 -- Any true chat restriction overrides both native and custom press dispatch.
@@ -306,6 +310,13 @@ for i, case in ipairs({
     before = #played
     fire("UNIT_SPELLCAST_FAILED", 100, timeBase + 3, "party-fail-" .. i)
     assert(#played == before + 1, "failure in group " .. case.group .. "/" .. case.instance)
+
+    cfg.trigger = "press"
+    cfg.emotes = { ["c:1"] = { cooldown = 0 } }
+    local beforeCustom = #sent
+    press(1, timeBase + 4)
+    assert(#sent == beforeCustom + 1, "custom /e press in " .. case.group .. "/" .. case.instance)
+    cfg.emotes = { ROAR = { cooldown = 0 } }
 end
 for _, kind in ipairs({
     Enum.AddOnRestrictionType.Map, Enum.AddOnRestrictionType.Encounter,
@@ -320,7 +331,7 @@ groupMode = "solo"
 FlourishForeverDB.instances[5] = { emotes = {} }
 FlourishForeverDB.instances.corrupt = "invalid"
 FlourishForeverDB.actionEmotesEnabled = "invalid"
-cfg.trigger = "unknown"
+cfg.trigger = 0 / 0 -- corrupt SavedVariables should never index a table with NaN
 cfg.chance = 0 / 0
 cfg.emotes = { ROAR = { cooldown = math.huge } }
 cast(100, 1700, "invalid-config")
