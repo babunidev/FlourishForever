@@ -5,6 +5,16 @@
 
 Flourish Forever links player-selected abilities to native or custom emotes, with per-ability chance, per-emote cooldowns and per-character settings. It does not cast abilities automatically.
 
+## 7 November 2026 — Investigating live 6-second cooldown repetition
+
+After installing the persistence fix, Babuni tested a configured ability ("Mobility") using **Button press** and a six-second emote timer, and reported an emote on **every press**. This directly contradicts the desired behavior; the earlier mock-only verification did not prove the live issue was solved.
+
+Source review found that cooldown dispatch is **per selected emote token, not per ability**: if several emotes are selected, each ready token can play in turn on consecutive presses, without any individual timer being bypassed. Whether this explains the observed in-game behavior is **unknown**; one identical token firing repeatedly would instead indicate a real timer or duplicate-output problem.
+
+The development version now reuses a **single cooldown-remaining calculation** for choosing eligible emotes and for read-only diagnostics. Type `/flourish cooldowns mobility` immediately after pressing the configured ability to see each selected token, configured seconds, remaining seconds, recorded server timestamp, and session timestamp. `/flourish cooldowns` uses the most recently matched ability. `/flourish debug` also reports the last attempted token and its configured cooldown alongside API acceptance/rejection counters. These commands send no emotes, do not modify settings, and print only on explicit request.
+
+Regression mocks now reproduce six-second repeated presses with exactly one selected token, and verify that two different tokens can each fire once before **both** become unavailable. The tests pass, but the original live behavior has **not** been reproduced or confirmed resolved in the Forever client. If the same token appears while the diagnostic still shows a positive remaining cooldown and the accepted-dispatch count does not increase, investigate another addon, macro, or client-generated emote before changing the design.
+
 ## 6 November 2026 — Individual emote cooldown correction (unreleased)
 
 A player report led to a confirmed limitation: the previous cooldown history existed only in the Lua-local `lastFireByAbility` table, so `/reload` or relog made every emote immediately available, regardless of the configured delay.

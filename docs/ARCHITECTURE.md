@@ -4,6 +4,14 @@
 **Latest confirmed Git tag:** `v0.4.3-beta` · **Unreleased work:** `feat/ability-trigger-modes`.  
 **Evidence:** current Lua source, package configuration, mocked test suites and Babuni's November 5, 2026 general in-game confirmation.
 
+## Per-token cooldown live diagnostics (unreleased)
+
+The timer now has a single `RemainingCooldown(info, now, last, wallNow)` helper, returning the maximum nonexpired local (`GetTime()`) and saved server-time (`GetServerTime()`) remaining delay. Both `ReadyEmotes` and the manual `FlourishForever_CooldownDiagnostics(abilityName)` function call this helper. This refactor changes **no intended user-visible cooldown semantics**; it prevents the live report and selection code from disagreeing on timer calculations.
+
+`/flourish cooldowns [ability name]` is read-only: it examines the active profile's selected tokens (up to twelve), each selected timer, session and saved last-dispatch stamp, and the last attempted token/dispatch result. If no name is supplied, it uses the last configured ability reached by a spell hook. `/flourish debug` adds the last ability, selected token, and configured per-token cooldown to its existing counters. These functions are invoked only manually, do not call a protected API, and do not mutate SavedVariables.
+
+A player press dispatches at most one randomly chosen **ready token**; a six-second cooldown applies to that one token, not to the configured ability. Several selected tokens with separate cooldowns can therefore generate an emote on each of several successive presses without any token violating its own timer. The observed real-client repeating emote might follow that pattern or reflect a separate bug; it is **not diagnosed** without token-level evidence. Regression tests cover both patterns on the same version. No game-client verification is claimed.
+
 ## Per-emote cooldown persistence (development only)
 
 Each selected emote uses `cfg.emotes[token].cooldown` (0–120 seconds) and may include `cfg.emotes[token].lastFiredAt` (integer Unix seconds from `GetServerTime()`). Both values live inside the character's existing SavedVariables profile and are keyed by configured ability and native/custom emote token. In-session `lastFireByAbility[key][token]` still uses high-resolution `GetTime()`, while `ReadyEmotes` requires both the in-session and persisted wall-clock checks to expire before selecting a token. This retains sub-second precision between reloads and prevents the previous reload bypass.

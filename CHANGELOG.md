@@ -2,6 +2,14 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** WoW Forever 1.60.1 / Interface 16001.
 
+## Unreleased investigation — 6-second emote repeat report (2026-11-07)
+
+- Babuni reported that the installed persistence build still emits an emote every time Mobility is pressed despite a six-second setting. Root cause remains unconfirmed.
+- Refactor per-token cooldown eligibility and manual readout to share one remaining-time calculation; preserve existing timer semantics, independent emotes and no global ability throttle.
+- Add read-only `/flourish cooldowns [ability]` to show each selected token, configured duration, remaining seconds, server/session timestamps and last attempted token. Extend `/flourish debug` with last matched ability, token and token cooldown.
+- Test a single six-second emote across consecutive presses and exact expiry; also test that two separate selected emotes can each fire once while their own cooldowns run.
+- **Verification:** GitHub mocked logic/UI and no-upload package preview passed. Live reproduction and confirmation of the user's six-second issue remain pending. No new tag or public release.
+
 ## Unreleased development — individual emote cooldown persistence (2026-11-06)
 
 - Fix cooldown history resetting on every `/reload` or relog. Successful native dispatches and submitted custom `/e` messages now save an individual `lastFiredAt` Unix timestamp alongside each emote's configured cooldown.

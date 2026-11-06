@@ -4,6 +4,13 @@
 **Game:** World of Warcraft **Forever only**, client 1.60.1 / interface 16001. Recheck after each game update.  
 **Current tagged baseline:** `v0.4.3-beta` · **Unreleased feature branch:** `feat/ability-trigger-modes` (`0.4.3-beta-dev`).
 
+## Continuing six-second cooldown report — preserve design, gather actual evidence
+
+- Babuni's live test of the prior development build reported emote output on every Mobility press despite a six-second setting. Do **not** label the earlier persistence fix sufficient, nor claim the new debug instrumentation resolves the live issue.
+- Per-token cooldowns are intentional. Multiple selected tokens can each trigger on successive presses, even while earlier tokens are cooling. Do not replace them with a global per-ability timer without Babuni's explicit design approval.
+- `/flourish cooldowns [ability]` reports (without mutation) the configured emote-token count, each individual timer's SavedVariables value, the remaining time calculated using the same helper as actual eligibility, and the last attempted API token. `/flourish debug` reports last matched ability and token. Both commands run only when requested; never emit chat spam in normal operation.
+- Use an actual in-client `/flourish cooldowns mobility` capture to discriminate bad slider values, single-token repeated attempts, individually rotating tokens, API response anomalies or another addon/macro generating a similar emote. Retest the single-token case in-game before calling the failure resolved.
+
 ## Individual emote cooldown correction (development only)
 
 - Keep **per-ability and per-token** delays distinct: `cfg.emotes[token].cooldown` is a 0–120-second preference and `cfg.emotes[token].lastFiredAt` is an optional server Unix timestamp of the last accepted dispatch.

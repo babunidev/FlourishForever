@@ -1,5 +1,13 @@
 # Flourish Forever — creative and technical development journal
 
+## 7 November 2026 — the six-second test that still failed
+
+After installing the new build, the cooldown still didn't behave as expected. Mobility was set to Button press, with six seconds configured, yet an emote appeared on every press. A passing automated test hadn't been enough to settle the real behavior.
+
+My AI assistant reviewed how the timer selects its next emote and found an important distinction: each selected expression has its own timer, not one timer for the whole ability. That could explain a series of different expressions, but it doesn't excuse the same expression repeating early. Rather than change the meaning of the settings, the development branch now prints an exact cooldown snapshot when requested, alongside the last attempted emote and the result reported by the client. The six-second case is also covered in mocks.
+
+This is a diagnostic checkpoint, not a claimed in-game repair. We still need to see which emote is firing and whether the client's accepted-send counter matches what appears in chat.
+
 ## 6 November 2026 — when the timer forgot
 
 Something was wrong with the individual emote timers. After watching Flourish through several changes, I had strong reason to doubt that the seconds assigned to each expression were doing what they should.

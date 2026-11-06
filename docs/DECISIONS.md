@@ -1,5 +1,11 @@
 # Flourish Forever — recorded design decisions and open alternatives
 
+## 7 November 2026 — do not confuse per-emote with per-ability cooldown
+
+Babuni's follow-up test contradicted the claim that persistent timestamps had solved the problem: a configured Mobility action on Button press with a six-second emote timer still appeared to produce an emote on every press. The source implements independent timers for each selected emote, so successive *different* emotes may legitimately occur even though the same token should remain blocked for six seconds.
+
+The root cause cannot be established from the report alone. Rather than add an unapproved global ability cooldown or weaken the existing accepted-dispatch requirement, AI added manual per-token observations and tests based on the exact reported six-second setting. The current implementation preserves independent token timers; a real-client report of the selected token, remaining time and actual API return is required before a narrowly targeted correction can be justified. No publication has been approved.
+
 ## 6 November 2026 — repairing the individual emote timers
 
 Babuni reported strong in-game evidence that individual timers were not doing their job. Source review identified a definite persistence gap: the selected cooldown values were saved, but the timestamps that determine whether an emote is eligible lived only in a Lua table that reset on every `/reload`. A repeated update-and-reload testing workflow therefore removed all active cooldowns.

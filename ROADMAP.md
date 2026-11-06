@@ -4,6 +4,17 @@
 **Latest confirmed Git tag:** `v0.4.3-beta` · **Current development:** per-ability trigger modes (unreleased, not tagged).  
 **Development:** Expanded UI restored from Babuni's older local archive and committed to `dev/expanded-ui-merge`. Preparation occurs separately; no public release tag was created.
 
+## Reported continuing cooldown issue — 7 November 2026
+
+- [x] Review real source after the player's six-second Mobility Button press test continued to show an emote on every press.
+- [x] Confirm that timers are per selected emote token, not a global ability timer; several individually ready tokens can play on successive presses.
+- [x] Refactor readiness/reporting around one cooldown-remaining calculator, with no undocumented change of timing semantics.
+- [x] Add exact six-second single- and multi-token regression mocks and per-ability `/flourish cooldowns` output.
+- [ ] In-game, inspect `/flourish cooldowns mobility` immediately after consecutive presses: selected tokens, actual saved cooldowns, remaining seconds and last attempt.
+- [ ] Compare `/flourish debug` before/after apparent repeated emotes. If acceptance does not increment, investigate macros or another enabled addon rather than assuming Flourish generated the emote.
+- [ ] Determine if *the same token* repeats before its timer expires; only then change runtime suppression behavior. Do not silently introduce a shared/global ability cooldown.
+- [ ] Confirm the fix in-game before proposing a release. Existing `v0.4.3-beta` remains untouched.
+
 ## Individual emote cooldown investigation — 6 November 2026
 
 - [x] Identify that the active cooldown history was stored only in `lastFireByAbility` and cleared on UI reload; configuration values alone survived.

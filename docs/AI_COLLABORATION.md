@@ -1,5 +1,9 @@
 # Flourish Forever — human–AI collaboration and attribution
 
+## 7 November 2026 — continued live cooldown investigation
+
+Babuni reported that even after the new persistence code was installed, Mobility with Button press and six seconds configured still appeared to send an emote on every press. AI confirmed that the source applies individual token cooldowns, which permit different eligible tokens to fire on successive presses, but do not justify early repetition of one token. The source change centralizes cooldown calculations and adds manually invoked token-level diagnostics; tests include the exact six-second single-token and multi-token scenarios. This is *not* a verified live fix. No release tag, merge or CurseForge upload is authorized.
+
 ## 6 November 2026 — independent cooldown investigation
 
 Babuni reported that per-emote cooldowns seemed ineffective and requested a thorough correction. AI examined the SavedVariables migration, UI slider handler, `GetTime()` comparisons and accepted-emote dispatch path. The documented source weakness was session-only last-dispatch history, lost on `/reload`; a new automated test reproduced the missing persistent timestamp. AI implemented per-token `GetServerTime()` persistence with precise in-session `GetTime()` checks, regression coverage for independent emotes/abilities, zero and nonzero durations, failure returns and corrupt saves, and UI slider save/reopen tests. Offline verification is distinguished from a still-pending WoW Forever retest.
