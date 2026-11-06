@@ -20,6 +20,7 @@ local debugState = {
     pressHooks = 0, outcomeEvents = 0,
     attempts = 0, accepted = 0, refused = 0,
     last = "no matching action yet", lastSpell = "-",
+    lastDispatch = "no emote attempted yet",
 }
 local function RecordBlock(why)
     debugState.last = why
@@ -584,12 +585,14 @@ local function DispatchEmote(key, cfg, now, fromPress)
         end
     end
     if #ready == 0 then
+        debugState.lastDispatch = "no eligible emotes"
         RecordBlock("no ready eligible emotes (or custom-only outcome mode)")
         return
     end
 
     local chance = tonumber(cfg.chance) or DEFAULT_CHANCE
     if math.random(1, 100) > chance then
+        debugState.lastDispatch = "chance roll skipped"
         RecordBlock("chance roll skipped")
         return
     end
@@ -600,21 +603,26 @@ local function DispatchEmote(key, cfg, now, fromPress)
         if fromPress and SendCustomEmote(token) then
             fired[token] = now
             debugState.accepted = debugState.accepted + 1
-            RecordBlock("custom /e dispatched; server delivery not confirmed")
+            debugState.lastDispatch = "custom /e dispatched; server delivery not confirmed"
+            RecordBlock(debugState.lastDispatch)
         else
             debugState.refused = debugState.refused + 1
-            RecordBlock("custom chat API unavailable")
+            debugState.lastDispatch = "custom chat API unavailable"
+            RecordBlock(debugState.lastDispatch)
         end
     elseif not C_ChatInfo or not C_ChatInfo.PerformEmote then
         debugState.refused = debugState.refused + 1
-        RecordBlock("native PerformEmote API unavailable")
+        debugState.lastDispatch = "native PerformEmote API unavailable"
+        RecordBlock(debugState.lastDispatch)
     elseif C_ChatInfo.PerformEmote(token) then
         fired[token] = now
         debugState.accepted = debugState.accepted + 1
-        RecordBlock("native emote API accepted " .. token)
+        debugState.lastDispatch = "native emote API accepted " .. token
+        RecordBlock(debugState.lastDispatch)
     else
         debugState.refused = debugState.refused + 1
-        RecordBlock("native emote API returned false for " .. token)
+        debugState.lastDispatch = "native emote API returned false for " .. token
+        RecordBlock(debugState.lastDispatch)
     end
 end
 
@@ -1929,6 +1937,7 @@ function FlourishForever_EmoteDiagnostics()
         .. "; accepted=" .. debugState.accepted
         .. "; rejected=" .. debugState.refused
         .. "; lastSpell=" .. tostring(debugState.lastSpell)
+        .. "; lastDispatch=" .. debugState.lastDispatch
         .. "; last=" .. debugState.last
 end
 

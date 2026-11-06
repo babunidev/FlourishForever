@@ -348,7 +348,8 @@ assert(diag:find("instance=none", 1, true)
     and diag:find("presses=", 1, true)
     and diag:find("attempts=", 1, true)
     and diag:find("ChatState=", 1, true)
-    and diag:find("lastSpell=", 1, true),
+    and diag:find("lastSpell=", 1, true)
+    and diag:find("lastDispatch=", 1, true),
     "read-only diagnostics expose relevant client states without player identifiers")
 
 -- Current storage module still migrates an existing name-keyed profile.
