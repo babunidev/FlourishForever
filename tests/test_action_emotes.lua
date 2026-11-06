@@ -195,15 +195,15 @@ assert(#played == 8, "foreign failures ignored")
 -- Failed native API send does not consume cooldown, and chance zero is silent.
 cfg.trigger = "success"
 cfg.chance = 0
-cast(100, 400, "chance-zero")
+cast(100, 500, "chance-zero")
 assert(#played == 8, "zero chance blocks success")
 cfg.chance = 100
 cfg.emotes.ROAR.cooldown = 120
 nativeAllowed = false
-cast(100, 401, "blocked-native")
+cast(100, 501, "blocked-native")
 assert(#played == 8, "failed native API response silent")
 nativeAllowed = true
-cast(100, 402, "allowed-native")
+cast(100, 502, "allowed-native")
 assert(#played == 9, "failed API response did not consume cooldown")
 
 cfg.emotes = {}
