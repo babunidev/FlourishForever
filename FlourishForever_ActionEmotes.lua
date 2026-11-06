@@ -2,6 +2,12 @@ local eventFrame = CreateFrame("Frame")
 
 local DEFAULT_CHANCE = 100
 local DEFAULT_COOLDOWN = 6
+local DEFAULT_TRIGGER = "success"
+local TRIGGER_LABELS = { success = "Success", press = "Button press", failure = "Failure" }
+
+local function NormalizeTrigger(value)
+    return TRIGGER_LABELS[value] and value or DEFAULT_TRIGGER
+end
 local WINDOW_W, WINDOW_H = 810, 676
 local PAGE_W, PAGE_H = 786, 632
 local HOME_ROW_H = 56
@@ -84,6 +90,7 @@ local function EnsureDB()
                 cfg.name = key
             end
             cfg.chance = BoundedWholeNumber(cfg.chance, DEFAULT_CHANCE, 0, 100)
+            cfg.trigger = NormalizeTrigger(cfg.trigger)
             if cfg.enabled == nil then
                 cfg.enabled = true
             elseif type(cfg.enabled) ~= "boolean" then
@@ -446,24 +453,9 @@ local function ReadyEmotes(cfg, now, fired)
     return ready
 end
 
--- Native and custom emotes may invoke restricted chat APIs. They are only
--- attempted in direct player action hooks, never from later spellcast events.
--- Pending native emotes are intentionally not queued or replayed on success.
+-- Press dispatch is hardware-event-bound. Outcome dispatch is native-only and
+-- disabled for PvP/chat lockdown so protected emote calls are not retried.
 local pressStamp = {}
--- Addon restriction types such as Map, Encounter and ChallengeMode describe
--- information lockdown, not necessarily a ban on player-initiated emotes.
--- Do not silence ordinary parties or dungeon/raid encounters for those states.
--- Chat and PvPMatch are retained alongside explicit chat/PvP guards below.
-local restrictedKinds = {}
-if Enum and Enum.AddOnRestrictionType then
-    local kinds = Enum.AddOnRestrictionType
-    for _, name in ipairs({ "Chat", "PvPMatch" }) do
-        if type(kinds[name]) == "number" then
-            restrictedKinds[#restrictedKinds + 1] = kinds[name]
-        end
-    end
-end
-
 local function IsCustomToken(token)
     return type(token) == "string" and string.sub(token, 1, 2) == "c:"
 end
@@ -487,34 +479,51 @@ end
 -- Keep chat/PvP security checks, without equating Map/Encounter/ChallengeMode
 -- restriction states with a prohibition on ordinary player-triggered emotes.
 -- Group membership and normal party/raid instances never suppress Flourish.
-local function IsRestrictedEmoteContext()
-    if IsInInstance then
-        local _, instanceType = IsInInstance()
-        if instanceType == "pvp" or instanceType == "arena" then
-            return true
-        end
-    end
+local function IsBattleground()
+    if not IsInInstance then return false end
+    local _, instanceType = IsInInstance()
+    return instanceType == "pvp" or instanceType == "arena"
+end
 
-    if C_ChatInfo and C_ChatInfo.InChatMessagingLockdown
-        and C_ChatInfo.InChatMessagingLockdown() then
-        return true
-    end
-
-    if C_RestrictedActions and C_RestrictedActions.GetAddOnRestrictionState then
-        for _, kind in ipairs(restrictedKinds) do
-            local state = C_RestrictedActions.GetAddOnRestrictionState(kind)
-            if type(state) == "number" and state ~= 0 then
-                return true
-            end
-        end
+local function IsRestrictionActive(name)
+    local kinds = Enum and Enum.AddOnRestrictionType
+    local kind = kinds and kinds[name]
+    if type(kind) == "number"
+        and C_RestrictedActions and C_RestrictedActions.GetAddOnRestrictionState then
+        local state = C_RestrictedActions.GetAddOnRestrictionState(kind)
+        return type(state) == "number" and state ~= 0
     end
     return false
 end
 
-local function ResolveAbility(spellID)
-    if IsRestrictedEmoteContext() then
-        return
+local function IsChatRestricted()
+    if C_ChatInfo and C_ChatInfo.InChatMessagingLockdown
+        and C_ChatInfo.InChatMessagingLockdown() then
+        return true
     end
+    return IsRestrictionActive("Chat")
+end
+
+-- A PvP match is a separate addon-data restriction from chat lockdown.
+-- The hardware-press fallback may be attempted when chat itself is allowed;
+-- result-event dispatch is never attempted while PvP restrictions are active.
+local function CanDispatchEmote(fromPress)
+    if IsChatRestricted() then return false end
+    if not fromPress and (IsBattleground() or IsRestrictionActive("PvPMatch")) then
+        return false
+    end
+    return true
+end
+
+local function EffectiveTrigger(cfg)
+    local trigger = NormalizeTrigger(cfg.trigger)
+    if trigger == "success" and IsBattleground() then
+        return "press"
+    end
+    return trigger
+end
+
+local function ResolveAbility(spellID)
     EnsureDB()
 
     if not db.actionEmotesEnabled then
@@ -561,49 +570,82 @@ local function SendCustomEmote(token)
     return false
 end
 
+-- Native tokens have a documented success return. Custom /e requires a
+-- genuine hardware event on Forever: never try to send it asynchronously.
+local function DispatchEmote(key, cfg, now, fromPress)
+    local fired = lastFireByAbility[key]
+    local ready = ReadyEmotes(cfg, now, fired)
+    if not fromPress then
+        -- Only native emotes are permitted from success/failure events.
+        for i = #ready, 1, -1 do
+            if IsCustomToken(ready[i]) then
+                table.remove(ready, i)
+            end
+        end
+    end
+    if #ready == 0 then return end
+
+    local chance = tonumber(cfg.chance) or DEFAULT_CHANCE
+    if math.random(1, 100) > chance then return end
+
+    local token = ready[math.random(1, #ready)]
+    if IsCustomToken(token) then
+        if fromPress and SendCustomEmote(token) then
+            fired[token] = now
+        end
+    elseif C_ChatInfo and C_ChatInfo.PerformEmote
+        and C_ChatInfo.PerformEmote(token) then
+        fired[token] = now
+    end
+end
+
 local function TryAbilityEmoteFromPress(spellID)
-    if type(spellID) ~= "number" or not SpellPressCanFire(spellID) then
+    if type(spellID) ~= "number" or not SpellPressCanFire(spellID)
+        or not CanDispatchEmote(true) then
         return
     end
 
     local key, cfg = ResolveAbility(spellID)
-    if not key then
-        return
-    end
+    if not key or EffectiveTrigger(cfg) ~= "press" then return end
 
     local now = GetTime()
-    if pressStamp[key] and (now - pressStamp[key]) < 0.2 then
-        return
-    end
-
+    if pressStamp[key] and now - pressStamp[key] < 0.2 then return end
     pressStamp[key] = now
+    DispatchEmote(key, cfg, now, true)
+end
 
-    local ready = ReadyEmotes(cfg, now, lastFireByAbility[key])
-    if #ready == 0 then
+local lastOutcome = {}
+local function IsSecret(value)
+    return issecretvalue and issecretvalue(value)
+end
+
+local function TryAbilityEmoteForOutcome(event, unit, castGUID, spellID)
+    if IsSecret(unit) or IsSecret(spellID) or IsSecret(castGUID)
+        or unit ~= "player" or type(spellID) ~= "number"
+        or not CanDispatchEmote(false) then
         return
     end
 
-    local chance = tonumber(cfg.chance) or DEFAULT_CHANCE
-    if math.random(1, 100) > chance then
-        return
-    end
+    local requested = event == "UNIT_SPELLCAST_SUCCEEDED" and "success" or "failure"
+    local key, cfg = ResolveAbility(spellID)
+    if not key or EffectiveTrigger(cfg) ~= requested then return end
 
-    local token = ready[math.random(1, #ready)]
-    if IsCustomToken(token) then
-        if SendCustomEmote(token) then
-            lastFireByAbility[key][token] = now
+    local now = GetTime()
+    local previous = lastOutcome[key]
+    local identified = type(castGUID) == "string" and castGUID ~= ""
+    -- A failed and interrupted event can describe the same cast; quiet failures
+    -- may also be duplicated. Do not reroll chance or emit twice for one cast.
+    if previous and previous.spellID == spellID then
+        if identified and previous.guid == castGUID then
+            return
         end
-        return
-    end
-
-    -- Forever's native emote API is restricted when called from delayed
-    -- UNIT_SPELLCAST_SUCCEEDED. This hook is reached during a player action.
-    -- A failed attempt does not spend the emote cooldown.
-    if C_ChatInfo and C_ChatInfo.PerformEmote then
-        if C_ChatInfo.PerformEmote(token) then
-            lastFireByAbility[key][token] = now
+        if not identified and previous.event == requested and now - previous.at < 0.2 then
+            return
         end
     end
+    lastOutcome[key] = { spellID = spellID, guid = identified and castGUID or nil,
+        event = requested, at = now }
+    DispatchEmote(key, cfg, now, false)
 end
 
 local function SpellIDFromActionSlot(slot)
@@ -676,6 +718,7 @@ local function AddOrSelectAbility(ability)
             name = ability.name,
             spellID = ability.spellID,
             chance = DEFAULT_CHANCE,
+            trigger = DEFAULT_TRIGGER,
             enabled = true,
             emotes = { ROAR = { cooldown = DEFAULT_COOLDOWN } },
         }
@@ -767,6 +810,7 @@ local function ShowAbilityTooltip(owner, cfg)
     GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
     GameTooltip:SetText(cfg.name or "Ability", 1, 0.82, 0)
     GameTooltip:AddLine("Chance: " .. (tonumber(cfg.chance) or DEFAULT_CHANCE) .. "%", 1, 1, 1)
+    GameTooltip:AddLine("Triggered by: " .. TRIGGER_LABELS[NormalizeTrigger(cfg.trigger)], 1, 1, 1)
 
     if #entries == 0 then
         GameTooltip:AddLine("No emotes", 0.7, 0.7, 0.7)
@@ -999,7 +1043,7 @@ local function CreateUI()
 
     ui.chance = CreateFrame("Slider", "FlourishForeverChanceSlider", ui.editor, "OptionsSliderTemplate")
     ui.chance:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 24, -58)
-    ui.chance:SetSize(460, 18)
+    ui.chance:SetSize(370, 18)
     ui.chance:SetMinMaxValues(0, 100)
     ui.chance:SetValueStep(1)
     ui.chance:SetObeyStepOnDrag(true)
@@ -1017,12 +1061,59 @@ local function CreateUI()
         end
     end)
 
+    ui.triggerLabel = ui.editor:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    ui.triggerLabel:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 466, -43)
+    ui.triggerLabel:SetText("Triggered by")
+
+    ui.triggerButton = CreateFrame("Button", nil, ui.editor, "UIPanelButtonTemplate")
+    ui.triggerButton:SetSize(174, 25)
+    ui.triggerButton:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 548, -57)
+
+    ui.triggerMenu = CreateFrame("Frame", nil, ui.editor)
+    ui.triggerMenu:SetSize(176, 80)
+    ui.triggerMenu:SetPoint("TOPLEFT", ui.triggerButton, "BOTTOMLEFT", 0, -2)
+    ui.triggerMenu:SetFrameStrata("DIALOG")
+    local menuBackground = ui.triggerMenu:CreateTexture(nil, "BACKGROUND")
+    menuBackground:SetAllPoints()
+    menuBackground:SetColorTexture(0.08, 0.08, 0.10, 0.96)
+    ui.triggerOptions = {}
+    for i, trigger in ipairs({ "success", "press", "failure" }) do
+        local option = CreateFrame("Button", nil, ui.triggerMenu, "UIPanelButtonTemplate")
+        option:SetSize(168, 24)
+        option:SetPoint("TOPLEFT", ui.triggerMenu, "TOPLEFT", 4, -2 - (i - 1) * 25)
+        option:SetText(TRIGGER_LABELS[trigger])
+        option:SetScript("OnClick", function()
+            if selectedKey then
+                EnsureDB()
+                local cfg = db.instances[selectedKey]
+                if cfg then cfg.trigger = trigger end
+                ui.triggerButton:SetText(TRIGGER_LABELS[trigger] .. "  v")
+            end
+            ui.triggerMenu:Hide()
+        end)
+        ui.triggerOptions[trigger] = option
+    end
+    ui.triggerMenu:Hide()
+    ui.triggerButton:SetScript("OnClick", function()
+        if ui.triggerMenu:IsShown() then
+            ui.triggerMenu:Hide()
+        else
+            ui.triggerMenu:Show()
+        end
+    end)
+
+    ui.triggerHelp = ui.editor:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    ui.triggerHelp:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 18, -94)
+    ui.triggerHelp:SetWidth(748)
+    ui.triggerHelp:SetJustifyH("LEFT")
+    ui.triggerHelp:SetText("In battlegrounds, Success uses Button press if chat permits. Custom /e needs Button press.")
+
     ui.emoteHint = ui.editor:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    ui.emoteHint:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 16, -108)
+    ui.emoteHint:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 16, -119)
     ui.emoteHint:SetText("Emotes. One ready emote is chosen at random.")
 
     ui.emoteScroll = CreateQuietScroll(ui.editor)
-    ui.emoteScroll:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 12, -132)
+    ui.emoteScroll:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 12, -145)
     ui.emoteScroll:SetPoint("BOTTOMRIGHT", ui.editor, "BOTTOMRIGHT", -12, 40)
     ui.emoteChild = CreateFrame("Frame", nil, ui.emoteScroll)
     ui.emoteChild:SetSize(750, 1)
@@ -1061,7 +1152,7 @@ local function CreateUI()
     ui.customHint:SetPoint("TOPLEFT", ui.custom, "TOPLEFT", 12, -44)
     ui.customHint:SetWidth(PAGE_W - 40)
     ui.customHint:SetJustifyH("LEFT")
-    ui.customHint:SetText("One emote per line. Each line is sent as /e when you press the ability, so your name appears and then the text.")
+    ui.customHint:SetText("One /e emote per line. Forever requires a real button press for custom chat; Success and Failure modes can send native emotes only.")
 
     ui.customScroll = CreateQuietScroll(ui.custom)
     ui.customScroll:SetPoint("TOPLEFT", ui.custom, "TOPLEFT", 12, -84)
@@ -1673,6 +1764,8 @@ local function CreateUI()
 
         self.updating = true
         self.chance:SetValue(tonumber(cfg.chance) or DEFAULT_CHANCE)
+        self.triggerButton:SetText(TRIGGER_LABELS[NormalizeTrigger(cfg.trigger)] .. "  v")
+        self.triggerMenu:Hide()
         self.updating = false
 
         local items = {}
@@ -1732,6 +1825,9 @@ local function CreateUI()
         RefreshKnownEmotes()
         self:ShowPage(self.page or "home")
     end)
+    ui:SetScript("OnHide", function(self)
+        self.triggerMenu:Hide()
+    end)
 
     return ui
 end
@@ -1757,8 +1853,13 @@ function FlourishForever_ActionStatus()
     return db.actionEmotesEnabled, count
 end
 
-eventFrame:SetScript("OnEvent", function(self, event)
-    if event == "SPELLS_CHANGED" then
+eventFrame:SetScript("OnEvent", function(self, event, ...)
+    if event == "UNIT_SPELLCAST_SUCCEEDED" or event == "UNIT_SPELLCAST_FAILED"
+        or event == "UNIT_SPELLCAST_FAILED_QUIET"
+        or event == "UNIT_SPELLCAST_INTERRUPTED" then
+        local unit, castGUID, spellID = ...
+        TryAbilityEmoteForOutcome(event, unit, castGUID, spellID)
+    elseif event == "SPELLS_CHANGED" then
         if ui then
             ui.spellColumns = nil
             if ui:IsShown() and ui.page == "picker" then
@@ -1769,3 +1870,7 @@ eventFrame:SetScript("OnEvent", function(self, event)
 end)
 
 eventFrame:RegisterEvent("SPELLS_CHANGED")
+eventFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED")
+eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED_QUIET")
+eventFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
