@@ -429,7 +429,7 @@ assert(type(cfg.emotes.ROAR.lastFiredAt) == "number",
 -- Invalid saved timestamps cannot indefinitely silence a token.
 cfg.emotes.ROAR.lastFiredAt = math.huge
 press(1, 2202)
-assert(#played == first + 10, "malformed cooldown timestamp is rejected")
+assert(#played == first + 11, "malformed cooldown timestamp is rejected")
 
 -- Custom text has the same individual cooldown and survives UI reload.
 cfg.emotes = { ["c:1"] = { cooldown = 30 } }

@@ -49,6 +49,18 @@ local function BoundedWholeNumber(value, default, low, high)
     return math.floor(number + 0.5)
 end
 
+-- Persist the last successful dispatch time across UI reloads using Forever's
+-- synchronized Unix timestamp. GetTime() continues to provide precise timing
+-- within one Lua session. No polling or background timer is required.
+local function CooldownWallTime()
+    if not GetServerTime then return nil end
+    local value = GetServerTime()
+    if type(value) == "number" and value == value
+        and value > 0 and value < 100000000000 then
+        return math.floor(value)
+    end
+end
+
 local function NormalizeEmotes(cfg)
     -- Older versions used a single per-ability cooldown and boolean emotes.
     -- Newer settings store a separate cooldown per selected token. Preserve
@@ -70,6 +82,13 @@ local function NormalizeEmotes(cfg)
             cfg.emotes[token] = { cooldown = BoundedWholeNumber(value, legacy, 0, 120) }
         elseif type(value) == "table" then
             value.cooldown = BoundedWholeNumber(value.cooldown, legacy, 0, 120)
+            local stamp = value.lastFiredAt
+            if type(stamp) ~= "number" or stamp ~= stamp or
+                stamp <= 0 or stamp >= 100000000000 then
+                value.lastFiredAt = nil
+            else
+                value.lastFiredAt = math.floor(stamp)
+            end
         else
             cfg.emotes[token] = nil
         end
@@ -448,19 +467,34 @@ end
 
 local function ReadyEmotes(cfg, now, fired)
     local ready = {}
+    local wallNow = CooldownWallTime()
 
     for token, info in pairs(cfg.emotes or {}) do
         if type(token) == "string" and token ~= "" and type(info) == "table" then
             local cooldown = BoundedWholeNumber(info.cooldown, DEFAULT_COOLDOWN, 0, 120)
             local last = fired[token]
-            -- A token has no cooldown until it has actually fired once.
-            if not last or now - last >= cooldown then
+            local inSession = last and now >= last and now - last < cooldown
+            local persisted = info.lastFiredAt
+            local elapsed = wallNow and persisted and (wallNow - persisted)
+            -- The persisted timestamp covers /reload; the precise GetTime
+            -- check prevents wall-clock rounding from shortening an active
+            -- cooldown. Implausible future stamps never lock an emote forever.
+            local acrossReload = elapsed and elapsed >= 0 and elapsed < cooldown
+            if not inSession and not acrossReload then
                 ready[#ready + 1] = token
             end
         end
     end
 
     return ready
+end
+
+local function RememberEmote(key, cfg, token, now)
+    lastFireByAbility[key][token] = now
+    local entry = cfg.emotes and cfg.emotes[token]
+    if type(entry) == "table" then
+        entry.lastFiredAt = CooldownWallTime()
+    end
 end
 
 -- Press dispatch is hardware-event-bound. Outcome dispatch is native-only and
@@ -601,7 +635,7 @@ local function DispatchEmote(key, cfg, now, fromPress)
     debugState.attempts = debugState.attempts + 1
     if IsCustomToken(token) then
         if fromPress and SendCustomEmote(token) then
-            fired[token] = now
+            RememberEmote(key, cfg, token, now)
             debugState.accepted = debugState.accepted + 1
             debugState.lastDispatch = "custom /e dispatched; server delivery not confirmed"
             RecordBlock(debugState.lastDispatch)
@@ -615,7 +649,7 @@ local function DispatchEmote(key, cfg, now, fromPress)
         debugState.lastDispatch = "native PerformEmote API unavailable"
         RecordBlock(debugState.lastDispatch)
     elseif C_ChatInfo.PerformEmote(token) then
-        fired[token] = now
+        RememberEmote(key, cfg, token, now)
         debugState.accepted = debugState.accepted + 1
         debugState.lastDispatch = "native emote API accepted " .. token
         RecordBlock(debugState.lastDispatch)
