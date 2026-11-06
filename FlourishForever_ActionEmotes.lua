@@ -1903,7 +1903,11 @@ end
 -- Inspect the actual client restriction state after testing in a battleground.
 -- Read-only, no protected emote call and no player-identifying information.
 function FlourishForever_EmoteDiagnostics()
-    local _, instanceType = IsInInstance and IsInInstance()
+    local instanceType = "unknown"
+    if IsInInstance then
+        local _, currentType = IsInInstance()
+        instanceType = currentType or "unknown"
+    end
     local chatLockdown = C_ChatInfo and C_ChatInfo.InChatMessagingLockdown
         and C_ChatInfo.InChatMessagingLockdown()
     local kinds = Enum and Enum.AddOnRestrictionType
