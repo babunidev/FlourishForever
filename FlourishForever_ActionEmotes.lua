@@ -21,6 +21,7 @@ local debugState = {
     attempts = 0, accepted = 0, refused = 0,
     last = "no matching action yet", lastSpell = "-",
     lastDispatch = "no emote attempted yet",
+    lastAbility = nil, lastToken = nil, lastTokenCooldown = nil,
 }
 local function RecordBlock(why)
     debugState.last = why
@@ -465,27 +466,38 @@ local function SortedInstanceKeys()
     return keys
 end
 
+-- One calculator drives both actual dispatch eligibility and the manual
+-- cooldown report, so diagnostics cannot disagree with the selection logic.
+local function RemainingCooldown(info, now, last, wallNow)
+    local duration = BoundedWholeNumber(info.cooldown, DEFAULT_COOLDOWN, 0, 120)
+    if duration == 0 then return 0, 0 end
+
+    local sessionLeft = 0
+    if type(last) == "number" and now >= last then
+        sessionLeft = math.max(0, duration - (now - last))
+    end
+
+    local wallLeft = 0
+    local stamped = info.lastFiredAt
+    if type(wallNow) == "number" and type(stamped) == "number" then
+        local elapsed = wallNow - stamped
+        if elapsed >= 0 and elapsed < duration then
+            wallLeft = duration - elapsed
+        end
+    end
+    return math.max(sessionLeft, wallLeft), duration
+end
+
 local function ReadyEmotes(cfg, now, fired)
     local ready = {}
     local wallNow = CooldownWallTime()
-
     for token, info in pairs(cfg.emotes or {}) do
         if type(token) == "string" and token ~= "" and type(info) == "table" then
-            local cooldown = BoundedWholeNumber(info.cooldown, DEFAULT_COOLDOWN, 0, 120)
-            local last = fired[token]
-            local inSession = last and now >= last and now - last < cooldown
-            local persisted = info.lastFiredAt
-            local elapsed = wallNow and persisted and (wallNow - persisted)
-            -- The persisted timestamp covers /reload; the precise GetTime
-            -- check prevents wall-clock rounding from shortening an active
-            -- cooldown. Implausible future stamps never lock an emote forever.
-            local acrossReload = elapsed and elapsed >= 0 and elapsed < cooldown
-            if not inSession and not acrossReload then
+            if RemainingCooldown(info, now, fired[token], wallNow) <= 0 then
                 ready[#ready + 1] = token
             end
         end
     end
-
     return ready
 end
 
@@ -583,6 +595,7 @@ local function ResolveAbility(spellID)
         lastFireByAbility[key] = {}
     end
 
+    debugState.lastAbility = key
     return key, cfg
 end
 
@@ -632,6 +645,10 @@ local function DispatchEmote(key, cfg, now, fromPress)
     end
 
     local token = ready[math.random(1, #ready)]
+    debugState.lastToken = token
+    local option = cfg.emotes and cfg.emotes[token]
+    debugState.lastTokenCooldown = type(option) == "table"
+        and BoundedWholeNumber(option.cooldown, DEFAULT_COOLDOWN, 0, 120) or nil
     debugState.attempts = debugState.attempts + 1
     if IsCustomToken(token) then
         if fromPress and SendCustomEmote(token) then
@@ -1942,6 +1959,65 @@ function FlourishForever_ActionStatus()
     return db.actionEmotesEnabled, count
 end
 
+-- Manual, read-only diagnostic. This does not call any chat/emote APIs or
+-- change timers. A single button press can legitimately choose a *different*
+-- ready token while the previous token is still cooling down.
+function FlourishForever_CooldownDiagnostics(abilityName)
+    local profile = FlourishForeverDB
+    if type(profile) ~= "table" or type(profile.instances) ~= "table" then
+        return { "Character emote settings are not loaded." }
+    end
+
+    local key
+    if type(abilityName) == "string" and Trim(abilityName) ~= "" then
+        key = AbilityKey(abilityName)
+    else
+        key = debugState.lastAbility
+    end
+
+    local cfg = key and profile.instances[key]
+    if type(cfg) ~= "table" or type(cfg.emotes) ~= "table" then
+        return { "No configured ability found. Use /flourish cooldowns <ability name>." }
+    end
+
+    local tokens = {}
+    for token, value in pairs(cfg.emotes) do
+        if type(token) == "string" and type(value) == "table" then
+            tokens[#tokens + 1] = token
+        end
+    end
+    table.sort(tokens)
+
+    local now = GetTime()
+    local wallNow = CooldownWallTime()
+    local history = lastFireByAbility[key] or {}
+    local lines = {
+        tostring(cfg.name or key) .. ": trigger=" .. NormalizeTrigger(cfg.trigger)
+            .. ", chance=" .. tostring(cfg.chance) .. "%"
+            .. ", selected=" .. #tokens .. " emotes"
+            .. ", serverClock=" .. (wallNow and "available" or "unavailable"),
+    }
+    if #tokens == 0 then
+        lines[#lines + 1] = "No selected emotes; no cooldown applies."
+    end
+    for i = 1, math.min(#tokens, 12) do
+        local token = tokens[i]
+        local entry = cfg.emotes[token]
+        local left, duration = RemainingCooldown(entry, now, history[token], wallNow)
+        local state = left > 0 and (string.format("%.1fs remaining", left)) or "READY"
+        lines[#lines + 1] = token .. ": " .. duration .. "s cooldown, " .. state
+            .. ", savedStamp=" .. tostring(entry.lastFiredAt or "none")
+            .. ", sessionStamp=" .. tostring(history[token] or "none")
+    end
+    if #tokens > 12 then
+        lines[#lines + 1] = tostring(#tokens - 12) .. " additional tokens not displayed."
+    end
+    lines[#lines + 1] = "Last attempted: " .. tostring(debugState.lastToken or "none")
+        .. " (" .. tostring(debugState.lastTokenCooldown or "?") .. "s), "
+        .. debugState.lastDispatch
+    return lines
+end
+
 -- Inspect the actual client restriction state after testing in a battleground.
 -- Read-only, no protected emote call and no player-identifying information.
 function FlourishForever_EmoteDiagnostics()
@@ -1971,6 +2047,9 @@ function FlourishForever_EmoteDiagnostics()
         .. "; accepted=" .. debugState.accepted
         .. "; rejected=" .. debugState.refused
         .. "; lastSpell=" .. tostring(debugState.lastSpell)
+        .. "; lastAbility=" .. tostring(debugState.lastAbility or "none")
+        .. "; lastToken=" .. tostring(debugState.lastToken or "none")
+        .. "; lastTokenCooldown=" .. tostring(debugState.lastTokenCooldown or "unknown")
         .. "; lastDispatch=" .. debugState.lastDispatch
         .. "; last=" .. debugState.last
 end

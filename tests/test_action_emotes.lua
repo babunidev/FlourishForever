@@ -447,6 +447,52 @@ assert(#sent == beforeCustom + 1, "custom timer survives UI reload")
 press(1, 2330)
 assert(#sent == beforeCustom + 2, "custom cooldown eventually expires")
 
+-- Exact live report: a single emote set to 6 seconds must not fire on
+-- every successive Button press. Cooldown diagnostics use the same calculator.
+cfg.emotes = { ROAR = { cooldown = 6 } }
+cfg.trigger, cfg.chance, cfg.enabled = "press", 100, true
+local beforeSix = #played
+press(1, 2400)
+assert(#played == beforeSix + 1, "6s first native press")
+local remaining = FlourishForever_CooldownDiagnostics("strike")
+assert(remaining[1]:find("selected=1 emotes", 1, true)
+    and remaining[2]:find("6s cooldown", 1, true)
+    and remaining[2]:find("6.0s remaining", 1, true),
+    "manual report identifies the configured 6s cooldown and active timer")
+press(1, 2400.5)
+press(1, 2401)
+press(1, 2405.9)
+assert(#played == beforeSix + 1, "6s single-token cooldown blocks repeated presses")
+press(1, 2406)
+assert(#played == beforeSix + 2, "6s single-token cooldown expires")
+remaining = FlourishForever_CooldownDiagnostics("strike")
+assert(remaining[2]:find("6.0s remaining", 1, true),
+    "report observes the same restarted timer as runtime dispatch")
+
+-- Per-token cooling is intentionally not a global ability cooldown:
+-- distinct ready tokens can fire on consecutive presses, each only once.
+cfg.emotes = { ROAR = { cooldown = 6 }, CHEER = { cooldown = 6 } }
+local firstDual = #played
+press(1, 2410)
+local tokenOne = played[#played]
+press(1, 2411)
+local tokenTwo = played[#played]
+assert(#played == firstDual + 2 and tokenOne ~= tokenTwo,
+    "two different ready tokens may fire on consecutive presses")
+press(1, 2412)
+assert(#played == firstDual + 2,
+    "both individual 6s timers block third press")
+local reports = FlourishForever_CooldownDiagnostics("strike")
+assert(reports[1]:find("selected=2 emotes", 1, true)
+    and #reports == 4
+    and reports[2]:find("remaining", 1, true)
+    and reports[3]:find("remaining", 1, true),
+    "manual report shows individual remaining times for each selected emote")
+assert(FlourishForever_CooldownDiagnostics("nonexistent")[1]:find("No configured ability", 1, true),
+    "invalid query yields a safe read-only message")
+assert(FlourishForever_EmoteDiagnostics():find("lastTokenCooldown=6", 1, true),
+    "general debug exposes last selected token's cooldown")
+
 -- Current storage module still migrates an existing name-keyed profile.
 local oldProfile = { actionEmotesEnabled = false, instances = {} }
 ROARitFOREVERStorage = nil
