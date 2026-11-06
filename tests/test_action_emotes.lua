@@ -426,10 +426,13 @@ press(1, 2241)
 assert(type(cfg.emotes.ROAR.lastFiredAt) == "number",
     "successful retry starts its cooldown")
 
--- Invalid saved timestamps cannot indefinitely silence a token.
+-- Invalid saved timestamps cannot indefinitely silence a token. Reload
+-- first so a valid in-session cooldown does not mask timestamp validation.
 cfg.emotes.ROAR.lastFiredAt = math.huge
+now = 2242
+assert(loadfile("FlourishForever_ActionEmotes.lua"))()
 press(1, 2242)
-assert(#played == first + 11, "malformed cooldown timestamp is rejected")
+assert(#played == first + 11, "malformed persisted timestamp is rejected")
 
 -- Custom text has the same individual cooldown and survives UI reload.
 cfg.emotes = { ["c:1"] = { cooldown = 30 } }
