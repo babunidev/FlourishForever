@@ -473,13 +473,13 @@ assert(remaining[2]:find("6.0s remaining", 1, true),
 -- distinct ready tokens can fire on consecutive presses, each only once.
 cfg.emotes = { ROAR = { cooldown = 6 }, CHEER = { cooldown = 6 } }
 local firstDual = #played
-press(1, 2410)
+press(1, 2420)
 local tokenOne = played[#played]
-press(1, 2411)
+press(1, 2421)
 local tokenTwo = played[#played]
 assert(#played == firstDual + 2 and tokenOne ~= tokenTwo,
     "two different ready tokens may fire on consecutive presses")
-press(1, 2412)
+press(1, 2422)
 assert(#played == firstDual + 2,
     "both individual 6s timers block third press")
 local reports = FlourishForever_CooldownDiagnostics("strike")
