@@ -4,6 +4,13 @@
 **Game:** World of Warcraft **Forever only**, client 1.60.1 / interface 16001. Recheck after each game update.  
 **Current tagged baseline:** `v0.4.3-beta` · **Unreleased feature branch:** `feat/ability-trigger-modes` (`0.4.3-beta-dev`).
 
+## Individual emote cooldown correction (development only)
+
+- Keep **per-ability and per-token** delays distinct: `cfg.emotes[token].cooldown` is a 0–120-second preference and `cfg.emotes[token].lastFiredAt` is an optional server Unix timestamp of the last accepted dispatch.
+- `lastFireByAbility` and `GetTime()` still provide precise in-session timing; `GetServerTime()` lets the remaining delay survive `/reload`/relog. Avoid polling and do not overwrite an existing valid timestamp on failed native dispatch or chance rejection.
+- A zero cooldown permits repeated genuine button presses (apart from the existing short hook dedupe). Do not accidentally create a global cooldown across different tokens or abilities.
+- Malformed saved timestamps must never block an emote indefinitely; preserve existing boolean-emote migration and independent profile storage. Player test is still pending; mocks are not game-client evidence.
+
 ## Current development investigation — search and PvP
 
 - The native emote editor search must match both the canonical token (e.g. `ROAR`) and any displayed slash alias, without altering stored emotes or leaking display labels into API calls.
@@ -29,7 +36,7 @@ The expanded interface and custom `/e` text are now part of the approved develop
 - **Custom /e security:** custom text may be sent only in a genuine player-action press context on Forever; even when an ability is configured Success/Failure, do not send custom messages from outcome events. State this limitation in the interface. Save settings even when the selected custom token cannot fire in outcome mode.
 
 - **Existing public trigger:** v0.4.3-beta uses player-action hooks. The new development branch introduces guarded native outcome-event dispatch outside PvP per Babuni's explicit direction. This may still be restricted in certain combat states and must be tested in-game; never bypass protection or claim full compatibility from mocks.
-- First presses must not be throttled by a synthetic zero timestamp; runtime cooldown timestamps are session-only. Failed API returns must not consume cooldown.
+- First presses must not be throttled by a synthetic zero timestamp. The development fix persists per-token dispatch timestamps through SavedVariables; in-session `GetTime()` measurements remain transient. Failed API returns must not consume cooldown.
 - Custom `/e` text uses `c:id` tokens and is attempted during player button-press hooks (`UseAction`, `CastSpellByID`, `C_Spell.CastSpell` where available). It can trigger **before cast success**, including on failed/aborted casts. Preserve this distinction and verify secure-chat restrictions in Forever before claiming complete compatibility.
 - Spellbook selection excludes passive, future, off-spec and non-spell entries. Actual modern API availability must be verified on the target Forever build, not guessed from an interface number.
 - `EnsureDB` validates saved data; keep backward migration compatible and avoid unnecessary allocations on routine casts. Preserve malformed/unknown saved records for possible recovery when safe.

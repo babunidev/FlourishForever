@@ -4,6 +4,16 @@
 **Latest confirmed Git tag:** `v0.4.3-beta` · **Unreleased work:** `feat/ability-trigger-modes`.  
 **Evidence:** current Lua source, package configuration, mocked test suites and Babuni's November 5, 2026 general in-game confirmation.
 
+## Per-emote cooldown persistence (development only)
+
+Each selected emote uses `cfg.emotes[token].cooldown` (0–120 seconds) and may include `cfg.emotes[token].lastFiredAt` (integer Unix seconds from `GetServerTime()`). Both values live inside the character's existing SavedVariables profile and are keyed by configured ability and native/custom emote token. In-session `lastFireByAbility[key][token]` still uses high-resolution `GetTime()`, while `ReadyEmotes` requires both the in-session and persisted wall-clock checks to expire before selecting a token. This retains sub-second precision between reloads and prevents the previous reload bypass.
+
+Only `RememberEmote` writes the wall timestamp when a native `C_ChatInfo.PerformEmote` reports success or the custom `/e` dispatch returns success. Chance rejection, no eligible token, or a failed native API return do not update the timer. A zero-second preference is never blocked by its timestamp. Increasing/decreasing a slider applies to the elapsed time since the last dispatch. `NormalizeEmotes` discards impossible saved stamps, including NaN, infinity and non-positive values. Future clock values do not create an indefinite lock.
+
+`GetServerTime()` is available on the Forever 1.60.1 API and gives Unix seconds, with one-second precision for persisted durations; `GetTime()` tracks the exact per-session elapsed interval. There is no `OnUpdate`, scheduled callback, timer scanning or addon communication. A UI reload recreates the precise Lua table but leaves each saved last-dispatch time intact.
+
+**Evidence:** automatic Lua mocks test individual tokens, 0/15/30/60/120-second boundaries, independent abilities, a simulated fresh module load, and corrupt saves. The actual in-game report prompted the fix, but no post-fix in-client timer test is recorded.
+
 ## Search and PvP observability (development only)
 
 Search rows store the displayed slash-command label for the UI, but their case-insensitive search index now concatenates the underlying native token with that label. This permits finding `ROAR` even if an alias or localization makes the displayed command different. The saved token remains unchanged.
@@ -54,7 +64,7 @@ There is no external library or server component.
 
 ## Profile model and migration
 
-The account-wide `FlourishForeverStorage.profiles[UnitGUID("player")]` contains `actionEmotesEnabled`, an `instances` table keyed by normalized spell name, and `customEmotes` with text and stable `id` values. An ability entry holds `name`, `spellID`, `enabled`, `chance`, legacy/default `cooldown`, and `emotes` mapping selected native tokens or `c:id` custom tokens to `{ cooldown = seconds }`.
+The account-wide `FlourishForeverStorage.profiles[UnitGUID("player")]` contains `actionEmotesEnabled`, an `instances` table keyed by normalized spell name, and `customEmotes` with text and stable `id` values. An ability entry holds `name`, `spellID`, `enabled`, `chance`, legacy/default `cooldown`, and `emotes` mapping selected native tokens or `c:id` custom tokens to `{ cooldown = seconds, lastFiredAt = optionalServerUnixSeconds }` on the current development branch.
 
 `FlourishForever_BindCharacterDB` binds a character profile at login and from other DB entry points. It can migrate older name or name-realm keys into the current GUID key, and conditionally adopt an already-loaded `ROARitFOREVERStorage` global. It cannot load another addon's absent SavedVariables file.
 
@@ -100,7 +110,7 @@ UNIT_SPELLCAST_SUCCEEDED -> not registered, never dispatches an emote
 
 The modern `C_ChatInfo.PerformEmote` API is documented for Forever 1.60.1 with restrictions, but whether it actually succeeds in all relevant hardware-press/combat contexts remains **unverified in-game**. The guards are preventative, not circumventions. They cannot guarantee that all `ADDON_ACTION_BLOCKED` situations disappear. No deferred retries, synthetic clicks or protected API bypasses were added.
 
-Cooldown timers are per ability and emote token; last-fired timestamps live only in session memory and reset on reload. Failure to send a native emote does not consume cooldown. Character SavedVariables and the expanded interface are otherwise unchanged.
+Cooldown timers are per ability and emote token. The current development build retains last-fired timestamps both in session memory for precision and in per-emote SavedVariables for reload persistence. Native API refusal does not consume a cooldown. The expanded interface and other character settings are otherwise unchanged.
 
 ## Automated and in-game evidence
 

@@ -1,5 +1,13 @@
 # Flourish Forever — creative and technical development journal
 
+## 6 November 2026 — when the timer forgot
+
+Something was wrong with the individual emote timers. After watching Flourish through several changes, I had strong reason to doubt that the seconds assigned to each expression were doing what they should.
+
+The source revealed that the slider values survived, but the actual memory of the last emote did not survive a UI reload. My AI assistant reproduced the missing timestamp with a failing regression test and changed the implementation to retain a server-time marker alongside each configured emote. Separate in-session timing still handles precise intervals, and another emote can remain available while its neighbor is cooling down.
+
+The offline tests now pass for different delays, character abilities, native and custom emotes, and reloads. The actual Forever client still has to confirm the fix, so it remains on the development branch rather than becoming a public release.
+
 ## 6 November 2026 — looking for the missing roar
 
 During the first trigger-menu test, searching for Roar failed to find the emote, and the battleground remained completely quiet. Both problems matter for an addon built around expressive play. The search was plainly relying on whichever slash command the client displayed rather than the underlying ROAR token, so the filter now recognizes either name.

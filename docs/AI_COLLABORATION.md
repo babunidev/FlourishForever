@@ -1,5 +1,9 @@
 # Flourish Forever — human–AI collaboration and attribution
 
+## 6 November 2026 — independent cooldown investigation
+
+Babuni reported that per-emote cooldowns seemed ineffective and requested a thorough correction. AI examined the SavedVariables migration, UI slider handler, `GetTime()` comparisons and accepted-emote dispatch path. The documented source weakness was session-only last-dispatch history, lost on `/reload`; a new automated test reproduced the missing persistent timestamp. AI implemented per-token `GetServerTime()` persistence with precise in-session `GetTime()` checks, regression coverage for independent emotes/abilities, zero and nonzero durations, failure returns and corrupt saves, and UI slider save/reopen tests. Offline verification is distinguished from a still-pending WoW Forever retest.
+
 ## 6 November 2026 — native emote search and PvP observability
 
 Babuni reported a missing Roar search result and no emote activity in a battleground while testing the new selectable trigger system. AI identified and corrected the native-token search omission, removed unnecessary spell-usability gating for press-triggered behavior, added mocked UI/gameplay cases, and implemented a manual `/flourish debug` status report with no player-identifying data. Current battleground restrictions remain under investigation. Tests and packaging status are recorded separately; no successful live PvP test or public distribution is claimed.

@@ -2,6 +2,14 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** WoW Forever 1.60.1 / Interface 16001.
 
+## Unreleased development — individual emote cooldown persistence (2026-11-06)
+
+- Fix cooldown history resetting on every `/reload` or relog. Successful native dispatches and submitted custom `/e` messages now save an individual `lastFiredAt` Unix timestamp alongside each emote's configured cooldown.
+- Retain precise `GetTime()` checking within a session and use Forever's `GetServerTime()` to honor the unexpired time across reloads. No polling or additional events.
+- Preserve per-ability/per-token independence, 0–120-second editable settings, immediate first use, chance, and no cooldown consumption for rejected native sends. Invalid or malformed saved timestamps are discarded.
+- Add offline regressions for 0/15/30/60/120-second cases, separate tokens, separate abilities, native API failure, custom emotes, corrupt saved timestamps, simulated reload, and slider save/reopen.
+- **Evidence:** Lua/UI mock tests and real no-upload packaging checks passed on the development branch. The user's timer problem was reported in-game; **this corrective implementation has not yet been retested in-game**. No new public tag.
+
 ## Unreleased development — search and battleground diagnostics (2026-11-06)
 
 - Fix emote editor search to match canonical native tokens such as `ROAR` as well as displayed slash aliases/localized labels. Add a UI mock verifying search works with a nonmatching alias.

@@ -5,6 +5,16 @@
 
 Flourish Forever links player-selected abilities to native or custom emotes, with per-ability chance, per-emote cooldowns and per-character settings. It does not cast abilities automatically.
 
+## 6 November 2026 — Individual emote cooldown correction (unreleased)
+
+A player report led to a confirmed limitation: the previous cooldown history existed only in the Lua-local `lastFireByAbility` table, so `/reload` or relog made every emote immediately available, regardless of the configured delay.
+
+The development fix now records `lastFiredAt` as a **server Unix timestamp on each selected emote's SavedVariables entry**, but **only after a native emote API success or custom `/e` send attempt is dispatched**. The old `GetTime()` clock still prevents premature repeats with frame-level precision during one session; server time protects the remaining cooldown over UI reloads. No polling, timers, hidden chat messages or synchronization with other players are used. Invalid saved timestamps are discarded safely.
+
+Each ability and each selected emote retain their own independent 0–120-second delay. Other ready emotes associated with the same ability can still play while one token is cooling down. A configured **0 seconds** means no emote cooldown (normal 0.2-second duplicate-hook protection still applies). Editing a timer immediately changes its duration relative to the last accepted emote.
+
+**Verification:** mocked Lua regression checks now cover first fire, expiry boundaries, 0-second operation, different tokens on one ability, same token across abilities, API failure, custom `/e`, corrupted timestamps and `/reload`. A mocked UI test confirms changing ROAR's slider writes the correct token and survives reopening the editor. Actual WoW Forever behavior is still to be verified locally.
+
 ## 6 November 2026 — Emote search and battleground diagnostics (unreleased)
 
 A report identified that searching the emote editor for `ROAR` did not reliably find the emote when its displayed alias differed. Search now indexes **both the canonical emote token** (e.g. `ROAR`) **and the displayed slash command** (e.g. `/rawr`), without changing the label or stored choice. A mocked UI regression tests both queries and confirms unrelated entries are hidden.
@@ -59,7 +69,7 @@ The 810×676 configuration window provides a searchable overview of configured a
 
 Install the latest available Forever file from [CurseForge](https://www.curseforge.com/wow/addons/flourishforever). Version `0.4.3-beta` is prepared but has not yet been confirmed there. The game addon directory `_forever_/Interface/AddOns/FlourishForever/` must contain `FlourishForever.toc`, `FlourishForever_Storage.lua`, `FlourishForever.lua`, and `FlourishForever_ActionEmotes.lua`.
 
-Settings persist in `FlourishForeverStorage`, indexed by character GUID. Older boolean emote selections are migrated; actual last-fired timestamps reset on reload.
+Settings persist in `FlourishForeverStorage`, indexed by character GUID. Older boolean emote selections are migrated; in the **unreleased cooldown fix**, per-emote last-fired timestamps also persist across `/reload` and relog, while the in-session clock retains precise timing.
 
 ## Development checks
 

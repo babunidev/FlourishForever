@@ -4,6 +4,17 @@
 **Latest confirmed Git tag:** `v0.4.3-beta` · **Current development:** per-ability trigger modes (unreleased, not tagged).  
 **Development:** Expanded UI restored from Babuni's older local archive and committed to `dev/expanded-ui-merge`. Preparation occurs separately; no public release tag was created.
 
+## Individual emote cooldown investigation — 6 November 2026
+
+- [x] Identify that the active cooldown history was stored only in `lastFireByAbility` and cleared on UI reload; configuration values alone survived.
+- [x] Persist server epoch timestamps per accepted native/custom emote in the existing per-character emote records; keep `GetTime()` precision during one session.
+- [x] Add regressions for independent 0–120-second emote delays, other ready tokens, distinct abilities, changing the slider, UI reopen, simulated reload, rejected native sends and invalid timestamps.
+- [x] Confirm the test suite fails on the previous nonpersistent implementation and passes with the correction.
+- [ ] Test in WoW Forever after `/reload`: choose one ability with a single emote at 30 or 60 seconds, fire twice rapidly, reload, and confirm it remains suppressed until its actual delay ends.
+- [ ] Test separate emotes on one ability, the same emote on multiple abilities, custom /e on Button press, and changing a slider while a cooldown is active.
+- [ ] Verify reported timer failure during one uninterrupted live session. The source-level reset explains reload tests, not necessarily every report of rapid repetition.
+- [ ] No public release tag approved; keep the existing `v0.4.3-beta` tag unchanged.
+
 ## Search bug and battleground silence — 6 November 2026
 
 - [x] Identify search indexing only a displayed slash-command label, not the canonical native emote token.

@@ -12,7 +12,7 @@
 | Custom `/e` text | Player-authored text entered in the custom emote editor | `customEmotes` entries with stable IDs |
 | Per-ability chance and enabled switch | Player configuration | Character profile |
 | Per-emote cooldowns | Player configuration | Emote selection records |
-| Actual last-fired times | Session `GetTime()` | **Not saved** across reload/relog |
+| Actual last-fired times (development fix) | Session `GetTime()` plus per-token `lastFiredAt` from `GetServerTime()` | Saved per character and emote; remaining delay survives reload/relog |
 
 ## Per-ability trigger preference (development)
 
@@ -49,7 +49,7 @@ FlourishForeverStorage = {
 
 This is a structural illustration, not an actual character profile. A new character has no configured abilities. The first added ability starts with native ROAR selected; user-defined emotes are never assigned without explicit player choice.
 
-Older `cfg.emotes[token] = true` entries are normalized into `{ cooldown = legacyAbilityCooldown }`; valid per-emote tables are retained. Unsupported SavedVariables records remain recoverable where possible. Stored cooldown preferences persist, but runtime last-fired timestamps do not.
+Older `cfg.emotes[token] = true` entries are normalized into `{ cooldown = legacyAbilityCooldown }`; valid per-emote tables are retained. Unsupported SavedVariables records remain recoverable where possible. Stored cooldown preferences persist. On the development branch, the last accepted native/custom dispatch timestamp also persists per token, while a separate in-memory clock maintains precise in-session timing.
 
 Custom emotes have `c:`-prefixed saved references and text entries under `customEmotes`. Deleting or editing custom lines can affect assigned selections; the editor tries to preserve IDs where corresponding lines remain.
 

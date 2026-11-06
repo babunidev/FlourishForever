@@ -1,5 +1,13 @@
 # Flourish Forever — recorded design decisions and open alternatives
 
+## 6 November 2026 — repairing the individual emote timers
+
+Babuni reported strong in-game evidence that individual timers were not doing their job. Source review identified a definite persistence gap: the selected cooldown values were saved, but the timestamps that determine whether an emote is eligible lived only in a Lua table that reset on every `/reload`. A repeated update-and-reload testing workflow therefore removed all active cooldowns.
+
+Rather than replace the per-emote design or introduce a global timer, the development fix now records the last accepted dispatch in the same per-emote SavedVariables entry using Forever's `GetServerTime()`. The existing `GetTime()` measurement remains for precise active-session decisions. The timers stay independent across different tokens and abilities; native API refusals and chance failures never consume one, and malformed saved timestamps are ignored. That persistence change is a technical correction to make configured durations meaningful across reloads.
+
+Tests now cover saved slider values and multiple timing patterns, including reload. No post-fix in-game test has been recorded, and the possibility of another cause for rapid repetitions within one uninterrupted session remains open. No public release is approved.
+
 ## 6 November 2026 — searchable native tokens and targeted PvP diagnosis
 
 Babuni reported that searching for Roar in the emote editor no longer found it, and that the new development build produced no Flourish emotes inside a battleground. Babuni also correctly noted that a game restart is usually unnecessary when an addon can be reloaded.
