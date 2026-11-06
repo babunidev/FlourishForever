@@ -15,6 +15,13 @@ SlashCmdList.FLOURISHFOREVER = function(msg)
         return
     end
 
+    if msg == "debug" then
+        if FlourishForever_EmoteDiagnostics then
+            print("Flourish Forever: " .. FlourishForever_EmoteDiagnostics())
+        end
+        return
+    end
+
     if msg == "status" then
         if FlourishForever_StorageStatus then
             print("Flourish Forever: " .. FlourishForever_StorageStatus())
@@ -27,5 +34,5 @@ SlashCmdList.FLOURISHFOREVER = function(msg)
         return
     end
 
-    print("Flourish Forever: /flourish | /ffsh | /flourish status | /flourish config")
+    print("Flourish Forever: /flourish | /ffsh | /flourish status | /flourish debug | /flourish config")
 end

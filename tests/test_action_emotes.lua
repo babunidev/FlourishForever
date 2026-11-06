@@ -247,8 +247,10 @@ cfg.emotes = { ROAR = { cooldown = 0 } }
 currentInstanceType = "pvp"
 restrictionStates[Enum.AddOnRestrictionType.PvPMatch] = 2
 nativeBefore = #played
+C_Spell.IsSpellUsable = function() return false end
 press(1, 1100)
-assert(#played == nativeBefore + 1, "PvP success fallback uses hardware press")
+assert(#played == nativeBefore + 1, "PvP fallback works despite false spell usability")
+C_Spell.IsSpellUsable = function() return true end
 cast(100, 1100.1, "pvp-success")
 assert(#played == nativeBefore + 1, "PvP success never runs delayed emote")
 assert(cfg.trigger == "success", "PvP fallback must not overwrite saved mode")
@@ -341,6 +343,13 @@ assert(cfg.chance == 100 and cfg.emotes.ROAR.cooldown == 120, "malformed values 
 assert(FlourishForeverDB.instances.corrupt == "invalid" and FlourishForeverDB.instances[5],
     "unknown save records preserved")
 assert(select(2, FlourishForever_ActionStatus()) == 2, "status excludes malformed keys")
+local diag = FlourishForever_EmoteDiagnostics()
+assert(diag:find("instance=none", 1, true)
+    and diag:find("presses=", 1, true)
+    and diag:find("attempts=", 1, true)
+    and diag:find("ChatState=", 1, true)
+    and diag:find("lastSpell=", 1, true),
+    "read-only diagnostics expose relevant client states without player identifiers")
 
 -- Current storage module still migrates an existing name-keyed profile.
 local oldProfile = { actionEmotesEnabled = false, instances = {} }

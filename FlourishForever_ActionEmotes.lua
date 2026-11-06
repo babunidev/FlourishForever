@@ -15,6 +15,15 @@ local HOME_ROW_W = 748
 local ABILITY_ICON = 48
 
 local lastFireByAbility = {}
+-- Session-only counters: no chat spam, player names, GUIDs or SavedVariables.
+local debugState = {
+    pressHooks = 0, outcomeEvents = 0,
+    attempts = 0, accepted = 0, refused = 0,
+    last = "no matching action yet", lastSpell = "-",
+}
+local function RecordBlock(why)
+    debugState.last = why
+end
 
 local db
 local ui
@@ -460,22 +469,9 @@ local function IsCustomToken(token)
     return type(token) == "string" and string.sub(token, 1, 2) == "c:"
 end
 
-local function SpellPressCanFire(spellID)
-    if C_Spell and C_Spell.IsSpellUsable then
-        local usable = C_Spell.IsSpellUsable(spellID)
-        if usable == false then
-            return false
-        end
-    elseif IsUsableSpell then
-        local usable = IsUsableSpell(spellID)
-        if usable == false then
-            return false
-        end
-    end
-
-    return true
-end
-
+-- Button press means the actual player action, even during a GCD/cooldown.
+-- Spell usability is not an emote-security check. On some clients it can be
+-- false in combat and unexpectedly silence the battleground press fallback.
 -- Keep chat/PvP security checks, without equating Map/Encounter/ChallengeMode
 -- restriction states with a prohibition on ordinary player-triggered emotes.
 -- Group membership and normal party/raid instances never suppress Flourish.
@@ -508,8 +504,12 @@ end
 -- The hardware-press fallback may be attempted when chat itself is allowed;
 -- result-event dispatch is never attempted while PvP restrictions are active.
 local function CanDispatchEmote(fromPress)
-    if IsChatRestricted() then return false end
+    if IsChatRestricted() then
+        RecordBlock("chat messaging lockdown / Chat restriction")
+        return false
+    end
     if not fromPress and (IsBattleground() or IsRestrictionActive("PvPMatch")) then
+        RecordBlock("outcome event suppressed in PvP")
         return false
     end
     return true
@@ -583,33 +583,64 @@ local function DispatchEmote(key, cfg, now, fromPress)
             end
         end
     end
-    if #ready == 0 then return end
+    if #ready == 0 then
+        RecordBlock("no ready eligible emotes (or custom-only outcome mode)")
+        return
+    end
 
     local chance = tonumber(cfg.chance) or DEFAULT_CHANCE
-    if math.random(1, 100) > chance then return end
+    if math.random(1, 100) > chance then
+        RecordBlock("chance roll skipped")
+        return
+    end
 
     local token = ready[math.random(1, #ready)]
+    debugState.attempts = debugState.attempts + 1
     if IsCustomToken(token) then
         if fromPress and SendCustomEmote(token) then
             fired[token] = now
+            debugState.accepted = debugState.accepted + 1
+            RecordBlock("custom /e dispatched; server delivery not confirmed")
+        else
+            debugState.refused = debugState.refused + 1
+            RecordBlock("custom chat API unavailable")
         end
-    elseif C_ChatInfo and C_ChatInfo.PerformEmote
-        and C_ChatInfo.PerformEmote(token) then
+    elseif not C_ChatInfo or not C_ChatInfo.PerformEmote then
+        debugState.refused = debugState.refused + 1
+        RecordBlock("native PerformEmote API unavailable")
+    elseif C_ChatInfo.PerformEmote(token) then
         fired[token] = now
+        debugState.accepted = debugState.accepted + 1
+        RecordBlock("native emote API accepted " .. token)
+    else
+        debugState.refused = debugState.refused + 1
+        RecordBlock("native emote API returned false for " .. token)
     end
 end
 
 local function TryAbilityEmoteFromPress(spellID)
-    if type(spellID) ~= "number" or not SpellPressCanFire(spellID)
-        or not CanDispatchEmote(true) then
+    if type(spellID) ~= "number" then
+        RecordBlock("no numeric spell ID from action hook")
+        return
+    end
+    debugState.lastSpell = spellID
+    if not CanDispatchEmote(true) then return end
+
+    local key, cfg = ResolveAbility(spellID)
+    if not key then
+        RecordBlock("spell has no enabled configured ability")
+        return
+    end
+    if EffectiveTrigger(cfg) ~= "press" then
+        RecordBlock("ability is configured for an outcome event, not a press")
         return
     end
 
-    local key, cfg = ResolveAbility(spellID)
-    if not key or EffectiveTrigger(cfg) ~= "press" then return end
-
     local now = GetTime()
-    if pressStamp[key] and now - pressStamp[key] < 0.2 then return end
+    if pressStamp[key] and now - pressStamp[key] < 0.2 then
+        RecordBlock("duplicate press ignored")
+        return
+    end
     pressStamp[key] = now
     DispatchEmote(key, cfg, now, true)
 end
@@ -620,15 +651,24 @@ local function IsSecret(value)
 end
 
 local function TryAbilityEmoteForOutcome(event, unit, castGUID, spellID)
+    debugState.outcomeEvents = debugState.outcomeEvents + 1
     if IsSecret(unit) or IsSecret(spellID) or IsSecret(castGUID)
         or unit ~= "player" or type(spellID) ~= "number"
         or not CanDispatchEmote(false) then
         return
     end
 
+    debugState.lastSpell = spellID
     local requested = event == "UNIT_SPELLCAST_SUCCEEDED" and "success" or "failure"
     local key, cfg = ResolveAbility(spellID)
-    if not key or EffectiveTrigger(cfg) ~= requested then return end
+    if not key then
+        RecordBlock("outcome spell has no enabled configured ability")
+        return
+    end
+    if EffectiveTrigger(cfg) ~= requested then
+        RecordBlock("outcome ignored by selected trigger")
+        return
+    end
 
     local now = GetTime()
     local previous = lastOutcome[key]
@@ -676,7 +716,10 @@ end
 local hardwareLock = false
 
 local function OnAbilityPress(spellID)
-    if hardwareLock or type(spellID) ~= "number" then
+    if hardwareLock then return end
+    debugState.pressHooks = debugState.pressHooks + 1
+    if type(spellID) ~= "number" then
+        RecordBlock("press hook called without a numeric spell ID")
         return
     end
     hardwareLock = true
@@ -1771,7 +1814,11 @@ local function CreateUI()
         local items = {}
         for _, token in ipairs(knownEmotes) do
             local label = EmoteLabel(token)
-            items[#items + 1] = { token = token, label = label, search = string.lower(label) }
+            -- Match the canonical emote token as well as its displayed/localized slash alias.
+            items[#items + 1] = {
+                token = token, label = label,
+                search = string.lower(token .. " " .. label),
+            }
         end
         if #(db.customEmotes or {}) > 0 then
             items[#items + 1] = { header = "Custom emotes" }
@@ -1851,6 +1898,34 @@ function FlourishForever_ActionStatus()
         end
     end
     return db.actionEmotesEnabled, count
+end
+
+-- Inspect the actual client restriction state after testing in a battleground.
+-- Read-only, no protected emote call and no player-identifying information.
+function FlourishForever_EmoteDiagnostics()
+    local _, instanceType = IsInInstance and IsInInstance()
+    local chatLockdown = C_ChatInfo and C_ChatInfo.InChatMessagingLockdown
+        and C_ChatInfo.InChatMessagingLockdown()
+    local kinds = Enum and Enum.AddOnRestrictionType
+    local function RestrictionState(name)
+        local id = kinds and kinds[name]
+        if type(id) ~= "number"
+            or not C_RestrictedActions or not C_RestrictedActions.GetAddOnRestrictionState then
+            return "unavailable"
+        end
+        return tostring(C_RestrictedActions.GetAddOnRestrictionState(id))
+    end
+    return "instance=" .. tostring(instanceType or "unknown")
+        .. "; chatLockdown=" .. tostring(chatLockdown == true)
+        .. "; ChatState=" .. RestrictionState("Chat")
+        .. "; PvPMatchState=" .. RestrictionState("PvPMatch")
+        .. "; presses=" .. debugState.pressHooks
+        .. "; outcomes=" .. debugState.outcomeEvents
+        .. "; attempts=" .. debugState.attempts
+        .. "; accepted=" .. debugState.accepted
+        .. "; rejected=" .. debugState.refused
+        .. "; lastSpell=" .. tostring(debugState.lastSpell)
+        .. "; last=" .. debugState.last
 end
 
 eventFrame:SetScript("OnEvent", function(self, event, ...)
