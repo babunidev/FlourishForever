@@ -194,7 +194,8 @@ assert(#played == 8, "duplicate event ignored")
 fire("UNIT_SPELLCAST_FAILED", 100, 304, "other-unit", "target")
 assert(#played == 8, "foreign failures ignored")
 
--- Failed native API send does not consume cooldown, and chance zero is silent.
+-- A false native return does not claim success, but its attempted token
+-- must not be called again until the configured retry delay has elapsed.
 cfg.trigger = "success"
 cfg.chance = 0
 cast(100, 500, "chance-zero")
@@ -205,15 +206,17 @@ nativeAllowed = false
 cast(100, 501, "blocked-native")
 assert(#played == 8, "failed native API response silent")
 nativeAllowed = true
-cast(100, 502, "allowed-native")
-assert(#played == 9, "failed API response did not consume cooldown")
+cast(100, 502, "suppressed-native-retry")
+assert(#played == 8, "failed native attempt is rate-limited for 120 seconds")
+cast(100, 621, "allowed-native-after-retry")
+assert(#played == 9, "native retry resumes at the configured cooldown boundary")
 
 cfg.emotes = {}
-cast(100, 550, "empty-pool")
+cast(100, 650, "empty-pool")
 assert(#played == 9, "intentionally empty pool silent")
 cfg.cooldown = 0
 cfg.emotes = "corrupt"
-cast(100, 551, "restored-pool")
+cast(100, 651, "restored-pool")
 assert(#played == 10, "corrupt pool recovered")
 
 -- Custom /e requires hardware input. Do not send it asynchronously on success or failure.
