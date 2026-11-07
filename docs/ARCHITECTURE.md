@@ -4,6 +4,17 @@
 **Latest confirmed Git tag:** `v0.4.3-beta` · **Unreleased work:** `feat/ability-trigger-modes`.  
 **Evidence:** current Lua source, package configuration, mocked test suites and Babuni's November 5, 2026 general in-game confirmation.
 
+
+## New chosen-emote ability lock (development implementation, 7 November)
+
+`cfg.emotes[token].cooldown` is still the 0–120-second duration set by each slider. The runtime **does not independently filter tokens using old last-fire history**. At the next eligible trigger it tests `RemainingAbilityLock` for that configured ability, rolls chance, then randomly chooses a token (native-only for asynchronous Success/Failure outcomes). The selected token's duration is snapshotted into `cfg.abilityLock = { token, duration, startedAt }` and `activeAbilityLocks[key]`. Until that duration expires, no other emote can trigger for that ability, regardless of its own configured duration. Locks for other ability keys are entirely separate.
+
+The local `GetTime()` copy provides precision without polling; the persisted `GetServerTime()` timestamp survives `/reload`. Invalid saved locks are discarded. Slider changes affect the **next** lock only. A duration of zero imposes no lock apart from the existing short duplicate-action-hook suppression. `/flourish cooldowns [ability]` reports the chosen token and its active lock as well as each selected emote's *potential* lock duration.
+
+Native `C_ChatInfo.PerformEmote(token)` is never called when actual chat lockdown prevents it. If invoked, the selected duration starts the ability lock whether the native API reports true or false, while the separate `lastFiredAt` and `lastAttemptAt` token stamps remain truthful historical evidence. A successfully submitted custom `/e` also starts the chosen duration, but outcome-triggered custom chat remains prohibited. Chance failure and empty/invalid pools impose no new lock. The prior per-token independent readiness model is retained in dated project history, not in current dispatch logic.
+
+**Evidence:** GitHub mocked Lua tests and upload-disabled preview ZIP validation passed; Babuni's earlier individual timers worked in-game, but this revised ability-wide behavior has no reported live verification yet.
+
 ## Native retry attempt tracking (development; client verification pending)
 
 The runtime now distinguishes three concepts: the **user's configured per-emote cooldown**, a native **API call attempt**, and an API-acknowledged **successful emote dispatch**. `cfg.emotes[token].lastFiredAt` records only successful native API returns (and custom `/e` dispatches), while `lastAttemptAt` records actual native `C_ChatInfo.PerformEmote(token)` invocations even if the function returns false. The latter is a bounded retry interval rather than evidence that the emote appeared. Both are Unix seconds; `lastFireByAbility[key][token]` holds the precise in-session last call time.

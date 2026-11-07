@@ -1,5 +1,12 @@
 # Flourish Forever — human–AI collaboration and attribution
 
+
+## 7 November 2026 — Babuni approves chosen-duration ability locks
+
+Babuni confirmed the preceding individual-emote cooldown implementation works in-game, then directed a new behavior: each emote retains an independently configured duration, but the *one selected* locks its whole ability until that duration expires. The three-second giggle and twenty-second dramatic emote example is Babuni's creative direction, not an AI-generated feature proposal.
+
+AI implemented the new per-ability runtime and SavedVariables lock, preserved native attempt/success evidence and Forever's chat/PvP guards, updated editor guidance and diagnostics, and revised mocked regressions. GitHub Lua/package checks passed; **no live test of the new shared-lock behavior** has been reported. The implementation remains in a development branch, with no authorized new publication.
+
 ## 7 November 2026 — decoding the native emote diagnostic
 
 Babuni supplied Forever diagnostic output showing nine attempted native emotes, zero API-accepted results, nine false returns, FAINT as the last selected token with a six-second timer, and no chat/PvP lockdown. AI traced the missing cooldown to a native dispatch path that wrote no timestamp when `PerformEmote` returned false. The new development implementation records a separate `lastAttemptAt` for any actual native call, while retaining `lastFiredAt` only for accepted results. This deliberately rate-limits ambiguous or unsuccessful native attempts without falsely claiming their delivery. Regression mocks simulate visible output even from a false-result call and exercise six-second expiry, reload and accepted/refused diagnostics. Actual client delivery on false returns and the effectiveness of the new throttle are still unverified in-game; no release is authorized.

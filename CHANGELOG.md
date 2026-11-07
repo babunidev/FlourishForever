@@ -2,6 +2,16 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** WoW Forever 1.60.1 / Interface 16001.
 
+
+## Unreleased development — chosen emote sets the whole ability's cooldown (2026-11-07)
+
+- Babuni confirmed that the preceding cooldown implementation works in-game and approved a change to **ability-wide cooldown gating** without removing individual emote duration sliders.
+- Whenever a selected emote is attempted, snapshot its 0–120-second duration and lock **all emotes on that configured ability** until it expires. Afterward, randomly select from the eligible native/custom pool again; other configured abilities remain independent.
+- Preserve native-emote false-return retry protection: a real native API attempt starts the ability lock even if the function returns false, without claiming a successful dispatch. Custom `/e` starts the lock when submitted; blocked chat calls, empty pools and chance rejections do not start one.
+- Persist `cfg.abilityLock` with chosen token, duration and server timestamp; keep high-resolution in-session timing and validate corrupt saved values. Existing token preferences and historical per-token timestamps are retained.
+- Update editor guidance and `/flourish cooldowns` diagnostics to show the current ability lock and the duration each token would impose if selected.
+- **Verification:** Lua syntax, mocked trigger, duration, independent ability, custom chat, native false-return, reload and malformed-save regression checks, and upload-disabled BigWigs packaging ZIP validation passed on the development branch. **New behavior has not yet been tested in the Forever client. No public tag.**
+
 ## Unreleased fix — native false-result retry throttling (2026-11-07)
 
 - Babuni supplied live diagnostics showing nine native attempts, zero reported successful calls and nine `false` API results; the last attempted token was `FAINT`, with a six-second configured timer. A `Mobility` cooldown lookup found no saved ability under that name, while the last matched ability was `Find Treasure`.

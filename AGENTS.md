@@ -4,17 +4,26 @@
 **Game:** World of Warcraft **Forever only**, client 1.60.1 / interface 16001. Recheck after each game update.  
 **Current tagged baseline:** `v0.4.3-beta` · **Unreleased feature branch:** `feat/ability-trigger-modes` (`0.4.3-beta-dev`).
 
+
+## Approved ability-wide cooldown design — 7 November 2026 (development only)
+
+- **Babuni superseded the older independent-per-token gating design.** Each selected native/custom token retains its own adjustable `cooldown = 0..120` seconds, but when a token triggers, **its chosen duration locks the entire configured ability** until expiry. Another selected emote cannot bypass that active lock. Other configured abilities are independent.
+- Snapshot the chosen duration at the time of an attempted emote. Later slider changes affect the next lock, not an already running lock. Select randomly from all appropriate configured tokens only when the ability is unlocked; obey chance, trigger mode, 0.2-second duplicate-press suppression and actual chat restrictions.
+- Native `C_ChatInfo.PerformEmote` calls lock the ability for the chosen duration **even when the API reports false**, without incorrectly recording a successful send. A custom `/e` attempt locks only after it can be submitted. Chance rejection, empty pools, missing APIs or chat lockdown do **not** start a new lock.
+- Persist `cfg.abilityLock = { token, duration, startedAt }` using `GetServerTime()`; keep a precise `GetTime()` session copy. Normalize malformed saved lock values. Preserve old per-token `lastFiredAt` and `lastAttemptAt` records as historical diagnostics, not as independent dispatch gates. A 0-second selected emote causes no ability-wide delay.
+- The earlier **“no global ability cooldown” guidance below describes the superseded design** and must not override this explicit decision. This is *per configured ability*, not a single global cooldown across the character or addon. Automated regression checks pass; **this new behavior is not yet verified in-game**. Do not tag or publish without separate release authorization.
+
 ## False native-emote result and cooldown semantics (development)
 
 - Babuni supplied live diagnostic evidence of `PerformEmote` returning false on nine attempts (accepted zero), most recently `FAINT` with six seconds configured. The actual cause of the visible emote output remains unverified; do not assert that a false API return proves delivery.
-- Keep success and attempt timestamps distinct: `lastFiredAt` is written only for native API success or a custom chat dispatch; `lastAttemptAt` records native calls that actually ran, whether the API returned true or false. Apply configured per-token cooldown to attempted native retries as well as confirmed dispatches.
+- Keep success and attempt timestamps distinct: `lastFiredAt` records native API success or submitted custom chat; `lastAttemptAt` records native calls regardless of return. **The currently active dispatch gate is the shared ability lock** with the selected token's duration; retain per-token timestamps as truthful history.
 - False-result throttling can delay a later genuinely successful retry. This is the explicit trade-off to prevent possible emote spam without falsely counting rejected calls as accepted. Never attempt restricted APIs when chat lockdown or a block guard prevents dispatch.
 - The last recognized configured ability was `Find Treasure`, not `Mobility`; diagnostic commands must use the actual configured ability key or the no-argument last matched ability. Neither the code-backed explanation nor mock tests prove the live bug fixed yet.
 
 ## Continuing six-second cooldown report — preserve design, gather actual evidence
 
 - Babuni's live test of the prior development build reported emote output on every Mobility press despite a six-second setting. Do **not** label the earlier persistence fix sufficient, nor claim the new debug instrumentation resolves the live issue.
-- Per-token cooldowns are intentional. Multiple selected tokens can each trigger on successive presses, even while earlier tokens are cooling. Do not replace them with a global per-ability timer without Babuni's explicit design approval.
+- Historical 6 November behavior: multiple tokens could trigger on successive presses. **Superseded 7 November by Babuni's explicit approval of an ability-wide lock set by the chosen token's duration.**
 - `/flourish cooldowns [ability]` reports (without mutation) the configured emote-token count, each individual timer's SavedVariables value, the remaining time calculated using the same helper as actual eligibility, and the last attempted API token. `/flourish debug` reports last matched ability and token. Both commands run only when requested; never emit chat spam in normal operation.
 - Use an actual in-client `/flourish cooldowns mobility` capture to discriminate bad slider values, single-token repeated attempts, individually rotating tokens, API response anomalies or another addon/macro generating a similar emote. Retest the single-token case in-game before calling the failure resolved.
 
@@ -22,7 +31,7 @@
 
 - Keep **per-ability and per-token** delays distinct: `cfg.emotes[token].cooldown` is a 0–120-second preference and `cfg.emotes[token].lastFiredAt` is an optional server Unix timestamp of the last accepted dispatch.
 - `lastFireByAbility` and `GetTime()` still provide precise in-session timing; `GetServerTime()` lets the remaining delay survive `/reload`/relog. Rejected native API calls save `lastAttemptAt` for retry throttling but must not update `lastFiredAt`; chance rejection never writes either stamp. Avoid polling.
-- A zero cooldown permits repeated genuine button presses (apart from the existing short hook dedupe). Do not accidentally create a global cooldown across different tokens or abilities.
+- A zero cooldown permits repeated genuine button presses (apart from short hook dedupe). The new lock is shared **within one configured ability** only; it never blocks other configured abilities.
 - Malformed saved timestamps must never block an emote indefinitely; preserve existing boolean-emote migration and independent profile storage. Player test is still pending; mocks are not game-client evidence.
 
 ## Current development investigation — search and PvP

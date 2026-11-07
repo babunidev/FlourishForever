@@ -5,11 +5,22 @@
 
 Flourish Forever links player-selected abilities to native or custom emotes, with per-ability chance, per-emote cooldowns and per-character settings. It does not cast abilities automatically.
 
+
+## Ability-wide cooldowns determined by the chosen emote (development, 7 November 2026)
+
+Every selected emote still has an individual **0–120-second cooldown setting**. The difference is what happens when an emote is chosen: its duration **locks the entire ability**, preventing *any* other emote on that ability until the interval expires.
+
+For example, a small giggle set to **3 seconds** allows another random emote after 3 seconds. A dramatic ROAR set to **20 seconds** pauses all flourishes linked to that ability for 20 seconds. On the next eligible trigger, Flourish selects randomly from the configured emotes again; the new selection determines the next lock duration. Other configured abilities have their own independent locks.
+
+The duration is captured when the emote is attempted. Editing its slider changes the duration of *future* locks, not an already running lock. A native API call returning `false` starts the chosen duration too (to avoid repeated calls that may still animate locally) while remaining recorded as unsuccessful. A rejected chance roll or actual chat restriction does not consume a lock. The lock persists through `/reload` using a saved server timestamp, with precise session timing from `GetTime()`. Previously saved per-token histories are retained for diagnosis, but no longer decide which emote may bypass the ability lock.
+
+**Status:** Implemented on `feat/ability-trigger-modes`, with passing mocked Lua/UI regression and upload-disabled packaging tests. Babuni confirmed that the prior individual-timer implementation worked in-game; this **new ability-wide behavior has not yet been tested in-game**. No new public version is tagged.
+
 ## 7 November 2026 — False-return native emotes: bounded retry correction (unreleased)
 
 In-game diagnostics showed `attempts=9; accepted=0; rejected=9` and `lastToken=FAINT; lastTokenCooldown=6`. The previous native code marked an emote's timer only when `C_ChatInfo.PerformEmote` returned `true`. With repeated `false` values, **nothing was throttling repeated native API attempts**, even though Babuni reported visible emotes. The documentation defines the return as a success boolean, but does **not** establish whether a `false` call can still show a local animation or whether some other addon produced that output.
 
-The new development fix preserves the difference between **success** and **attempt**. `lastFiredAt` continues to represent a reported successful dispatch, while an additional per-ability, per-token `lastAttemptAt` records when the addon **actually called** the native emote API, even if that call returned `false`. Both time points participate in the token's configured **0–120-second minimum interval**. Thus repeated `false` results no longer trigger a native emote attempt on every button press; a six-second setting also rate-limits retries for six seconds. Chat lockdown, invalid token pools, and failed chance rolls do not create an attempt timestamp. All tokens and abilities remain independent.
+The new development fix preserves the difference between **success** and **attempt**. `lastFiredAt` continues to represent a reported successful dispatch, while an additional per-ability, per-token `lastAttemptAt` records when the addon **actually called** the native emote API, even if that call returned `false`. The previous implementation used these per-token histories for individual **0–120-second retry intervals**. The new development design retains their diagnostic distinction but instead uses the selected emote's duration as an **ability-wide lock**. Chat lockdown, invalid pools and rejected chance rolls create no lock. Separate configured abilities remain independent.
 
 **Trade-off:** a native API call that genuinely failed is also rate-limited; this is intentional to prevent repeated attempts or possible visual spam. `/flourish cooldowns` now shows `attemptStamp` separately from `savedStamp` and `/flourish debug` retains truthful accepted/rejected counters. The last recognized ability in Babuni's diagnostics was **Find Treasure**, not Mobility; use `/flourish cooldowns find treasure` or `/flourish cooldowns` rather than a name absent from the configured profile.
 
@@ -31,7 +42,7 @@ A player report led to a confirmed limitation: the previous cooldown history exi
 
 The development fix now records `lastFiredAt` as a **server Unix timestamp on each selected emote's SavedVariables entry**, but **only after a native emote API success or custom `/e` send attempt is dispatched**. The old `GetTime()` clock still prevents premature repeats with frame-level precision during one session; server time protects the remaining cooldown over UI reloads. No polling, timers, hidden chat messages or synchronization with other players are used. Invalid saved timestamps are discarded safely.
 
-Each ability and each selected emote retain their own independent 0–120-second delay. Other ready emotes associated with the same ability can still play while one token is cooling down. A configured **0 seconds** means no emote cooldown (normal 0.2-second duplicate-hook protection still applies). Editing a timer immediately changes its duration relative to the last accepted emote.
+Historical implementation: each selected emote originally had an independent dispatch delay. **This was superseded on 7 November:** the chosen emote now locks the entire ability for its configured duration. A configured **0 seconds** means no emote cooldown (normal 0.2-second duplicate-hook protection still applies). Editing a timer immediately changes its duration relative to the last accepted emote.
 
 **Verification:** mocked Lua regression checks now cover first fire, expiry boundaries, 0-second operation, different tokens on one ability, same token across abilities, API failure, custom `/e`, corrupted timestamps and `/reload`. A mocked UI test confirms changing ROAR's slider writes the correct token and survives reopening the editor. Actual WoW Forever behavior is still to be verified locally.
 
@@ -79,7 +90,7 @@ The same settings, action-press native/custom emotes and cooldowns are retained.
 
 ## Features and controls
 
-The 810×676 configuration window provides a searchable overview of configured abilities, categorized spellbook picker with search, individual enable switches, native/custom emote search and selection, an editable custom `/e` list, independent **0–120-second cooldowns per emote**, and **0–100% chance per ability**. New characters start with no configured abilities.
+The 810×676 configuration window provides a searchable overview of configured abilities, categorized spellbook picker with search, individual enable switches, native/custom emote search and selection, an editable custom `/e` list, individual **0–120-second duration settings** that lock their entire ability when chosen, and **0–100% chance per ability**. New characters start with no configured abilities.
 
 | Command | Function |
 | --- | --- |

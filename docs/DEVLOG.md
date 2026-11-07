@@ -1,5 +1,12 @@
 # Flourish Forever — creative and technical development journal
 
+
+## 7 November 2026 — the silence after a larger gesture
+
+With the individual emote timers working again, a different rhythm became appealing. A small giggle should leave room for another gesture almost immediately, while a forceful roar deserves a longer quiet moment. The important part isn't merely how often each emote appears, but how much space it leaves afterward.
+
+The new rule is that any chosen emote pauses its entire ability for its own configured duration. My AI assistant implemented that shared lock while keeping separate sliders, chance, trigger modes and character settings intact. Automated Lua and packaging checks now pass; the new timing has not yet been verified in the actual Forever client. No public tag has been made.
+
 ## 7 November 2026 — when the emote API answered no
 
 The diagnostics finally showed why my emote timer wasn't being used: Flourish had attempted nine native emotes, but the client returned false every time. The addon only remembered successful sends, so the same action remained eligible on the next button press. It also became clear that the cooldown command needed the real configured ability name rather than the label I had tried.

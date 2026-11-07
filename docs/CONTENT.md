@@ -3,6 +3,13 @@
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** World of Warcraft Forever / interface 16001.  
 **Public baseline:** v0.4.3-beta · **Development:** Success/press/failure choice per ability, pending in-game verification.
 
+
+## Chosen emote determines the active ability lock (development)
+
+The cooldown slider still writes `cfg.emotes[token].cooldown` (0–120 seconds) for each selected emote. New ability-level state is `cfg.abilityLock = { token = "ROAR", duration = 20, startedAt = unixSeconds }`, persisted in the same GUID-keyed character profile. This record represents the **last selected emote's ability-wide cooldown**, not a fixed configured ability timer. A three-second token locks its own ability for three seconds; a twenty-second token locks it for twenty, excluding every other selected token during that interval.
+
+Legacy per-token `lastFiredAt` and `lastAttemptAt` values remain available for historical diagnostics and truthful API-result reporting, but do not gate which token may be selected. Separate abilities and character profiles retain independent locks; no global character cooldown was introduced.
+
 ## Content sources
 
 | Content | Source | Persistence |

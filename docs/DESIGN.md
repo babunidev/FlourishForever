@@ -3,6 +3,13 @@
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** Forever interface 16001.  
 **Current public tag:** v0.4.3-beta · **New development:** per-ability Triggered by selector. The earlier 0.3.2-beta used a smaller 620×520 layout.
 
+
+## Cooldown slider behavior — 7 November development
+
+Each selected emote keeps its individual 0–120-second slider. The editor now explains that the *chosen* emote's duration locks its entire ability until the timer expires; no alternate selected emote can play during that lock. A subsequent random emote may have a different cooldown duration. The Chance and Triggered by controls are unchanged, and the cooldown is never shared across different configured abilities.
+
+The existing `/flourish cooldowns` readout shows the active ability lock and the duration each selected token would impose if chosen. The interface and diagnostics have mocked coverage; game-client visuals and actual live timing remain to be verified.
+
 ## Expanded configuration window
 
 The player opens a movable Blizzard-style **810×676** window using `/flourish` or an alias. The four UI pages guide a player from a general overview to selecting an ability, assigning emotes and managing custom text:

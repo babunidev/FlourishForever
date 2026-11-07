@@ -1,5 +1,12 @@
 # Flourish Forever — recorded design decisions and open alternatives
 
+
+## 7 November 2026 — chosen emote controls the whole ability's cooldown
+
+Babuni confirmed that the most recent individual cooldown implementation works and explicitly chose a revised interaction: every selected emote retains its own duration, but whichever one fires locks the **entire configured ability** for that duration. A minor giggle with a three-second timer allows the next random expression quickly, while a more impactful roar with a twenty-second timer creates a longer silence. The next emote is chosen randomly only after the current ability lock expires. The ability's chance and selected trigger mode remain unchanged; other abilities are never locked by this one.
+
+This explicitly **supersedes** the previous independent-token gating and the earlier instruction not to introduce an ability-wide timer. It does not introduce one global cooldown across the character, nor does it change native versus custom chat protection. AI implemented the chosen-duration lock, kept separate historical attempt/success timestamps for native APIs returning false, updated tests and reports, and documented the outstanding in-game verification. The existing public `v0.4.3-beta` tag is untouched.
+
 ## 7 November 2026 — respecting a false-return native-emote retry interval
 
 The next in-game diagnostic showed that Flourish tried nine native emotes and **all nine `PerformEmote` calls returned false**, yet the player had observed repeated emote activity. The most recent token was FAINT with a six-second configured delay. The named `Mobility` lookup did not correspond to a configured ability key; the last matched ability was `Find Treasure`. This explains why the previous accepted-dispatch timer never started, although the cause of visible emotes under false-return status remains unresolved.

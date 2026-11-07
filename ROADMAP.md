@@ -4,11 +4,22 @@
 **Latest confirmed Git tag:** `v0.4.3-beta` · **Current development:** per-ability trigger modes (unreleased, not tagged).  
 **Development:** Expanded UI restored from Babuni's older local archive and committed to `dev/expanded-ui-merge`. Preparation occurs separately; no public release tag was created.
 
+
+## Approved cooldown behavior — 7 November 2026
+
+- [x] Babuni confirmed the preceding per-token cooldown implementation works in-game and approved a refined design: every token keeps its own duration, but the chosen emote locks the **entire ability** until that duration expires.
+- [x] Implement per-ability lock state with the chosen token and duration, persisted across `/reload`, while preserving older per-token history records and character settings.
+- [x] Preserve rate-limiting of actual native-emote calls returning `false`, without recording them as confirmed successful dispatches.
+- [x] Update UI guidance and read-only cooldown diagnostics to show which emote is locking the ability and for how long.
+- [x] GitHub mocked Lua regressions cover 3s/20s locks, other-token suppression, independent abilities, changes to slider durations, custom `/e`, false native returns, reload, 0s, and malformed saves; packaging dry run passed.
+- [ ] Validate the new shared lock directly in the Forever client: 3-second giggle versus 20-second ROAR on the same ability, mixed native/custom pools, reload, and group/PvP security restrictions.
+- [ ] No release tag, main merge or CurseForge upload is authorized for this specific change.
+
 ## Native emote false-return diagnosis — 7 November 2026
 
 - [x] Use Babuni's in-game output: `accepted=0`, `rejected=9`, `lastToken=FAINT`, six-second duration and no reported chat lockdown.
 - [x] Identify that the previous implementation never recorded a timestamp after native `PerformEmote` returned false, allowing repeated attempts every eligible press.
-- [x] Add a separate per-token `lastAttemptAt` retry timestamp and retain `lastFiredAt` only for reported successful native dispatches. No global ability cooldown.
+- [x] Historical implementation added separate per-token attempt and success timestamps; the 7 November design supersedes individual dispatch gating with a lock scoped to one configured ability.
 - [x] Add simulated false-return-but-visible `FAINT` regression, rapid presses, reload and six-second retry expiry.
 - [ ] Confirm exact release-branch CI and upload-disabled package checks after final docs.
 - [ ] Live client: repeat one emote on a six-second Button press trigger; inspect `/flourish cooldowns find treasure` (or `/flourish cooldowns`) for the real configured ability and `attemptStamp`, `savedStamp`, remaining seconds.
@@ -23,7 +34,7 @@
 - [x] Add exact six-second single- and multi-token regression mocks and per-ability `/flourish cooldowns` output.
 - [ ] In-game, inspect `/flourish cooldowns find treasure` or `/flourish cooldowns` (last matched ability); the previous `mobility` lookup did not find a saved ability under that name.
 - [ ] Compare `/flourish debug` before/after apparent repeated emotes. If acceptance does not increment, investigate macros or another enabled addon rather than assuming Flourish generated the emote.
-- [ ] Determine if *the same token* repeats before its timer expires; only then change runtime suppression behavior. Do not silently introduce a shared/global ability cooldown.
+- [x] Babuni confirmed the earlier individual timers worked and explicitly approved the new ability-wide lock determined by the selected token. Live verification of the revised design remains open.
 - [ ] Confirm the fix in-game before proposing a release. Existing `v0.4.3-beta` remains untouched.
 
 ## Individual emote cooldown investigation — 6 November 2026
