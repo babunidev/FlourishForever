@@ -277,7 +277,7 @@ nativeAllowed = false
 press(1, 1114)
 cast(100, 1114.1, "arena-later-event")
 local pvpDiagnostic = FlourishForever_EmoteDiagnostics()
-assert(pvpDiagnostic:find("lastDispatch=native emote API returned false for ROAR", 1, true),
+assert(pvpDiagnostic:find("lastDispatch=native emote API returned false; attempt throttled for ROAR", 1, true),
     "later PvP cast event must not erase the native send refusal")
 nativeAllowed = true
 chatLockdown = true
