@@ -216,7 +216,7 @@ cast(100, 650, "empty-pool")
 assert(#played == 9, "intentionally empty pool silent")
 cfg.cooldown = 0
 cfg.emotes = "corrupt"
-cast(100, 651, "restored-pool")
+cast(100, 750, "restored-pool")
 assert(#played == 10, "corrupt pool recovered")
 
 -- Custom /e requires hardware input. Do not send it asynchronously on success or failure.
@@ -242,7 +242,7 @@ assert(#sent == 2, "custom cooldown expires")
 cfg.trigger = "success"
 cfg.emotes = { ROAR = { cooldown = 0 }, ["c:1"] = { cooldown = 0 } }
 local sentBefore, nativeBefore = #sent, #played
-cast(100, 1050, "mixed-native")
+cast(100, 1070, "mixed-native")
 assert(#played == nativeBefore + 1 and #sent == sentBefore,
     "success mode selects native token only")
 
