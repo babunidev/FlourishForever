@@ -65,6 +65,14 @@ local function CooldownWallTime()
     end
 end
 
+local function CleanCooldownStamp(value)
+    if type(value) ~= "number" or value ~= value
+        or value <= 0 or value >= 100000000000 then
+        return nil
+    end
+    return math.floor(value)
+end
+
 local function NormalizeEmotes(cfg)
     -- Older versions used a single per-ability cooldown and boolean emotes.
     -- Newer settings store a separate cooldown per selected token. Preserve
@@ -86,15 +94,8 @@ local function NormalizeEmotes(cfg)
             cfg.emotes[token] = { cooldown = BoundedWholeNumber(value, legacy, 0, 120) }
         elseif type(value) == "table" then
             value.cooldown = BoundedWholeNumber(value.cooldown, legacy, 0, 120)
-            for _, field in ipairs({ "lastFiredAt", "lastAttemptAt" }) do
-                local stamp = value[field]
-                if type(stamp) ~= "number" or stamp ~= stamp or
-                    stamp <= 0 or stamp >= 100000000000 then
-                    value[field] = nil
-                else
-                    value[field] = math.floor(stamp)
-                end
-            end
+            value.lastFiredAt = CleanCooldownStamp(value.lastFiredAt)
+            value.lastAttemptAt = CleanCooldownStamp(value.lastAttemptAt)
         else
             cfg.emotes[token] = nil
         end
@@ -473,6 +474,17 @@ end
 
 -- One calculator drives both actual dispatch eligibility and the manual
 -- cooldown report, so diagnostics cannot disagree with the selection logic.
+local function SavedCooldownRemaining(wallNow, stamp, duration)
+    if type(wallNow) ~= "number" or type(stamp) ~= "number" then
+        return 0
+    end
+    local elapsed = wallNow - stamp
+    if elapsed >= 0 and elapsed < duration then
+        return duration - elapsed
+    end
+    return 0
+end
+
 local function RemainingCooldown(info, now, last, wallNow)
     local duration = BoundedWholeNumber(info.cooldown, DEFAULT_COOLDOWN, 0, 120)
     if duration == 0 then return 0, 0 end
@@ -482,18 +494,10 @@ local function RemainingCooldown(info, now, last, wallNow)
         sessionLeft = math.max(0, duration - (now - last))
     end
 
-    local wallLeft = 0
-    if type(wallNow) == "number" then
-        for _, field in ipairs({ "lastFiredAt", "lastAttemptAt" }) do
-            local stamped = info[field]
-            if type(stamped) == "number" then
-                local elapsed = wallNow - stamped
-                if elapsed >= 0 and elapsed < duration then
-                    wallLeft = math.max(wallLeft, duration - elapsed)
-                end
-            end
-        end
-    end
+    local wallLeft = math.max(
+        SavedCooldownRemaining(wallNow, info.lastFiredAt, duration),
+        SavedCooldownRemaining(wallNow, info.lastAttemptAt, duration)
+    )
     return math.max(sessionLeft, wallLeft), duration
 end
 
