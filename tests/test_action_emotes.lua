@@ -364,174 +364,158 @@ assert(diag:find("instance=none", 1, true)
     and diag:find("lastDispatch=", 1, true),
     "read-only diagnostics expose relevant client states without player identifiers")
 
--- Focused cooldown regressions: per token, per ability, editable duration,
--- API-rejection semantics, and surviving a simulated UI reload.
+-- New behavior: each emote has a selectable cooldown duration, but once
+-- selected that duration locks the ENTIRE ability, including other tokens.
 FlourishForeverDB.actionEmotesEnabled = true
 cfg.enabled, cfg.chance, cfg.trigger = true, 100, "press"
-cfg.emotes = { ROAR = { cooldown = 60 } }
+cfg.emotes = { ROAR = { cooldown = 3 } }
 local first = #played
 press(1, 2000)
-assert(#played == first + 1, "first press must fire")
-assert(type(cfg.emotes.ROAR.lastFiredAt) == "number", "successful native emote must save cooldown timestamp")
+assert(#played == first + 1 and played[#played] == "ROAR", "first 3s emote fires")
+assert(cfg.abilityLock.token == "ROAR" and cfg.abilityLock.duration == 3,
+    "3s token starts an ability-wide 3s lock")
+cfg.emotes = { CHEER = { cooldown = 20 } }
 press(1, 2001)
-press(1, 2059)
-assert(#played == first + 1, "60s ROAR timer blocks repeated presses")
-press(1, 2060)
-assert(#played == first + 2, "ROAR becomes ready at exactly 60 seconds")
+assert(#played == first + 1, "another token cannot bypass the running ability lock")
+press(1, 2003)
+assert(#played == first + 2 and played[#played] == "CHEER", "20s emote follows 3s lock")
+assert(cfg.abilityLock.token == "CHEER" and cfg.abilityLock.duration == 20,
+    "20s token starts a 20s lock for the whole ability")
+cfg.emotes = { ROAR = { cooldown = 3 }, CHEER = { cooldown = 20 } }
+press(1, 2004)
+press(1, 2022.7)
+assert(#played == first + 2, "3s emote cannot bypass a 20s CHEER lock")
+press(1, 2023)
+assert(#played == first + 3, "next random selected emote allowed when ability unlocks")
+local chosen = played[#played]
+assert(cfg.abilityLock.token == chosen
+    and cfg.abilityLock.duration == cfg.emotes[chosen].cooldown,
+    "new lock uses chosen token's configured duration")
 
--- A reload rebuilds Lua locals, but should not allow a 60s emote instantly.
-now = 2061
+-- Reload preserves the *ability* lock rather than reinstating old per-token
+-- histories; the selected cooldown duration is snapshotted at trigger time.
+cfg.emotes = { ROAR = { cooldown = 60 } }
+press(1, 2100)
+assert(#played == first + 4 and cfg.abilityLock.duration == 60,
+    "60s lock starts when long-cooldown emote selected")
+now = 2101
 assert(loadfile("FlourishForever_ActionEmotes.lua"))()
-press(1, 2061)
-assert(#played == first + 2, "per-emote cooldown survives UI reload")
+press(1, 2101)
+assert(#played == first + 4, "ability lock survives /reload")
 cfg.emotes.ROAR.cooldown = 15
-press(1, 2074)
-assert(#played == first + 2, "changing slider cooldown still respects elapsed time")
-press(1, 2075)
-assert(#played == first + 3, "shorter cooldown applies to last successful emote")
+press(1, 2115)
+assert(#played == first + 4, "editing slider does not shorten a running 60s lock")
+press(1, 2160)
+assert(#played == first + 5 and cfg.abilityLock.duration == 15,
+    "next selected ROAR uses its newly configured 15s duration")
+press(1, 2174)
+assert(#played == first + 5, "new 15s lock enforced")
+press(1, 2175)
+assert(#played == first + 6, "15s lock expires on schedule")
 
-cfg.emotes.CHEER = { cooldown = 30 }
-press(1, 2076)
-assert(#played == first + 4 and played[#played] == "CHEER",
-    "another selected token remains eligible during ROAR cooldown")
-press(1, 2077)
-assert(#played == first + 4, "both tokens have independent running cooldowns")
-press(1, 2090)
-assert(#played == first + 5 and played[#played] == "ROAR",
-    "ROAR timer expires separately while CHEER stays blocked")
-cfg.emotes.ROAR.cooldown = 120
-press(1, 2106)
-assert(#played == first + 6 and played[#played] == "CHEER",
-    "CHEER cooldown expires independently")
-
--- Reusing the ROAR token on another ability must not share its timer.
+-- Independent abilities must never share a lock, even when they use the same
+-- emote token or have otherwise identical settings.
 local secondCfg = FlourishForeverDB.instances.second
 secondCfg.trigger, secondCfg.chance, secondCfg.enabled = "press", 100, true
 secondCfg.emotes = { ROAR = { cooldown = 120 } }
-press(2, 2107)
+press(2, 2176)
 assert(#played == first + 7 and played[#played] == "ROAR",
-    "different abilities have independent ROAR cooldowns")
-press(2, 2108)
-assert(#played == first + 7, "second ability respects its own timer")
+    "second ability can fire while Strike is locked")
+press(2, 2177)
+assert(#played == first + 7 and secondCfg.abilityLock.duration == 120,
+    "second ability honors its own long lock")
 
+-- Zero is a genuine no-cooldown choice; duplicate-hook dedupe still applies.
 cfg.emotes = { ROAR = { cooldown = 0 } }
-press(1, 2110)
-press(1, 2110.3)
-assert(#played == first + 9, "zero-second timer permits repeated genuine presses")
+press(1, 2200)
+press(1, 2200.3)
+assert(#played == first + 9 and cfg.abilityLock.duration == 0,
+    "zero-second selection allows separate button presses")
 
--- Native API false is not a successful send, but it must rate-limit repeated
--- attempts for the token. The old code retried on every press indefinitely.
-cfg.emotes = { ROAR = { cooldown = 120 } }
-nativeAllowed = false
-press(1, 2240)
-assert(cfg.emotes.ROAR.lastFiredAt == nil, "refused native result is not recorded as successful")
-assert(type(cfg.emotes.ROAR.lastAttemptAt) == "number",
-    "false result saves a separate native-attempt timestamp")
-nativeAllowed = true
-press(1, 2241)
-assert(cfg.emotes.ROAR.lastFiredAt == nil,
-    "native retry waits for configured cooldown after a false result")
-press(1, 2360)
-assert(type(cfg.emotes.ROAR.lastFiredAt) == "number",
-    "retry after false result is allowed when the interval expires")
-
--- Invalid saved timestamps cannot indefinitely silence a token. Reload first
--- to isolate persisted timestamp handling from the valid session clock.
-cfg.emotes.ROAR.lastFiredAt = math.huge
-cfg.emotes.ROAR.lastAttemptAt = math.huge
-now = 2361
-assert(loadfile("FlourishForever_ActionEmotes.lua"))()
-press(1, 2361)
-assert(#played == first + 11, "malformed persisted timestamps are rejected")
-
--- Custom text has the same individual cooldown and survives UI reload.
-cfg.emotes = { ["c:1"] = { cooldown = 30 } }
-local beforeCustom = #sent
-press(1, 2400)
-assert(#sent == beforeCustom + 1, "custom emote fires")
-assert(type(cfg.emotes["c:1"].lastFiredAt) == "number", "custom send persists timer")
-now = 2401
-assert(loadfile("FlourishForever_ActionEmotes.lua"))()
-press(1, 2401)
-assert(#sent == beforeCustom + 1, "custom timer survives UI reload")
-press(1, 2430)
-assert(#sent == beforeCustom + 2, "custom cooldown eventually expires")
-
--- Exact live report: a single emote set to 6 seconds must not fire on
--- every successive Button press. Cooldown diagnostics use the same calculator.
-cfg.emotes = { ROAR = { cooldown = 6 } }
-cfg.trigger, cfg.chance, cfg.enabled = "press", 100, true
-local beforeSix = #played
-press(1, 2450)
-assert(#played == beforeSix + 1, "6s first native press")
-local remaining = FlourishForever_CooldownDiagnostics("strike")
-assert(remaining[1]:find("selected=1 emotes", 1, true)
-    and remaining[2]:find("6s cooldown", 1, true)
-    and remaining[2]:find("6.0s remaining", 1, true),
-    "manual report identifies the configured 6s cooldown and active timer")
-press(1, 2450.5)
-press(1, 2451)
-press(1, 2455.7) -- leave >0.2s before expiry to avoid hook dedupe
-assert(#played == beforeSix + 1, "6s single-token cooldown blocks repeated presses")
-press(1, 2456)
-assert(#played == beforeSix + 2, "6s single-token cooldown expires")
-remaining = FlourishForever_CooldownDiagnostics("strike")
-assert(remaining[2]:find("6.0s remaining", 1, true),
-    "report observes the same restarted timer as runtime dispatch")
-
--- Per-token cooling is intentionally not a global ability cooldown:
--- distinct ready tokens can fire on consecutive presses, each only once.
-cfg.emotes = { ROAR = { cooldown = 6 }, CHEER = { cooldown = 6 } }
-local firstDual = #played
-press(1, 2470)
-local tokenOne = played[#played]
-press(1, 2471)
-local tokenTwo = played[#played]
-assert(#played == firstDual + 2 and tokenOne ~= tokenTwo,
-    "two different ready tokens may fire on consecutive presses")
-press(1, 2472)
-assert(#played == firstDual + 2,
-    "both individual 6s timers block third press")
-local reports = FlourishForever_CooldownDiagnostics("strike")
-assert(reports[1]:find("selected=2 emotes", 1, true)
-    and #reports == 4
-    and reports[2]:find("remaining", 1, true)
-    and reports[3]:find("remaining", 1, true),
-    "manual report shows individual remaining times for each selected emote")
-assert(FlourishForever_CooldownDiagnostics("nonexistent")[1]:find("No configured ability", 1, true),
-    "invalid query yields a safe read-only message")
-assert(FlourishForever_EmoteDiagnostics():find("lastTokenCooldown=6", 1, true),
-    "general debug exposes last selected token's cooldown")
-
--- Live observation simulation: native API reports false while the emote
--- appears. Even without a success report, its six-second retry interval must
--- prevent repeated output on every button press, including through /reload.
+-- Native false is not a confirmed success; nevertheless it can appear
+-- visibly in Forever, so the attempt itself locks the entire ability.
+cfg.emotes = { FAINT = { cooldown = 6 }, ROAR = { cooldown = 3 } }
+-- Select FAINT alone first to unambiguously start a 6s lock.
 cfg.emotes = { FAINT = { cooldown = 6 } }
-cfg.trigger, cfg.chance, cfg.enabled = "press", 100, true
 nativeAllowed = false
 nativeVisibleDespiteFalse = true
-local beforeFalseVisible = #played
-press(1, 2500)
-assert(#played == beforeFalseVisible + 1 and played[#played] == "FAINT",
-    "first false-result native emote may be locally visible")
-assert(cfg.emotes.FAINT.lastFiredAt == nil and type(cfg.emotes.FAINT.lastAttemptAt) == "number",
-    "a false native result records an attempt, never a claimed success")
-press(1, 2501)
-press(1, 2505)
-assert(#played == beforeFalseVisible + 1,
-    "false-result native emote is rate-limited for the entire six seconds")
-local faints = FlourishForever_CooldownDiagnostics("strike")
-assert(faints[2]:find("6s cooldown", 1, true) and faints[2]:find("remaining", 1, true)
-    and faints[2]:find("attemptStamp=", 1, true),
-    "cooldown diagnostics show native retry interval and attempt timestamp")
-now = 2505.3
+local beforeFalse = #played
+press(1, 2300)
+assert(#played == beforeFalse + 1 and cfg.abilityLock.token == "FAINT"
+    and cfg.abilityLock.duration == 6,
+    "false native FAINT starts the configured ability-wide 6s retry lock")
+assert(cfg.emotes.FAINT.lastFiredAt == nil
+    and type(cfg.emotes.FAINT.lastAttemptAt) == "number",
+    "native false preserves distinct attempt/success evidence")
+cfg.emotes.ROAR = { cooldown = 3 }
+press(1, 2301)
+press(1, 2305.7)
+assert(#played == beforeFalse + 1, "ROAR cannot fire during rejected FAINT's lock")
+local report = FlourishForever_CooldownDiagnostics("strike")
+assert(report[1]:find("selected=2 emotes", 1, true)
+    and report[2]:find("Ability lock", 1, true)
+    and report[2]:find("FAINT", 1, true), "diagnostics describe ability lock and chosen token")
+now = 2305.8
 assert(loadfile("FlourishForever_ActionEmotes.lua"))()
-press(1, 2505.3)
-assert(#played == beforeFalseVisible + 1, "false-result attempt cooldown survives /reload")
-press(1, 2506)
-assert(#played == beforeFalseVisible + 2, "native retry resumes after six seconds")
-nativeVisibleDespiteFalse = false
+press(1, 2305.8)
+assert(#played == beforeFalse + 1, "native false ability lock persists through reload")
 nativeAllowed = true
+nativeVisibleDespiteFalse = false
+-- Choose only ROAR for a deterministic next selection.
+cfg.emotes = { ROAR = { cooldown = 3 } }
+press(1, 2306)
+assert(#played == beforeFalse + 2 and cfg.abilityLock.duration == 3,
+    "new selected emote can fire once false-result lock expires")
+
+-- Custom /e selects its own ability-wide duration and persists across reload.
+cfg.emotes = { ["c:1"] = { cooldown = 30 } }
+local beforeCustom = #sent
+press(1, 2350)
+assert(#sent == beforeCustom + 1 and cfg.abilityLock.duration == 30,
+    "custom /e starts full-ability lock")
+now = 2351
+assert(loadfile("FlourishForever_ActionEmotes.lua"))()
+press(1, 2351)
+assert(#sent == beforeCustom + 1, "custom ability lock persists through reload")
+cfg.emotes = { ROAR = { cooldown = 3 }, ["c:1"] = { cooldown = 30 } }
+press(1, 2379)
+assert(#sent == beforeCustom + 1 and #played == beforeFalse + 2,
+    "other native token cannot bypass custom's 30s lock")
+cfg.emotes = { ["c:1"] = { cooldown = 30 } }
+press(1, 2380)
+assert(#sent == beforeCustom + 2, "custom lock expires at 30 seconds")
+
+-- Chance rejection and client chat restriction must not start a new lock.
+cfg.emotes = { ROAR = { cooldown = 3 } }
+cfg.chance = 0
+press(1, 2450)
+assert(cfg.abilityLock.duration == 30, "chance rejection retains last lock without resetting it")
+cfg.chance = 100
+chatLockdown = true
+press(1, 2451)
+assert(cfg.abilityLock.duration == 30, "chat lockdown never starts a new ability lock")
+chatLockdown = false
+press(1, 2452)
+assert(cfg.abilityLock.duration == 3, "ability can fire after lockdown ends")
+
+-- Malformed saved locks cannot indefinitely silence an ability.
+cfg.abilityLock = { token = "ROAR", duration = math.huge, startedAt = math.huge }
+now = 2500
+assert(loadfile("FlourishForever_ActionEmotes.lua"))()
+press(1, 2500)
+assert(cfg.abilityLock.duration == 3 and #played == beforeFalse + 3,
+    "corrupt lock discarded and normal emote starts")
+
+-- The no-argument report still uses the most recently matched ability.
+local final = FlourishForever_CooldownDiagnostics("strike")
+assert(final[2]:find("Ability lock", 1, true)
+    and final[2]:find("3.0s remaining", 1, true)
+    and final[3]:find("3s ability lock if chosen", 1, true),
+    "manual cooldown report shares runtime ability-lock calculation")
+assert(FlourishForever_CooldownDiagnostics("nonexistent")[1]
+    :find("No configured ability", 1, true), "unknown ability lookup is safe")
+assert(FlourishForever_EmoteDiagnostics():find("lastTokenCooldown=3", 1, true),
+    "debug reflects actual chosen emote duration")
 
 -- Current storage module still migrates an existing name-keyed profile.
 local oldProfile = { actionEmotesEnabled = false, instances = {} }

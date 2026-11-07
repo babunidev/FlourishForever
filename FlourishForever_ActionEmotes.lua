@@ -14,10 +14,12 @@ local HOME_ROW_H = 56
 local HOME_ROW_W = 748
 local ABILITY_ICON = 48
 
--- Precise session clock for sent emotes and native emote attempts (including
--- false results). A false API result does not necessarily establish whether
--- the client played a local emote; rate-limit retries without calling them wins.
+-- Keep per-token dispatch history for diagnostics and historical migrations.
+-- The new lock is per ability; its duration is copied from the chosen emote.
+-- A false native result can coincide with a visible local animation, so it
+-- must lock the ability even though it is not counted as a successful send.
 local lastFireByAbility = {}
+local activeAbilityLocks = {}
 -- Session-only counters: no chat spam, player names, GUIDs or SavedVariables.
 local debugState = {
     pressHooks = 0, outcomeEvents = 0,
@@ -133,6 +135,23 @@ local function EnsureDB()
                 cfg.enabled = false
             end
             NormalizeEmotes(cfg)
+            -- This new per-ability lock is introduced without inventing a
+            -- retroactive lock from old per-token histories.
+            local lock = cfg.abilityLock
+            if type(lock) == "table" then
+                local duration = tonumber(lock.duration)
+                local stamp = CleanCooldownStamp(lock.startedAt)
+                if type(lock.token) ~= "string" or lock.token == ""
+                    or type(duration) ~= "number" or duration ~= duration
+                    or duration < 0 or duration > 120 or not stamp then
+                    cfg.abilityLock = nil
+                else
+                    lock.duration = BoundedWholeNumber(duration, 0, 0, 120)
+                    lock.startedAt = stamp
+                end
+            elseif lock ~= nil then
+                cfg.abilityLock = nil
+            end
         end
         -- Malformed records are preserved for manual recovery but never run.
     end
@@ -472,46 +491,53 @@ local function SortedInstanceKeys()
     return keys
 end
 
--- One calculator drives both actual dispatch eligibility and the manual
--- cooldown report, so diagnostics cannot disagree with the selection logic.
+-- Use the same remaining-time check for runtime dispatch and diagnostics.
 local function SavedCooldownRemaining(wallNow, stamp, duration)
-    if type(wallNow) ~= "number" or type(stamp) ~= "number" then
-        return 0
-    end
+    if type(wallNow) ~= "number" or type(stamp) ~= "number" then return 0 end
     local elapsed = wallNow - stamp
-    if elapsed >= 0 and elapsed < duration then
-        return duration - elapsed
-    end
+    if elapsed >= 0 and elapsed < duration then return duration - elapsed end
     return 0
 end
 
-local function RemainingCooldown(info, now, last, wallNow)
-    local duration = BoundedWholeNumber(info.cooldown, DEFAULT_COOLDOWN, 0, 120)
-    if duration == 0 then return 0, 0 end
-
-    local sessionLeft = 0
-    if type(last) == "number" and now >= last then
-        sessionLeft = math.max(0, duration - (now - last))
+local function RemainingAbilityLock(key, cfg, now, wallNow)
+    local session = activeAbilityLocks[key]
+    local sessionRemaining = 0
+    if session and now >= session.at then
+        sessionRemaining = math.max(0, session.duration - (now - session.at))
     end
-
-    local wallLeft = math.max(
-        SavedCooldownRemaining(wallNow, info.lastFiredAt, duration),
-        SavedCooldownRemaining(wallNow, info.lastAttemptAt, duration)
-    )
-    return math.max(sessionLeft, wallLeft), duration
+    local saved = cfg.abilityLock
+    local savedRemaining = 0
+    if type(saved) == "table" and type(saved.duration) == "number" then
+        savedRemaining = SavedCooldownRemaining(wallNow, saved.startedAt, saved.duration)
+    end
+    return math.max(sessionRemaining, savedRemaining)
 end
 
-local function ReadyEmotes(cfg, now, fired)
-    local ready = {}
-    local wallNow = CooldownWallTime()
+local function StartAbilityLock(key, cfg, token, now)
+    local option = cfg.emotes and cfg.emotes[token]
+    if type(option) ~= "table" then return end
+    -- Snapshot the chosen emote's duration. Later slider edits affect the
+    -- *next* selection, not the lock already in progress.
+    local duration = BoundedWholeNumber(option.cooldown, DEFAULT_COOLDOWN, 0, 120)
+    activeAbilityLocks[key] = { token = token, duration = duration, at = now }
+    local stamp = CooldownWallTime()
+    if stamp then
+        cfg.abilityLock = { token = token, duration = duration, startedAt = stamp }
+    else
+        cfg.abilityLock = nil -- no persistent wall clock: session lock still works
+    end
+end
+
+-- Each emote's slider determines the lock AFTER it is picked. No individual
+-- token is excluded because of a previous token-level cooldown.
+local function SelectedEmotes(cfg)
+    local selected = {}
     for token, info in pairs(cfg.emotes or {}) do
         if type(token) == "string" and token ~= "" and type(info) == "table" then
-            if RemainingCooldown(info, now, fired[token], wallNow) <= 0 then
-                ready[#ready + 1] = token
-            end
+            selected[#selected + 1] = token
         end
     end
-    return ready
+    return selected
 end
 
 local function RememberNativeAttempt(key, cfg, token, now)
@@ -645,8 +671,12 @@ end
 -- Native tokens have a documented success return. Custom /e requires a
 -- genuine hardware event on Forever: never try to send it asynchronously.
 local function DispatchEmote(key, cfg, now, fromPress)
-    local fired = lastFireByAbility[key]
-    local ready = ReadyEmotes(cfg, now, fired)
+    local remaining = RemainingAbilityLock(key, cfg, now, CooldownWallTime())
+    if remaining > 0 then
+        RecordBlock("ability locked for " .. string.format("%.1f", remaining) .. " more seconds")
+        return
+    end
+    local ready = SelectedEmotes(cfg)
     if not fromPress then
         -- Only native emotes are permitted from success/failure events.
         for i = #ready, 1, -1 do
@@ -677,6 +707,7 @@ local function DispatchEmote(key, cfg, now, fromPress)
     if IsCustomToken(token) then
         if fromPress and SendCustomEmote(token) then
             RememberEmote(key, cfg, token, now)
+            StartAbilityLock(key, cfg, token, now)
             debugState.accepted = debugState.accepted + 1
             debugState.lastDispatch = "custom /e dispatched; server delivery not confirmed"
             RecordBlock(debugState.lastDispatch)
@@ -695,6 +726,7 @@ local function DispatchEmote(key, cfg, now, fromPress)
         -- when the API reports false (observed by the player, unverified cause).
         local succeeded = C_ChatInfo.PerformEmote(token)
         RememberNativeAttempt(key, cfg, token, now)
+        StartAbilityLock(key, cfg, token, now)
         if succeeded then
             RememberEmote(key, cfg, token, now)
             debugState.accepted = debugState.accepted + 1
@@ -1238,7 +1270,7 @@ local function CreateUI()
     ui.triggerHelp:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 18, -94)
     ui.triggerHelp:SetWidth(748)
     ui.triggerHelp:SetJustifyH("LEFT")
-    ui.triggerHelp:SetText("In battlegrounds, Success uses Button press if chat permits. Custom /e needs Button press.")
+    ui.triggerHelp:SetText("Chosen emote locks this ability for its cooldown. PvP Success uses Button press; custom /e needs press.")
 
     ui.emoteHint = ui.editor:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     ui.emoteHint:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 16, -119)
@@ -1263,6 +1295,7 @@ local function CreateUI()
         EnsureDB()
         db.instances[selectedKey] = nil
         lastFireByAbility[selectedKey] = nil
+        activeAbilityLocks[selectedKey] = nil
         selectedKey = nil
         ui:ShowPage("home")
     end)
@@ -1486,7 +1519,7 @@ local function CreateUI()
         sliderText:SetPoint("LEFT", row.slider, "RIGHT", 6, 0)
         row.slider:SetScript("OnValueChanged", function(self, value)
             value = math.floor(value + 0.5)
-            _G[self:GetName() .. "Text"]:SetText(value .. " sec")
+            _G[self:GetName() .. "Text"]:SetText(value .. "s lock")
             if ui.updating or not selectedKey then
                 return
             end
@@ -1989,9 +2022,8 @@ function FlourishForever_ActionStatus()
     return db.actionEmotesEnabled, count
 end
 
--- Manual, read-only diagnostic. This does not call any chat/emote APIs or
--- change timers. A single button press can legitimately choose a *different*
--- ready token while the previous token is still cooling down.
+-- Manual, read-only diagnostic: show the lock on the whole ability and the
+-- next possible duration for each selected emote. No protected API calls.
 function FlourishForever_CooldownDiagnostics(abilityName)
     local profile = FlourishForeverDB
     if type(profile) ~= "table" or type(profile.instances) ~= "table" then
@@ -2020,25 +2052,28 @@ function FlourishForever_CooldownDiagnostics(abilityName)
 
     local now = GetTime()
     local wallNow = CooldownWallTime()
-    local history = lastFireByAbility[key] or {}
+    local lock = activeAbilityLocks[key] or cfg.abilityLock
+    local remaining = RemainingAbilityLock(key, cfg, now, wallNow)
     local lines = {
         tostring(cfg.name or key) .. ": trigger=" .. NormalizeTrigger(cfg.trigger)
             .. ", chance=" .. tostring(cfg.chance) .. "%"
             .. ", selected=" .. #tokens .. " emotes"
             .. ", serverClock=" .. (wallNow and "available" or "unavailable"),
+        "Ability lock: " .. (remaining > 0 and string.format("%.1fs remaining", remaining) or "READY")
+            .. ", chosen=" .. tostring(lock and lock.token or "none")
+            .. ", duration=" .. tostring(lock and lock.duration or 0) .. "s"
+            .. ", startedAt=" .. tostring(cfg.abilityLock and cfg.abilityLock.startedAt or "none"),
     }
     if #tokens == 0 then
-        lines[#lines + 1] = "No selected emotes; no cooldown applies."
+        lines[#lines + 1] = "No selected emotes; no new cooldown can start."
     end
     for i = 1, math.min(#tokens, 12) do
         local token = tokens[i]
         local entry = cfg.emotes[token]
-        local left, duration = RemainingCooldown(entry, now, history[token], wallNow)
-        local state = left > 0 and (string.format("%.1fs remaining", left)) or "READY"
-        lines[#lines + 1] = token .. ": " .. duration .. "s cooldown, " .. state
-            .. ", savedStamp=" .. tostring(entry.lastFiredAt or "none")
-            .. ", attemptStamp=" .. tostring(entry.lastAttemptAt or "none")
-            .. ", sessionStamp=" .. tostring(history[token] or "none")
+        local duration = BoundedWholeNumber(entry.cooldown, DEFAULT_COOLDOWN, 0, 120)
+        lines[#lines + 1] = token .. ": " .. duration .. "s ability lock if chosen"
+            .. ", lastSuccess=" .. tostring(entry.lastFiredAt or "none")
+            .. ", lastAttempt=" .. tostring(entry.lastAttemptAt or "none")
     end
     if #tokens > 12 then
         lines[#lines + 1] = tostring(#tokens - 12) .. " additional tokens not displayed."
