@@ -2,13 +2,35 @@ local eventFrame = CreateFrame("Frame")
 
 local DEFAULT_CHANCE = 100
 local DEFAULT_COOLDOWN = 6
+local DEFAULT_TRIGGER = "success"
+local TRIGGER_LABELS = { success = "Success", press = "Button press", failure = "Failure" }
+
+local function NormalizeTrigger(value)
+    return type(value) == "string" and TRIGGER_LABELS[value] and value or DEFAULT_TRIGGER
+end
 local WINDOW_W, WINDOW_H = 810, 676
 local PAGE_W, PAGE_H = 786, 632
 local HOME_ROW_H = 56
 local HOME_ROW_W = 748
 local ABILITY_ICON = 48
 
+-- Keep per-token dispatch history for diagnostics and historical migrations.
+-- The new lock is per ability; its duration is copied from the chosen emote.
+-- A false native result can coincide with a visible local animation, so it
+-- must lock the ability even though it is not counted as a successful send.
 local lastFireByAbility = {}
+local activeAbilityLocks = {}
+-- Session-only counters: no chat spam, player names, GUIDs or SavedVariables.
+local debugState = {
+    pressHooks = 0, outcomeEvents = 0,
+    attempts = 0, accepted = 0, refused = 0,
+    last = "no matching action yet", lastSpell = "-",
+    lastDispatch = "no emote attempted yet",
+    lastAbility = nil, lastToken = nil, lastTokenCooldown = nil,
+}
+local function RecordBlock(why)
+    debugState.last = why
+end
 
 local db
 local ui
@@ -33,6 +55,26 @@ local function BoundedWholeNumber(value, default, low, high)
     return math.floor(number + 0.5)
 end
 
+-- Persist the last successful dispatch time across UI reloads using Forever's
+-- synchronized Unix timestamp. GetTime() continues to provide precise timing
+-- within one Lua session. No polling or background timer is required.
+local function CooldownWallTime()
+    if not GetServerTime then return nil end
+    local value = GetServerTime()
+    if type(value) == "number" and value == value
+        and value > 0 and value < 100000000000 then
+        return math.floor(value)
+    end
+end
+
+local function CleanCooldownStamp(value)
+    if type(value) ~= "number" or value ~= value
+        or value <= 0 or value >= 100000000000 then
+        return nil
+    end
+    return math.floor(value)
+end
+
 local function NormalizeEmotes(cfg)
     -- Older versions used a single per-ability cooldown and boolean emotes.
     -- Newer settings store a separate cooldown per selected token. Preserve
@@ -54,6 +96,8 @@ local function NormalizeEmotes(cfg)
             cfg.emotes[token] = { cooldown = BoundedWholeNumber(value, legacy, 0, 120) }
         elseif type(value) == "table" then
             value.cooldown = BoundedWholeNumber(value.cooldown, legacy, 0, 120)
+            value.lastFiredAt = CleanCooldownStamp(value.lastFiredAt)
+            value.lastAttemptAt = CleanCooldownStamp(value.lastAttemptAt)
         else
             cfg.emotes[token] = nil
         end
@@ -84,12 +128,30 @@ local function EnsureDB()
                 cfg.name = key
             end
             cfg.chance = BoundedWholeNumber(cfg.chance, DEFAULT_CHANCE, 0, 100)
+            cfg.trigger = NormalizeTrigger(cfg.trigger)
             if cfg.enabled == nil then
                 cfg.enabled = true
             elseif type(cfg.enabled) ~= "boolean" then
                 cfg.enabled = false
             end
             NormalizeEmotes(cfg)
+            -- This new per-ability lock is introduced without inventing a
+            -- retroactive lock from old per-token histories.
+            local lock = cfg.abilityLock
+            if type(lock) == "table" then
+                local duration = tonumber(lock.duration)
+                local stamp = CleanCooldownStamp(lock.startedAt)
+                if type(lock.token) ~= "string" or lock.token == ""
+                    or type(duration) ~= "number" or duration ~= duration
+                    or duration < 0 or duration > 120 or not stamp then
+                    cfg.abilityLock = nil
+                else
+                    lock.duration = BoundedWholeNumber(duration, 0, 0, 120)
+                    lock.startedAt = stamp
+                end
+            elseif lock ~= nil then
+                cfg.abilityLock = nil
+            end
         end
         -- Malformed records are preserved for manual recovery but never run.
     end
@@ -429,92 +491,136 @@ local function SortedInstanceKeys()
     return keys
 end
 
-local function ReadyEmotes(cfg, now, fired)
-    local ready = {}
+-- Use the same remaining-time check for runtime dispatch and diagnostics.
+local function SavedCooldownRemaining(wallNow, stamp, duration)
+    if type(wallNow) ~= "number" or type(stamp) ~= "number" then return 0 end
+    local elapsed = wallNow - stamp
+    if elapsed >= 0 and elapsed < duration then return duration - elapsed end
+    return 0
+end
 
+local function RemainingAbilityLock(key, cfg, now, wallNow)
+    local session = activeAbilityLocks[key]
+    local sessionRemaining = 0
+    if session and now >= session.at then
+        sessionRemaining = math.max(0, session.duration - (now - session.at))
+    end
+    local saved = cfg.abilityLock
+    local savedRemaining = 0
+    if type(saved) == "table" and type(saved.duration) == "number" then
+        savedRemaining = SavedCooldownRemaining(wallNow, saved.startedAt, saved.duration)
+    end
+    return math.max(sessionRemaining, savedRemaining)
+end
+
+local function StartAbilityLock(key, cfg, token, now)
+    local option = cfg.emotes and cfg.emotes[token]
+    if type(option) ~= "table" then return end
+    -- Snapshot the chosen emote's duration. Later slider edits affect the
+    -- *next* selection, not the lock already in progress.
+    local duration = BoundedWholeNumber(option.cooldown, DEFAULT_COOLDOWN, 0, 120)
+    activeAbilityLocks[key] = { token = token, duration = duration, at = now }
+    local stamp = CooldownWallTime()
+    if stamp then
+        cfg.abilityLock = { token = token, duration = duration, startedAt = stamp }
+    else
+        cfg.abilityLock = nil -- no persistent wall clock: session lock still works
+    end
+end
+
+-- Each emote's slider determines the lock AFTER it is picked. No individual
+-- token is excluded because of a previous token-level cooldown.
+local function SelectedEmotes(cfg)
+    local selected = {}
     for token, info in pairs(cfg.emotes or {}) do
         if type(token) == "string" and token ~= "" and type(info) == "table" then
-            local cooldown = BoundedWholeNumber(info.cooldown, DEFAULT_COOLDOWN, 0, 120)
-            local last = fired[token]
-            -- A token has no cooldown until it has actually fired once.
-            if not last or now - last >= cooldown then
-                ready[#ready + 1] = token
-            end
+            selected[#selected + 1] = token
         end
     end
-
-    return ready
+    return selected
 end
 
--- Native and custom emotes may invoke restricted chat APIs. They are only
--- attempted in direct player action hooks, never from later spellcast events.
--- Pending native emotes are intentionally not queued or replayed on success.
+local function RememberNativeAttempt(key, cfg, token, now)
+    -- A native API false result is not a proven successful emote, but repeated
+    -- immediate attempts can still produce a visible local animation or spam.
+    -- Respect this token's configured interval for retry attempts as well.
+    lastFireByAbility[key][token] = now
+    local entry = cfg.emotes and cfg.emotes[token]
+    if type(entry) == "table" then
+        entry.lastAttemptAt = CooldownWallTime()
+    end
+end
+
+local function RememberEmote(key, cfg, token, now)
+    lastFireByAbility[key][token] = now
+    local entry = cfg.emotes and cfg.emotes[token]
+    if type(entry) == "table" then
+        entry.lastFiredAt = CooldownWallTime()
+    end
+end
+
+-- Press dispatch is hardware-event-bound. Outcome dispatch is native-only and
+-- disabled for PvP/chat lockdown so protected emote calls are not retried.
 local pressStamp = {}
--- Addon restriction types such as Map, Encounter and ChallengeMode describe
--- information lockdown, not necessarily a ban on player-initiated emotes.
--- Do not silence ordinary parties or dungeon/raid encounters for those states.
--- Chat and PvPMatch are retained alongside explicit chat/PvP guards below.
-local restrictedKinds = {}
-if Enum and Enum.AddOnRestrictionType then
-    local kinds = Enum.AddOnRestrictionType
-    for _, name in ipairs({ "Chat", "PvPMatch" }) do
-        if type(kinds[name]) == "number" then
-            restrictedKinds[#restrictedKinds + 1] = kinds[name]
-        end
-    end
-end
-
 local function IsCustomToken(token)
     return type(token) == "string" and string.sub(token, 1, 2) == "c:"
 end
 
-local function SpellPressCanFire(spellID)
-    if C_Spell and C_Spell.IsSpellUsable then
-        local usable = C_Spell.IsSpellUsable(spellID)
-        if usable == false then
-            return false
-        end
-    elseif IsUsableSpell then
-        local usable = IsUsableSpell(spellID)
-        if usable == false then
-            return false
-        end
-    end
-
-    return true
-end
-
+-- Button press means the actual player action, even during a GCD/cooldown.
+-- Spell usability is not an emote-security check. On some clients it can be
+-- false in combat and unexpectedly silence the battleground press fallback.
 -- Keep chat/PvP security checks, without equating Map/Encounter/ChallengeMode
 -- restriction states with a prohibition on ordinary player-triggered emotes.
 -- Group membership and normal party/raid instances never suppress Flourish.
-local function IsRestrictedEmoteContext()
-    if IsInInstance then
-        local _, instanceType = IsInInstance()
-        if instanceType == "pvp" or instanceType == "arena" then
-            return true
-        end
-    end
+local function IsBattleground()
+    if not IsInInstance then return false end
+    local _, instanceType = IsInInstance()
+    return instanceType == "pvp" or instanceType == "arena"
+end
 
-    if C_ChatInfo and C_ChatInfo.InChatMessagingLockdown
-        and C_ChatInfo.InChatMessagingLockdown() then
-        return true
-    end
-
-    if C_RestrictedActions and C_RestrictedActions.GetAddOnRestrictionState then
-        for _, kind in ipairs(restrictedKinds) do
-            local state = C_RestrictedActions.GetAddOnRestrictionState(kind)
-            if type(state) == "number" and state ~= 0 then
-                return true
-            end
-        end
+local function IsRestrictionActive(name)
+    local kinds = Enum and Enum.AddOnRestrictionType
+    local kind = kinds and kinds[name]
+    if type(kind) == "number"
+        and C_RestrictedActions and C_RestrictedActions.GetAddOnRestrictionState then
+        local state = C_RestrictedActions.GetAddOnRestrictionState(kind)
+        return type(state) == "number" and state ~= 0
     end
     return false
 end
 
-local function ResolveAbility(spellID)
-    if IsRestrictedEmoteContext() then
-        return
+local function IsChatRestricted()
+    if C_ChatInfo and C_ChatInfo.InChatMessagingLockdown
+        and C_ChatInfo.InChatMessagingLockdown() then
+        return true
     end
+    return IsRestrictionActive("Chat")
+end
+
+-- A PvP match is a separate addon-data restriction from chat lockdown.
+-- The hardware-press fallback may be attempted when chat itself is allowed;
+-- result-event dispatch is never attempted while PvP restrictions are active.
+local function CanDispatchEmote(fromPress)
+    if IsChatRestricted() then
+        RecordBlock("chat messaging lockdown / Chat restriction")
+        return false
+    end
+    if not fromPress and (IsBattleground() or IsRestrictionActive("PvPMatch")) then
+        RecordBlock("outcome event suppressed in PvP")
+        return false
+    end
+    return true
+end
+
+local function EffectiveTrigger(cfg)
+    local trigger = NormalizeTrigger(cfg.trigger)
+    if trigger == "success" and IsBattleground() then
+        return "press"
+    end
+    return trigger
+end
+
+local function ResolveAbility(spellID)
     EnsureDB()
 
     if not db.actionEmotesEnabled then
@@ -539,6 +645,7 @@ local function ResolveAbility(spellID)
         lastFireByAbility[key] = {}
     end
 
+    debugState.lastAbility = key
     return key, cfg
 end
 
@@ -561,49 +668,145 @@ local function SendCustomEmote(token)
     return false
 end
 
-local function TryAbilityEmoteFromPress(spellID)
-    if type(spellID) ~= "number" or not SpellPressCanFire(spellID) then
+-- Native tokens have a documented success return. Custom /e requires a
+-- genuine hardware event on Forever: never try to send it asynchronously.
+local function DispatchEmote(key, cfg, now, fromPress)
+    local remaining = RemainingAbilityLock(key, cfg, now, CooldownWallTime())
+    if remaining > 0 then
+        RecordBlock("ability locked for " .. string.format("%.1f", remaining) .. " more seconds")
         return
     end
-
-    local key, cfg = ResolveAbility(spellID)
-    if not key then
-        return
+    local ready = SelectedEmotes(cfg)
+    if not fromPress then
+        -- Only native emotes are permitted from success/failure events.
+        for i = #ready, 1, -1 do
+            if IsCustomToken(ready[i]) then
+                table.remove(ready, i)
+            end
+        end
     end
-
-    local now = GetTime()
-    if pressStamp[key] and (now - pressStamp[key]) < 0.2 then
-        return
-    end
-
-    pressStamp[key] = now
-
-    local ready = ReadyEmotes(cfg, now, lastFireByAbility[key])
     if #ready == 0 then
+        debugState.lastDispatch = "no eligible emotes"
+        RecordBlock("no ready eligible emotes (or custom-only outcome mode)")
         return
     end
 
     local chance = tonumber(cfg.chance) or DEFAULT_CHANCE
     if math.random(1, 100) > chance then
+        debugState.lastDispatch = "chance roll skipped"
+        RecordBlock("chance roll skipped")
         return
     end
 
     local token = ready[math.random(1, #ready)]
+    debugState.lastToken = token
+    local option = cfg.emotes and cfg.emotes[token]
+    debugState.lastTokenCooldown = type(option) == "table"
+        and BoundedWholeNumber(option.cooldown, DEFAULT_COOLDOWN, 0, 120) or nil
+    debugState.attempts = debugState.attempts + 1
     if IsCustomToken(token) then
-        if SendCustomEmote(token) then
-            lastFireByAbility[key][token] = now
+        if fromPress and SendCustomEmote(token) then
+            RememberEmote(key, cfg, token, now)
+            StartAbilityLock(key, cfg, token, now)
+            debugState.accepted = debugState.accepted + 1
+            debugState.lastDispatch = "custom /e dispatched; server delivery not confirmed"
+            RecordBlock(debugState.lastDispatch)
+        else
+            debugState.refused = debugState.refused + 1
+            debugState.lastDispatch = "custom chat API unavailable"
+            RecordBlock(debugState.lastDispatch)
         end
+    elseif not C_ChatInfo or not C_ChatInfo.PerformEmote then
+        debugState.refused = debugState.refused + 1
+        debugState.lastDispatch = "native PerformEmote API unavailable"
+        RecordBlock(debugState.lastDispatch)
+    else
+        -- Never interpret a false result as success. Independently throttle
+        -- native *attempts*, because the Forever client can show an emote even
+        -- when the API reports false (observed by the player, unverified cause).
+        local succeeded = C_ChatInfo.PerformEmote(token)
+        RememberNativeAttempt(key, cfg, token, now)
+        StartAbilityLock(key, cfg, token, now)
+        if succeeded then
+            RememberEmote(key, cfg, token, now)
+            debugState.accepted = debugState.accepted + 1
+            debugState.lastDispatch = "native emote API accepted " .. token
+        else
+            debugState.refused = debugState.refused + 1
+            debugState.lastDispatch = "native emote API returned false; attempt throttled for " .. token
+        end
+        RecordBlock(debugState.lastDispatch)
+    end
+end
+
+local function TryAbilityEmoteFromPress(spellID)
+    if type(spellID) ~= "number" then
+        RecordBlock("no numeric spell ID from action hook")
+        return
+    end
+    debugState.lastSpell = spellID
+    if not CanDispatchEmote(true) then return end
+
+    local key, cfg = ResolveAbility(spellID)
+    if not key then
+        RecordBlock("spell has no enabled configured ability")
+        return
+    end
+    if EffectiveTrigger(cfg) ~= "press" then
+        RecordBlock("ability is configured for an outcome event, not a press")
         return
     end
 
-    -- Forever's native emote API is restricted when called from delayed
-    -- UNIT_SPELLCAST_SUCCEEDED. This hook is reached during a player action.
-    -- A failed attempt does not spend the emote cooldown.
-    if C_ChatInfo and C_ChatInfo.PerformEmote then
-        if C_ChatInfo.PerformEmote(token) then
-            lastFireByAbility[key][token] = now
+    local now = GetTime()
+    if pressStamp[key] and now - pressStamp[key] < 0.2 then
+        RecordBlock("duplicate press ignored")
+        return
+    end
+    pressStamp[key] = now
+    DispatchEmote(key, cfg, now, true)
+end
+
+local lastOutcome = {}
+local function IsSecret(value)
+    return issecretvalue and issecretvalue(value)
+end
+
+local function TryAbilityEmoteForOutcome(event, unit, castGUID, spellID)
+    debugState.outcomeEvents = debugState.outcomeEvents + 1
+    if IsSecret(unit) or IsSecret(spellID) or IsSecret(castGUID)
+        or unit ~= "player" or type(spellID) ~= "number"
+        or not CanDispatchEmote(false) then
+        return
+    end
+
+    debugState.lastSpell = spellID
+    local requested = event == "UNIT_SPELLCAST_SUCCEEDED" and "success" or "failure"
+    local key, cfg = ResolveAbility(spellID)
+    if not key then
+        RecordBlock("outcome spell has no enabled configured ability")
+        return
+    end
+    if EffectiveTrigger(cfg) ~= requested then
+        RecordBlock("outcome ignored by selected trigger")
+        return
+    end
+
+    local now = GetTime()
+    local previous = lastOutcome[key]
+    local identified = type(castGUID) == "string" and castGUID ~= ""
+    -- A failed and interrupted event can describe the same cast; quiet failures
+    -- may also be duplicated. Do not reroll chance or emit twice for one cast.
+    if previous and previous.spellID == spellID then
+        if identified and previous.guid == castGUID then
+            return
+        end
+        if not identified and previous.event == requested and now - previous.at < 0.2 then
+            return
         end
     end
+    lastOutcome[key] = { spellID = spellID, guid = identified and castGUID or nil,
+        event = requested, at = now }
+    DispatchEmote(key, cfg, now, false)
 end
 
 local function SpellIDFromActionSlot(slot)
@@ -634,7 +837,10 @@ end
 local hardwareLock = false
 
 local function OnAbilityPress(spellID)
-    if hardwareLock or type(spellID) ~= "number" then
+    if hardwareLock then return end
+    debugState.pressHooks = debugState.pressHooks + 1
+    if type(spellID) ~= "number" then
+        RecordBlock("press hook called without a numeric spell ID")
         return
     end
     hardwareLock = true
@@ -676,6 +882,7 @@ local function AddOrSelectAbility(ability)
             name = ability.name,
             spellID = ability.spellID,
             chance = DEFAULT_CHANCE,
+            trigger = DEFAULT_TRIGGER,
             enabled = true,
             emotes = { ROAR = { cooldown = DEFAULT_COOLDOWN } },
         }
@@ -767,6 +974,7 @@ local function ShowAbilityTooltip(owner, cfg)
     GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
     GameTooltip:SetText(cfg.name or "Ability", 1, 0.82, 0)
     GameTooltip:AddLine("Chance: " .. (tonumber(cfg.chance) or DEFAULT_CHANCE) .. "%", 1, 1, 1)
+    GameTooltip:AddLine("Triggered by: " .. TRIGGER_LABELS[NormalizeTrigger(cfg.trigger)], 1, 1, 1)
 
     if #entries == 0 then
         GameTooltip:AddLine("No emotes", 0.7, 0.7, 0.7)
@@ -999,7 +1207,7 @@ local function CreateUI()
 
     ui.chance = CreateFrame("Slider", "FlourishForeverChanceSlider", ui.editor, "OptionsSliderTemplate")
     ui.chance:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 24, -58)
-    ui.chance:SetSize(460, 18)
+    ui.chance:SetSize(370, 18)
     ui.chance:SetMinMaxValues(0, 100)
     ui.chance:SetValueStep(1)
     ui.chance:SetObeyStepOnDrag(true)
@@ -1017,12 +1225,59 @@ local function CreateUI()
         end
     end)
 
+    ui.triggerLabel = ui.editor:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    ui.triggerLabel:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 466, -43)
+    ui.triggerLabel:SetText("Triggered by")
+
+    ui.triggerButton = CreateFrame("Button", nil, ui.editor, "UIPanelButtonTemplate")
+    ui.triggerButton:SetSize(174, 25)
+    ui.triggerButton:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 548, -57)
+
+    ui.triggerMenu = CreateFrame("Frame", nil, ui.editor)
+    ui.triggerMenu:SetSize(176, 80)
+    ui.triggerMenu:SetPoint("TOPLEFT", ui.triggerButton, "BOTTOMLEFT", 0, -2)
+    ui.triggerMenu:SetFrameStrata("DIALOG")
+    local menuBackground = ui.triggerMenu:CreateTexture(nil, "BACKGROUND")
+    menuBackground:SetAllPoints()
+    menuBackground:SetColorTexture(0.08, 0.08, 0.10, 0.96)
+    ui.triggerOptions = {}
+    for i, trigger in ipairs({ "success", "press", "failure" }) do
+        local option = CreateFrame("Button", nil, ui.triggerMenu, "UIPanelButtonTemplate")
+        option:SetSize(168, 24)
+        option:SetPoint("TOPLEFT", ui.triggerMenu, "TOPLEFT", 4, -2 - (i - 1) * 25)
+        option:SetText(TRIGGER_LABELS[trigger])
+        option:SetScript("OnClick", function()
+            if selectedKey then
+                EnsureDB()
+                local cfg = db.instances[selectedKey]
+                if cfg then cfg.trigger = trigger end
+                ui.triggerButton:SetText(TRIGGER_LABELS[trigger] .. "  v")
+            end
+            ui.triggerMenu:Hide()
+        end)
+        ui.triggerOptions[trigger] = option
+    end
+    ui.triggerMenu:Hide()
+    ui.triggerButton:SetScript("OnClick", function()
+        if ui.triggerMenu:IsShown() then
+            ui.triggerMenu:Hide()
+        else
+            ui.triggerMenu:Show()
+        end
+    end)
+
+    ui.triggerHelp = ui.editor:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    ui.triggerHelp:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 18, -94)
+    ui.triggerHelp:SetWidth(748)
+    ui.triggerHelp:SetJustifyH("LEFT")
+    ui.triggerHelp:SetText("Chosen emote locks this ability for its cooldown. PvP Success uses Button press; custom /e needs press.")
+
     ui.emoteHint = ui.editor:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    ui.emoteHint:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 16, -108)
+    ui.emoteHint:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 16, -119)
     ui.emoteHint:SetText("Emotes. One ready emote is chosen at random.")
 
     ui.emoteScroll = CreateQuietScroll(ui.editor)
-    ui.emoteScroll:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 12, -132)
+    ui.emoteScroll:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 12, -145)
     ui.emoteScroll:SetPoint("BOTTOMRIGHT", ui.editor, "BOTTOMRIGHT", -12, 40)
     ui.emoteChild = CreateFrame("Frame", nil, ui.emoteScroll)
     ui.emoteChild:SetSize(750, 1)
@@ -1040,6 +1295,7 @@ local function CreateUI()
         EnsureDB()
         db.instances[selectedKey] = nil
         lastFireByAbility[selectedKey] = nil
+        activeAbilityLocks[selectedKey] = nil
         selectedKey = nil
         ui:ShowPage("home")
     end)
@@ -1061,7 +1317,7 @@ local function CreateUI()
     ui.customHint:SetPoint("TOPLEFT", ui.custom, "TOPLEFT", 12, -44)
     ui.customHint:SetWidth(PAGE_W - 40)
     ui.customHint:SetJustifyH("LEFT")
-    ui.customHint:SetText("One emote per line. Each line is sent as /e when you press the ability, so your name appears and then the text.")
+    ui.customHint:SetText("One /e emote per line. Forever requires a real button press for custom chat; Success and Failure modes can send native emotes only.")
 
     ui.customScroll = CreateQuietScroll(ui.custom)
     ui.customScroll:SetPoint("TOPLEFT", ui.custom, "TOPLEFT", 12, -84)
@@ -1263,7 +1519,7 @@ local function CreateUI()
         sliderText:SetPoint("LEFT", row.slider, "RIGHT", 6, 0)
         row.slider:SetScript("OnValueChanged", function(self, value)
             value = math.floor(value + 0.5)
-            _G[self:GetName() .. "Text"]:SetText(value .. " sec")
+            _G[self:GetName() .. "Text"]:SetText(value .. "s lock")
             if ui.updating or not selectedKey then
                 return
             end
@@ -1673,12 +1929,18 @@ local function CreateUI()
 
         self.updating = true
         self.chance:SetValue(tonumber(cfg.chance) or DEFAULT_CHANCE)
+        self.triggerButton:SetText(TRIGGER_LABELS[NormalizeTrigger(cfg.trigger)] .. "  v")
+        self.triggerMenu:Hide()
         self.updating = false
 
         local items = {}
         for _, token in ipairs(knownEmotes) do
             local label = EmoteLabel(token)
-            items[#items + 1] = { token = token, label = label, search = string.lower(label) }
+            -- Match the canonical emote token as well as its displayed/localized slash alias.
+            items[#items + 1] = {
+                token = token, label = label,
+                search = string.lower(token .. " " .. label),
+            }
         end
         if #(db.customEmotes or {}) > 0 then
             items[#items + 1] = { header = "Custom emotes" }
@@ -1732,6 +1994,9 @@ local function CreateUI()
         RefreshKnownEmotes()
         self:ShowPage(self.page or "home")
     end)
+    ui:SetScript("OnHide", function(self)
+        self.triggerMenu:Hide()
+    end)
 
     return ui
 end
@@ -1757,8 +2022,111 @@ function FlourishForever_ActionStatus()
     return db.actionEmotesEnabled, count
 end
 
-eventFrame:SetScript("OnEvent", function(self, event)
-    if event == "SPELLS_CHANGED" then
+-- Manual, read-only diagnostic: show the lock on the whole ability and the
+-- next possible duration for each selected emote. No protected API calls.
+function FlourishForever_CooldownDiagnostics(abilityName)
+    local profile = FlourishForeverDB
+    if type(profile) ~= "table" or type(profile.instances) ~= "table" then
+        return { "Character emote settings are not loaded." }
+    end
+
+    local key
+    if type(abilityName) == "string" and Trim(abilityName) ~= "" then
+        key = AbilityKey(abilityName)
+    else
+        key = debugState.lastAbility
+    end
+
+    local cfg = key and profile.instances[key]
+    if type(cfg) ~= "table" or type(cfg.emotes) ~= "table" then
+        return { "No configured ability found. Use /flourish cooldowns <ability name>." }
+    end
+
+    local tokens = {}
+    for token, value in pairs(cfg.emotes) do
+        if type(token) == "string" and type(value) == "table" then
+            tokens[#tokens + 1] = token
+        end
+    end
+    table.sort(tokens)
+
+    local now = GetTime()
+    local wallNow = CooldownWallTime()
+    local lock = activeAbilityLocks[key] or cfg.abilityLock
+    local remaining = RemainingAbilityLock(key, cfg, now, wallNow)
+    local lines = {
+        tostring(cfg.name or key) .. ": trigger=" .. NormalizeTrigger(cfg.trigger)
+            .. ", chance=" .. tostring(cfg.chance) .. "%"
+            .. ", selected=" .. #tokens .. " emotes"
+            .. ", serverClock=" .. (wallNow and "available" or "unavailable"),
+        "Ability lock: " .. (remaining > 0 and string.format("%.1fs remaining", remaining) or "READY")
+            .. ", chosen=" .. tostring(lock and lock.token or "none")
+            .. ", duration=" .. tostring(lock and lock.duration or 0) .. "s"
+            .. ", startedAt=" .. tostring(cfg.abilityLock and cfg.abilityLock.startedAt or "none"),
+    }
+    if #tokens == 0 then
+        lines[#lines + 1] = "No selected emotes; no new cooldown can start."
+    end
+    for i = 1, math.min(#tokens, 12) do
+        local token = tokens[i]
+        local entry = cfg.emotes[token]
+        local duration = BoundedWholeNumber(entry.cooldown, DEFAULT_COOLDOWN, 0, 120)
+        lines[#lines + 1] = token .. ": " .. duration .. "s ability lock if chosen"
+            .. ", lastSuccess=" .. tostring(entry.lastFiredAt or "none")
+            .. ", lastAttempt=" .. tostring(entry.lastAttemptAt or "none")
+    end
+    if #tokens > 12 then
+        lines[#lines + 1] = tostring(#tokens - 12) .. " additional tokens not displayed."
+    end
+    lines[#lines + 1] = "Last attempted: " .. tostring(debugState.lastToken or "none")
+        .. " (" .. tostring(debugState.lastTokenCooldown or "?") .. "s), "
+        .. debugState.lastDispatch
+    return lines
+end
+
+-- Inspect the actual client restriction state after testing in a battleground.
+-- Read-only, no protected emote call and no player-identifying information.
+function FlourishForever_EmoteDiagnostics()
+    local instanceType = "unknown"
+    if IsInInstance then
+        local _, currentType = IsInInstance()
+        instanceType = currentType or "unknown"
+    end
+    local chatLockdown = C_ChatInfo and C_ChatInfo.InChatMessagingLockdown
+        and C_ChatInfo.InChatMessagingLockdown()
+    local kinds = Enum and Enum.AddOnRestrictionType
+    local function RestrictionState(name)
+        local id = kinds and kinds[name]
+        if type(id) ~= "number"
+            or not C_RestrictedActions or not C_RestrictedActions.GetAddOnRestrictionState then
+            return "unavailable"
+        end
+        return tostring(C_RestrictedActions.GetAddOnRestrictionState(id))
+    end
+    return "instance=" .. tostring(instanceType or "unknown")
+        .. "; chatLockdown=" .. tostring(chatLockdown == true)
+        .. "; ChatState=" .. RestrictionState("Chat")
+        .. "; PvPMatchState=" .. RestrictionState("PvPMatch")
+        .. "; presses=" .. debugState.pressHooks
+        .. "; outcomes=" .. debugState.outcomeEvents
+        .. "; attempts=" .. debugState.attempts
+        .. "; accepted=" .. debugState.accepted
+        .. "; rejected=" .. debugState.refused
+        .. "; lastSpell=" .. tostring(debugState.lastSpell)
+        .. "; lastAbility=" .. tostring(debugState.lastAbility or "none")
+        .. "; lastToken=" .. tostring(debugState.lastToken or "none")
+        .. "; lastTokenCooldown=" .. tostring(debugState.lastTokenCooldown or "unknown")
+        .. "; lastDispatch=" .. debugState.lastDispatch
+        .. "; last=" .. debugState.last
+end
+
+eventFrame:SetScript("OnEvent", function(self, event, ...)
+    if event == "UNIT_SPELLCAST_SUCCEEDED" or event == "UNIT_SPELLCAST_FAILED"
+        or event == "UNIT_SPELLCAST_FAILED_QUIET"
+        or event == "UNIT_SPELLCAST_INTERRUPTED" then
+        local unit, castGUID, spellID = ...
+        TryAbilityEmoteForOutcome(event, unit, castGUID, spellID)
+    elseif event == "SPELLS_CHANGED" then
         if ui then
             ui.spellColumns = nil
             if ui:IsShown() and ui.page == "picker" then
@@ -1769,3 +2137,7 @@ eventFrame:SetScript("OnEvent", function(self, event)
 end)
 
 eventFrame:RegisterEvent("SPELLS_CHANGED")
+eventFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED")
+eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED_QUIET")
+eventFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")

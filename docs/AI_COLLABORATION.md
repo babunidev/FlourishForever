@@ -1,5 +1,37 @@
 # Flourish Forever — human–AI collaboration and attribution
 
+
+## 7 November 2026 — release preparation after live verification
+
+Babuni confirmed the new emote-dependent ability cooldown works in the Forever client and explicitly requested a publishing tag for other players. AI reviewed the development commit against the last tagged public baseline, prepared `0.5.0-beta` manifest/changelog documentation and synchronized the package validation test. Release tests and packaging must be verified against the final exact commit; a GitHub tag does not on its own establish a live CurseForge file. No additional game-client testing of battlegrounds or protected messaging was claimed.
+
+## 7 November 2026 — Babuni approves chosen-duration ability locks
+
+Babuni confirmed the preceding individual-emote cooldown implementation works in-game, then directed a new behavior: each emote retains an independently configured duration, but the *one selected* locks its whole ability until that duration expires. The three-second giggle and twenty-second dramatic emote example is Babuni's creative direction, not an AI-generated feature proposal.
+
+AI implemented the new per-ability runtime and SavedVariables lock, preserved native attempt/success evidence and Forever's chat/PvP guards, updated editor guidance and diagnostics, and revised mocked regressions. GitHub Lua/package checks passed; **no live test of the new shared-lock behavior** has been reported. The implementation remains in a development branch, with no authorized new publication.
+
+## 7 November 2026 — decoding the native emote diagnostic
+
+Babuni supplied Forever diagnostic output showing nine attempted native emotes, zero API-accepted results, nine false returns, FAINT as the last selected token with a six-second timer, and no chat/PvP lockdown. AI traced the missing cooldown to a native dispatch path that wrote no timestamp when `PerformEmote` returned false. The new development implementation records a separate `lastAttemptAt` for any actual native call, while retaining `lastFiredAt` only for accepted results. This deliberately rate-limits ambiguous or unsuccessful native attempts without falsely claiming their delivery. Regression mocks simulate visible output even from a false-result call and exercise six-second expiry, reload and accepted/refused diagnostics. Actual client delivery on false returns and the effectiveness of the new throttle are still unverified in-game; no release is authorized.
+
+## 7 November 2026 — continued live cooldown investigation
+
+Babuni reported that even after the new persistence code was installed, Mobility with Button press and six seconds configured still appeared to send an emote on every press. AI confirmed that the source applies individual token cooldowns, which permit different eligible tokens to fire on successive presses, but do not justify early repetition of one token. The source change centralizes cooldown calculations and adds manually invoked token-level diagnostics; tests include the exact six-second single-token and multi-token scenarios. This is *not* a verified live fix. No release tag, merge or CurseForge upload is authorized.
+
+## 6 November 2026 — independent cooldown investigation
+
+Babuni reported that per-emote cooldowns seemed ineffective and requested a thorough correction. AI examined the SavedVariables migration, UI slider handler, `GetTime()` comparisons and accepted-emote dispatch path. The documented source weakness was session-only last-dispatch history, lost on `/reload`; a new automated test reproduced the missing persistent timestamp. AI implemented per-token `GetServerTime()` persistence with precise in-session `GetTime()` checks, regression coverage for independent emotes/abilities, zero and nonzero durations, failure returns and corrupt saves, and UI slider save/reopen tests. Offline verification is distinguished from a still-pending WoW Forever retest.
+
+## 6 November 2026 — native emote search and PvP observability
+
+Babuni reported a missing Roar search result and no emote activity in a battleground while testing the new selectable trigger system. AI identified and corrected the native-token search omission, removed unnecessary spell-usability gating for press-triggered behavior, added mocked UI/gameplay cases, and implemented a manual `/flourish debug` status report with no player-identifying data. Current battleground restrictions remain under investigation. Tests and packaging status are recorded separately; no successful live PvP test or public distribution is claimed.
+
+## 6 November 2026 — per-ability trigger design
+
+Babuni supplied the new design: a Triggered by dropdown next to Chance offering Success as the default, Button press and Failure, with battleground/arena Success falling back to Button press rather than producing protected-action errors. AI reviewed the Forever spellcast events and restricted chat behavior, implemented per-ability stored preferences, event filtering, the UI and automated regressions. The native outcome path and press fallback remain pending local in-game verification, and no release was authorized. Custom `/e` requires hardware input and cannot honestly be represented as a guaranteed success/failure event response.
+
+
 ## 5 November 2026 — group-play follow-up and release preparation
 
 Babuni reported that the tested group-emote correction now seems to work fine and directed publication for all players. AI updated the `0.4.3-beta` manifest, public notes, project decisions, verification roadmap and package test. The user's confirmation is general in-game feedback rather than proof of every raid, dungeon and combat restriction case. No publication is claimed until an approved tag is pushed and the resulting CurseForge file is verified.

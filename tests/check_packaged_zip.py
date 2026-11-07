@@ -47,7 +47,7 @@ def main():
         if not re.search(r"^## Interface: 16001\s*$", toc, re.M):
             print("FAIL: wrong target interface", file=sys.stderr)
             return 1
-        if not re.search(r"^## Version: 0\.4\.3-beta\s*$", toc, re.M):
+        if not re.search(r"^## Version: 0\.5\.0-beta\s*$", toc, re.M):
             print("FAIL: wrong addon version", file=sys.stderr)
             return 1
         changelog = zf.read("FlourishForever/CHANGELOG.md").decode("utf-8")

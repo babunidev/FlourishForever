@@ -1,7 +1,14 @@
 # Flourish Forever — emote content, character settings and assets
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** World of Warcraft Forever / interface 16001.  
-**Public baseline:** v0.4.1-beta · **Prepared patch:** 0.4.2-beta. The new emote path was tested in general gameplay, not specifically confirmed in a battleground.
+**Public baseline:** v0.4.3-beta · **Development:** Success/press/failure choice per ability, pending in-game verification.
+
+
+## Chosen emote determines the active ability lock (development)
+
+The cooldown slider still writes `cfg.emotes[token].cooldown` (0–120 seconds) for each selected emote. New ability-level state is `cfg.abilityLock = { token = "ROAR", duration = 20, startedAt = unixSeconds }`, persisted in the same GUID-keyed character profile. This record represents the **last selected emote's ability-wide cooldown**, not a fixed configured ability timer. A three-second token locks its own ability for three seconds; a twenty-second token locks it for twenty, excluding every other selected token during that interval.
+
+Legacy per-token `lastFiredAt` and `lastAttemptAt` values remain available for historical diagnostics and truthful API-result reporting, but do not gate which token may be selected. Separate abilities and character profiles retain independent locks; no global character cooldown was introduced.
 
 ## Content sources
 
@@ -12,8 +19,13 @@
 | Custom `/e` text | Player-authored text entered in the custom emote editor | `customEmotes` entries with stable IDs |
 | Per-ability chance and enabled switch | Player configuration | Character profile |
 | Per-emote cooldowns | Player configuration | Emote selection records |
-| Actual last-fired times | Session `GetTime()` | **Not saved** across reload/relog |
+| Last successful dispatch / native retry attempt (development) | Session `GetTime()` plus `lastFiredAt` and `lastAttemptAt` from `GetServerTime()` | Separate per-character/per-emote timestamps; both delay types survive reload/relog |
 
+## Per-ability trigger preference (development)
+
+Each configured ability may include `trigger = "success"`, `"press"`, or `"failure"`. Older and malformed records normalize to `"success"` without deleting saved emote preferences. The value is per ability and per character, rather than global. Battleground/arena fallback is computed at runtime and is never saved.
+
+Native tokens can be considered on success/failure events, but custom `c:id` /e text is only sent during a genuine hardware press. As a result, selecting only custom emotes with Success or Failure yields no automatic message in those contexts. The ability editor communicates this limitation; it is not evidence of a broken SavedVariables migration.
 ## Storage and defaults
 
 The TOC declares `SavedVariables: FlourishForeverStorage`. Profiles are isolated by `UnitGUID("player")`, and configured abilities are keyed by normalized spell name. The base data shape is:
@@ -44,7 +56,7 @@ FlourishForeverStorage = {
 
 This is a structural illustration, not an actual character profile. A new character has no configured abilities. The first added ability starts with native ROAR selected; user-defined emotes are never assigned without explicit player choice.
 
-Older `cfg.emotes[token] = true` entries are normalized into `{ cooldown = legacyAbilityCooldown }`; valid per-emote tables are retained. Unsupported SavedVariables records remain recoverable where possible. Stored cooldown preferences persist, but runtime last-fired timestamps do not.
+Older `cfg.emotes[token] = true` entries are normalized into `{ cooldown = legacyAbilityCooldown }`; valid per-emote tables are retained. Unsupported SavedVariables records remain recoverable where possible. Stored cooldown preferences persist. On the development branch, `lastFiredAt` stores the last accepted native/custom dispatch and `lastAttemptAt` stores the last actual native API call even if its return was false. Both are per token; precise in-session timing remains separate. A false result never establishes successful output.
 
 Custom emotes have `c:`-prefixed saved references and text entries under `customEmotes`. Deleting or editing custom lines can affect assigned selections; the editor tries to preserve IDs where corresponding lines remain.
 

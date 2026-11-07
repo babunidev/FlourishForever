@@ -2,6 +2,74 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** WoW Forever 1.60.1 / Interface 16001.
 
+## 0.5.0-beta — selectable triggers and emote-dependent ability cooldowns (2026-11-07)
+
+- **Trigger timing per ability:** select **Success** (default), **Button press**, or **Failure** in the editor beside Chance. Handle player successful, failed, quiet-failed and interrupted casts with deduplication; preserve configured chance and character profiles.
+- **Battleground safety:** Success temporarily falls back to Button press in battlegrounds/arenas without changing the saved setting. Respect genuine chat lockdown and blocked native API calls. Actual battleground availability remains unverified.
+- **Native emote search:** search canonical tokens (such as `ROAR`) and displayed/localized slash aliases.
+- **Emote-dependent ability cooldown:** each selected emote retains an individual 0–120-second duration, but after selection its duration locks the entire configured ability. Other configured abilities remain independent. The chosen duration is preserved across UI reloads and unaffected by later slider edits during the active lock.
+- **Native-call retry protection:** a `C_ChatInfo.PerformEmote` attempt starts the selected ability lock even if the API reports `false`, while retaining accurate separate accepted/refused diagnostics. Chance rejection, chat lockdown or an unavailable API do not consume the lock.
+- **Diagnostics:** `/flourish cooldowns [ability]` reports the active ability lock, selected token and duration; `/flourish debug` reports instance/chat restriction and dispatch state, without automatic chat output.
+- **Custom text:** preserve player-written `/e` emotes on hardware presses only; do not send custom text from delayed success/failure events because of Forever's security restrictions.
+- **Compatibility:** WoW Forever 1.60.1, Interface 16001; preserved existing saved character settings, per-emote duration sliders and MIT license.
+- **Verification:** Babuni reported the new ability-lock design working in the Forever client. GitHub Lua syntax, mocked gameplay/UI regressions and a BigWigs upload-disabled packaging check passed. Exhaustive combat, battleground/arena and cross-addon testing remain unverified.
+- **Release process:** prepared for the approved Beta tag `v0.5.0-beta`. A successful Git tag alone does not prove a CurseForge file was published.
+
+### Detailed development history
+
+The dated entries below preserve the sequence of implementation and investigation prior to this release candidate. References to "unreleased" in those historical entries describe their status when written, not the current candidate.
+
+
+## Unreleased development — chosen emote sets the whole ability's cooldown (2026-11-07)
+
+- Babuni confirmed that the preceding cooldown implementation works in-game and approved a change to **ability-wide cooldown gating** without removing individual emote duration sliders.
+- Whenever a selected emote is attempted, snapshot its 0–120-second duration and lock **all emotes on that configured ability** until it expires. Afterward, randomly select from the eligible native/custom pool again; other configured abilities remain independent.
+- Preserve native-emote false-return retry protection: a real native API attempt starts the ability lock even if the function returns false, without claiming a successful dispatch. Custom `/e` starts the lock when submitted; blocked chat calls, empty pools and chance rejections do not start one.
+- Persist `cfg.abilityLock` with chosen token, duration and server timestamp; keep high-resolution in-session timing and validate corrupt saved values. Existing token preferences and historical per-token timestamps are retained.
+- Update editor guidance and `/flourish cooldowns` diagnostics to show the current ability lock and the duration each token would impose if selected.
+- **Verification:** Lua syntax, mocked trigger, duration, independent ability, custom chat, native false-return, reload and malformed-save regression checks, and upload-disabled BigWigs packaging ZIP validation passed on the development branch. **New behavior has not yet been tested in the Forever client. No public tag.**
+
+## Unreleased fix — native false-result retry throttling (2026-11-07)
+
+- Babuni supplied live diagnostics showing nine native attempts, zero reported successful calls and nine `false` API results; the last attempted token was `FAINT`, with a six-second configured timer. A `Mobility` cooldown lookup found no saved ability under that name, while the last matched ability was `Find Treasure`.
+- Keep `lastFiredAt` exclusively for native API successes and custom `/e` dispatches. Add `lastAttemptAt` for actual native API invocations **regardless of the boolean result**; use the larger remaining interval of precise session and both saved timestamps for per-token rate-limiting.
+- Failed native results continue to be reported as rejected, not mislabeled as success. They now impose the configured retry delay to prevent repeated immediate calls or possible visible animations on every press.
+- Do not consume a timer on chance rejection, client chat lockdown or when the native API is unavailable. Preserve separate emotes/abilities and a zero-second setting.
+- Extend mocked regressions for a native API that returns false while the simulated client displays an emote, including rapid presses, exact six-second expiry, persistence across reload and truthful diagnostics.
+- **Verification:** offline Lua/UI tests and no-upload ZIP checks run on the development branch. The real-client false-return behavior is not fully explained and the throttling fix remains unverified in-game. No new public tag.
+
+## Unreleased investigation — 6-second emote repeat report (2026-11-07)
+
+- Babuni reported that the installed persistence build still emits an emote every time Mobility is pressed despite a six-second setting. Root cause remains unconfirmed.
+- Refactor per-token cooldown eligibility and manual readout to share one remaining-time calculation; preserve existing timer semantics, independent emotes and no global ability throttle.
+- Add read-only `/flourish cooldowns [ability]` to show each selected token, configured duration, remaining seconds, server/session timestamps and last attempted token. Extend `/flourish debug` with last matched ability, token and token cooldown.
+- Test a single six-second emote across consecutive presses and exact expiry; also test that two separate selected emotes can each fire once while their own cooldowns run.
+- **Verification:** GitHub mocked logic/UI and no-upload package preview passed. Live reproduction and confirmation of the user's six-second issue remain pending. No new tag or public release.
+
+## Unreleased development — individual emote cooldown persistence (2026-11-06)
+
+- Fix cooldown history resetting on every `/reload` or relog. Successful native dispatches and submitted custom `/e` messages now save an individual `lastFiredAt` Unix timestamp alongside each emote's configured cooldown.
+- Retain precise `GetTime()` checking within a session and use Forever's `GetServerTime()` to honor the unexpired time across reloads. No polling or additional events.
+- Preserve per-ability/per-token independence, 0–120-second editable settings, immediate first use and chance. Rejected native sends do not count as success; the later development correction adds a separate per-token retry interval for them. Invalid or malformed saved timestamps are discarded.
+- Add offline regressions for 0/15/30/60/120-second cases, separate tokens, separate abilities, native API failure, custom emotes, corrupt saved timestamps, simulated reload, and slider save/reopen.
+- **Evidence:** Lua/UI mock tests and real no-upload packaging checks passed on the development branch. The user's timer problem was reported in-game; **this corrective implementation has not yet been retested in-game**. No new public tag.
+
+## Unreleased development — search and battleground diagnostics (2026-11-06)
+
+- Fix emote editor search to match canonical native tokens such as `ROAR` as well as displayed slash aliases/localized labels. Add a UI mock verifying search works with a nonmatching alias.
+- Remove `IsSpellUsable` from the press-trigger path: a real player press remains a press even if a spell is temporarily unusable or on cooldown. Preserve existing emote chance, per-token cooldowns and deduplication.
+- Add read-only `/flourish debug` showing instance type, chat lockdown and Chat/PvPMatch state, press/outcome counts, native/custom attempts and whether the emote API returned success. No identifiers, constant polling, persistent logs or chat spam.
+- **Caution:** the user's battleground test reported no emote output with the earlier development build. Actual restriction state and API rejection cause are not yet known. The new diagnostics do not bypass protected functions or guarantee PvP output.
+- Verify with mocked UI/gameplay tests and the no-upload packaging dry run; local Forever battleground and group retesting remain open.
+
+## Unreleased development — configurable ability trigger modes (2026-11-06)
+
+- Add a per-ability **Triggered by** dropdown next to Chance, with Success (new/default for older saved configurations), Button press and Failure.
+- Listen to `UNIT_SPELLCAST_SUCCEEDED`, `UNIT_SPELLCAST_FAILED`, `UNIT_SPELLCAST_FAILED_QUIET` and `UNIT_SPELLCAST_INTERRUPTED` for the player; deduplicate duplicate reports per cast where possible.
+- Temporarily resolve a saved Success trigger to Button press in battlegrounds/arenas without writing the fallback into SavedVariables. Keep genuine chat lockdown restrictions and suppress delayed native emotes during PvP restrictions.
+- Respect Forever's custom `/e` hardware-input restriction: outcome events send **native tokens only**, while custom `/e` stays on hardware press. No silent fallback for explicitly selected Failure.
+- Preserve existing character profiles, emote pools, independent chance/cooldowns and ordinary group/dungeon/raid behavior. Add mocked UI and gameplay coverage.
+- **Verification status:** code implemented on the `feat/ability-trigger-modes` development branch, pending exact-commit automated checks and local WoW Forever testing. No release tag or CurseForge upload.
 ## 0.4.3-beta — restore group-play emotes (prepared; not yet published)
 
 - Stop treating `Map`, `Encounter` and `ChallengeMode` addon data-restriction states as blanket emote bans. Normal outdoor parties, dungeons and raids can attempt native and custom emotes through existing player-action hooks.

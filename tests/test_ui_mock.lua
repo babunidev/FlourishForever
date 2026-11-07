@@ -74,6 +74,11 @@ local entries={{itemType=1,spellID=100,name="Strike",iconID=111},{itemType=1,spe
 C_SpellBook={GetNumSpellBookSkillLines=function()return 1 end,GetSpellBookSkillLineInfo=function()return {name="General",itemIndexOffset=0,numSpellBookItems=2} end,GetSpellBookItemInfo=function(i)return entries[i] end}
 FlourishForeverDB={actionEmotesEnabled=true,instances={strike={name="Strike",spellID=100,chance=100,cooldown=6,emotes={ROAR=true}},second={name="Second",spellID=200,chance=100,cooldown=6,emotes={ROAR=true}}}}
 _G.EMOTE1_TOKEN="ROAR"
+_G.EMOTE2_TOKEN="CHEER"
+GetEmoteSlashCmd=function(token)
+    if token == "ROAR" then return "/rawr" end
+    if token == "CHEER" then return "/hurrah" end
+end
 assert(loadfile("FlourishForever_ActionEmotes.lua"))()
 local ok, err = xpcall(FlourishForever_OpenConfig, debug.traceback); if not ok then print("TRACE:",err); os.exit(1) end
 local ui=_G.FlourishForeverConfigFrame
@@ -90,8 +95,51 @@ assert(not ui.generalButtons[2]:IsShown(),"filters unrelated spell")
 -- Clicking filtered entry should bring up emote editor without crashing.
 ui.generalButtons[1].scripts.OnClick(ui.generalButtons[1])
 assert(ui.page=="editor" and ui.editorTitle:GetText()=="Strike", "editor for chosen spell")
+assert(ui.triggerButton and ui.triggerButton:GetText():find("Success", 1, true),
+    "new and migrated abilities default to Success")
+assert(ui.triggerLabel:GetText() == "Triggered by", "trigger control labeled")
+ui.triggerButton.scripts.OnClick(ui.triggerButton)
+assert(ui.triggerMenu:IsShown(), "trigger dropdown opens")
+ui.triggerOptions.failure.scripts.OnClick(ui.triggerOptions.failure)
+assert(FlourishForeverDB.instances.strike.trigger == "failure", "menu persists Failure per ability")
+assert(not ui.triggerMenu:IsShown(), "menu closes after selection")
+ui:ShowPage("home")
+ui:ShowPage("editor")
+assert(ui.triggerButton:GetText():find("Failure", 1, true), "dropdown remembers selected mode")
+ui.triggerOptions.press.scripts.OnClick(ui.triggerOptions.press)
+assert(FlourishForeverDB.instances.strike.trigger == "press", "Button press option persists")
 ui.search:SetText("roar")
-assert(#ui.emoteRows>0 and ui.emoteRows[1]:IsShown(),"emote search")
+local tokenRows = {}
+for _, row in ipairs(ui.emoteRows) do
+    if row.check and row.check.token then
+        tokenRows[row.check.token] = row
+    end
+end
+assert(tokenRows.ROAR and tokenRows.ROAR:IsShown(),
+    "ROAR token found even though displayed command is /rawr")
+local slider = tokenRows.ROAR.slider
+assert(slider:IsShown(), "selected emote exposes its cooldown slider")
+slider:SetValue(47)
+assert(FlourishForeverDB.instances.strike.emotes.ROAR.cooldown == 47,
+    "emote slider writes its own SavedVariables value")
+ui:ShowPage("home")
+ui:ShowPage("editor")
+local reopenedRoar
+for _, row in ipairs(ui.emoteRows) do
+    if row.check and row.check.token == "ROAR" then reopenedRoar = row end
+end
+assert(FlourishForeverDB.instances.strike.emotes.ROAR.cooldown == 47
+    and reopenedRoar and reopenedRoar.slider:GetValue() == 47,
+    "edited ROAR cooldown survives reopening without assuming row order")
+ui.search:SetText("roar") -- reopening the editor intentionally resets the search
+assert(tokenRows.CHEER and not tokenRows.CHEER:IsShown(),
+    "search hides unrelated /hurrah command")
+ui.search:SetText("hurrah")
+assert(tokenRows.CHEER:IsShown() and not tokenRows.ROAR:IsShown(),
+    "search still matches localized command label")
+ui.search:SetText("")
+assert(tokenRows.ROAR:IsShown() and tokenRows.CHEER:IsShown(),
+    "clearing search restores choices")
 ui:ShowPage("custom")
 assert(ui.customEdit and ui.customSave, "custom emote editor")
 ui.customEdit:SetText("shakes her head")
@@ -99,4 +147,4 @@ ui:SaveCustomEmotes()
 assert(#FlourishForeverDB.customEmotes==1,"custom save")
 ui:ShowPage("home")
 assert(ui.homeRows[1]:IsShown(),"home restored")
-print("PASS: mocked home overview, ability search, spell picker, editor, custom text")
+print("PASS: UI trigger selection, search, per-emote cooldown slider persistence, picker and custom text")

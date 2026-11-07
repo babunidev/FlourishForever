@@ -1,9 +1,87 @@
 # Flourish Forever — roadmap and verification status
 
 **Creative decision authority:** Babuni · **Game:** WoW Forever 1.60.1 / Interface 16001  
-**Latest confirmed Git tag:** `v0.4.2-beta` · **Prepared group-play update:** `0.4.3-beta` (not tagged yet).  
+**Last confirmed public Git tag:** `v0.4.3-beta` · **Prepared version:** `0.5.0-beta` (tag/CourseForge publication not yet confirmed).  
 **Development:** Expanded UI restored from Babuni's older local archive and committed to `dev/expanded-ui-merge`. Preparation occurs separately; no public release tag was created.
 
+
+## v0.5.0-beta release preparation — 7 November 2026
+
+- [x] Review the exact development branch against public `v0.4.3-beta` and preserve the approved selectable triggers, token search and chosen-emote ability lock.
+- [x] Prepare version metadata, player-facing changelog and six-file package validator for `0.5.0-beta`.
+- [x] Record Babuni's in-game confirmation of the revised cooldown model without claiming complete battleground security verification.
+- [ ] Re-run exact versioned release commit Lua/UI and upload-disabled packaging checks.
+- [ ] After explicit release authorization, push only the annotated `v0.5.0-beta` publishing tag and confirm its remote target.
+- [ ] Verify the resulting CurseForge file, Beta classification, Forever target, contents and publication status. GitHub tag existence is not proof of publication.
+
+## Approved cooldown behavior — 7 November 2026
+
+- [x] Babuni confirmed the preceding per-token cooldown implementation works in-game and approved a refined design: every token keeps its own duration, but the chosen emote locks the **entire ability** until that duration expires.
+- [x] Implement per-ability lock state with the chosen token and duration, persisted across `/reload`, while preserving older per-token history records and character settings.
+- [x] Preserve rate-limiting of actual native-emote calls returning `false`, without recording them as confirmed successful dispatches.
+- [x] Update UI guidance and read-only cooldown diagnostics to show which emote is locking the ability and for how long.
+- [x] GitHub mocked Lua regressions cover 3s/20s locks, other-token suppression, independent abilities, changes to slider durations, custom `/e`, false native returns, reload, 0s, and malformed saves; packaging dry run passed.
+- [x] Babuni confirmed the new emote-dependent ability lock works in actual Forever gameplay (7 November 2026).
+- [ ] Detailed client verification remains open for mixed native/custom pools, reload, group/PvP security restrictions, and all trigger modes.
+- [x] Babuni authorized a new public tag for this tested version (7 November 2026).
+- [ ] Verify the tag is pushed, the CurseForge generated file is really published as Beta for Forever 1.60.1, and the ZIP contents match the package preview.
+
+## Native emote false-return diagnosis — 7 November 2026
+
+- [x] Use Babuni's in-game output: `accepted=0`, `rejected=9`, `lastToken=FAINT`, six-second duration and no reported chat lockdown.
+- [x] Identify that the previous implementation never recorded a timestamp after native `PerformEmote` returned false, allowing repeated attempts every eligible press.
+- [x] Historical implementation added separate per-token attempt and success timestamps; the 7 November design supersedes individual dispatch gating with a lock scoped to one configured ability.
+- [x] Add simulated false-return-but-visible `FAINT` regression, rapid presses, reload and six-second retry expiry.
+- [ ] Confirm exact release-branch CI and upload-disabled package checks after final docs.
+- [ ] Live client: repeat one emote on a six-second Button press trigger; inspect `/flourish cooldowns find treasure` (or `/flourish cooldowns`) for the real configured ability and `attemptStamp`, `savedStamp`, remaining seconds.
+- [ ] If a visible emote still appears without an incrementing Flourish attempt counter, check other addon or macro sources. Whether a false native API result itself produces a visible emote remains unconfirmed.
+- [ ] No merge/public tag/CurseForge publication until separate approval and real-world verification.
+
+## Reported continuing cooldown issue — 7 November 2026
+
+- [x] Review real source after the player's six-second Mobility Button press test continued to show an emote on every press.
+- [x] Confirm that timers are per selected emote token, not a global ability timer; several individually ready tokens can play on successive presses.
+- [x] Refactor readiness/reporting around one cooldown-remaining calculator, with no undocumented change of timing semantics.
+- [x] Add exact six-second single- and multi-token regression mocks and per-ability `/flourish cooldowns` output.
+- [ ] In-game, inspect `/flourish cooldowns find treasure` or `/flourish cooldowns` (last matched ability); the previous `mobility` lookup did not find a saved ability under that name.
+- [ ] Compare `/flourish debug` before/after apparent repeated emotes. If acceptance does not increment, investigate macros or another enabled addon rather than assuming Flourish generated the emote.
+- [x] Babuni confirmed the earlier individual timers worked and explicitly approved the new ability-wide lock determined by the selected token. Live verification of the revised design remains open.
+- [ ] Confirm the fix in-game before proposing a release. Existing `v0.4.3-beta` remains untouched.
+
+## Individual emote cooldown investigation — 6 November 2026
+
+- [x] Identify that the active cooldown history was stored only in `lastFireByAbility` and cleared on UI reload; configuration values alone survived.
+- [x] Persist server epoch timestamps per accepted native/custom emote in the existing per-character emote records; keep `GetTime()` precision during one session.
+- [x] Add regressions for independent 0–120-second emote delays, other ready tokens, distinct abilities, changing the slider, UI reopen, simulated reload, rejected native sends and invalid timestamps.
+- [x] Confirm the test suite fails on the previous nonpersistent implementation and passes with the correction.
+- [ ] Test in WoW Forever after `/reload`: choose one ability with a single emote at 30 or 60 seconds, fire twice rapidly, reload, and confirm it remains suppressed until its actual delay ends.
+- [ ] Test separate emotes on one ability, the same emote on multiple abilities, custom /e on Button press, and changing a slider while a cooldown is active.
+- [ ] Verify reported timer failure during one uninterrupted live session. The source-level reset explains reload tests, not necessarily every report of rapid repetition.
+- [ ] No public release tag approved; keep the existing `v0.4.3-beta` tag unchanged.
+
+## Search bug and battleground silence — 6 November 2026
+
+- [x] Identify search indexing only a displayed slash-command label, not the canonical native emote token.
+- [x] Index both native token and displayed/localized slash alias, with a mock where ROAR displays as `/rawr`.
+- [x] Remove `IsSpellUsable` gating from the explicit Button press path and Success-to-press PvP fallback; chance/cooldowns still apply.
+- [x] Add `/flourish debug` as a manual, read-only, session-local report of security states, hook counts and emote API responses.
+- [ ] Run exact-commit Lua/UI tests and BigWigs no-upload ZIP dry run after docs changes.
+- [ ] Verify in-game in Forever: search for ROAR and alias, Button press while an ability is unavailable, group and overworld Success, and the same selected ability inside battlegrounds.
+- [ ] Inspect diagnostic output if PvP remains silent, distinguishing a hook not firing, a configured-mode mismatch, actual chat lockdown and native API refusal. Never bypass protected functions.
+- [ ] No public tag or CurseForge upload until the design is verified and separately approved.
+
+## Per-ability trigger timing — 6 November 2026
+
+- [x] Babuni approved three choices per ability: Success (default), Button press and Failure, via a dropdown beside Chance.
+- [x] Implement per-ability SavedVariables migration/normalization, separate player cast-success/failure event listeners, duplicate-outcome guards and press-time selection.
+- [x] Implement Success-to-Button-press runtime fallback in battlegrounds/arenas without modifying settings, while keeping actual chat-lockdown suppression.
+- [x] Handle Forever's custom `/e` hardware-only rule by allowing custom text from press mode but never sending it from delayed success/failure events.
+- [x] Add mocked trigger, storage, PvP fallback, party/dungeon/raid and UI dropdown tests.
+- [ ] Exact-commit GitHub Lua/UI CI and real upload-disabled packager ZIP checks must pass.
+- [ ] Verify in the real Forever client: successful cast, failed/quiet failed cast, interruption, action press, selected native and custom text, dropdown persistence and chances/cooldowns.
+- [ ] Verify entering/leaving battlegrounds and arenas, real chat lockdown, and no `ADDON_ACTION_BLOCKED` errors. PvP button-press fallback cannot guarantee emote output under active chat restrictions.
+- [ ] Verify ordinary group/dungeon/raid triggers remain functional.
+- [ ] No new public version is approved or tagged; do not merge or publish before local testing.
 ## Group-play regression — 0.4.3-beta release preparation
 
 - [x] Inspect the `0.4.2-beta` trigger code and identify overbroad `Map`, `Encounter` and `ChallengeMode` restriction-state suppression.

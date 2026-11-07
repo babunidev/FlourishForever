@@ -1,5 +1,59 @@
 # Flourish Forever — creative and technical development journal
 
+
+## 7 November 2026 — a tested rhythm, ready to share
+
+The revised cooldown finally feels right in the Forever client. Whichever emote is chosen determines how long that ability remains quiet, leaving a brief pause after a little giggle and more space after a larger gesture. With that behavior confirmed in play, the next step is a public beta so others can use the new trigger timing and ability-specific expression.
+
+The AI-assisted release preparation updates the manifest, package checks and player-facing notes for `0.5.0-beta`, without changing the tested runtime. Automated tests and a local package dry run cover the installable files; protected chat restrictions in battlegrounds still deserve separate verification. Publication remains a distinct step that requires the actual tagged package to appear on CurseForge.
+
+## 7 November 2026 — the silence after a larger gesture
+
+With the individual emote timers working again, a different rhythm became appealing. A small giggle should leave room for another gesture almost immediately, while a forceful roar deserves a longer quiet moment. The important part isn't merely how often each emote appears, but how much space it leaves afterward.
+
+The new rule is that any chosen emote pauses its entire ability for its own configured duration. My AI assistant implemented that shared lock while keeping separate sliders, chance, trigger modes and character settings intact. Automated Lua and packaging checks now pass; the new timing has not yet been verified in the actual Forever client. No public tag has been made.
+
+## 7 November 2026 — when the emote API answered no
+
+The diagnostics finally showed why my emote timer wasn't being used: Flourish had attempted nine native emotes, but the client returned false every time. The addon only remembered successful sends, so the same action remained eligible on the next button press. It also became clear that the cooldown command needed the real configured ability name rather than the label I had tried.
+
+The revised development build now keeps separate records for accepted emotes and for native API attempts. Even a reported failed call cannot be repeated until that token's configured delay expires, while the addon still reports the return value truthfully. That means retries after genuine failures are delayed too, which is preferable to hammering the same action on every press. My AI assistant updated the tests to model the exact six-second situation and kept the change out of public releases.
+
+Whether a `false` API result can still show a local emote animation is not established by these logs. Another real-client test is needed before calling the behavior repaired.
+
+## 7 November 2026 — the six-second test that still failed
+
+After installing the new build, the cooldown still didn't behave as expected. Mobility was set to Button press, with six seconds configured, yet an emote appeared on every press. A passing automated test hadn't been enough to settle the real behavior.
+
+My AI assistant reviewed how the timer selects its next emote and found an important distinction: each selected expression has its own timer, not one timer for the whole ability. That could explain a series of different expressions, but it doesn't excuse the same expression repeating early. Rather than change the meaning of the settings, the development branch now prints an exact cooldown snapshot when requested, alongside the last attempted emote and the result reported by the client. The six-second case is also covered in mocks.
+
+This is a diagnostic checkpoint, not a claimed in-game repair. We still need to see which emote is firing and whether the client's accepted-send counter matches what appears in chat.
+
+## 6 November 2026 — when the timer forgot
+
+Something was wrong with the individual emote timers. After watching Flourish through several changes, I had strong reason to doubt that the seconds assigned to each expression were doing what they should.
+
+The source revealed that the slider values survived, but the actual memory of the last emote did not survive a UI reload. My AI assistant reproduced the missing timestamp with a failing regression test and changed the implementation to retain a server-time marker alongside each configured emote. Separate in-session timing still handles precise intervals, and another emote can remain available while its neighbor is cooling down.
+
+The offline tests now pass for different delays, character abilities, native and custom emotes, and reloads. The actual Forever client still has to confirm the fix, so it remains on the development branch rather than becoming a public release.
+
+## 6 November 2026 — looking for the missing roar
+
+During the first trigger-menu test, searching for Roar failed to find the emote, and the battleground remained completely quiet. Both problems matter for an addon built around expressive play. The search was plainly relying on whichever slash command the client displayed rather than the underlying ROAR token, so the filter now recognizes either name.
+
+The battleground silence required more care. My AI assistant found that an ability-usability check could stop a genuine button press from counting, but Forever's native emote API also has protected states that cannot simply be ignored. Instead of pretending the restrictions were fully understood, we added a small `/flourish debug` report to tell us whether the press hook fired, whether chat was locked down and whether an emote was actually accepted. A simple `/reload` is sufficient for a normal Lua update; restarting the game need not be a requirement.
+
+The search and press-time correction are in a development branch. There is no claimed battleground success and no new public release.
+
+## 6 November 2026 — choosing when a flourish belongs
+
+After the security fixes, it became clear that moving every native emote to the button press had changed an important part of Flourish's character. A flourish that follows a successful action is different from one that marks an attempt, and a failed spell might deserve an expression of its own.
+
+The new design gives each ability a small Triggered by menu beside Chance: Success, Button press, or Failure. Success remains my default, while battlegrounds temporarily use a press-triggered fallback when the client permits chat. My AI assistant has implemented the state handling and tests on a separate development branch. Custom `/e` chat has stricter hardware restrictions and cannot be sent from the later outcome events; the interface now explains that limit.
+
+There is no new public version yet. The Forever client still needs to confirm that success and failure events permit native emotes without protected-action errors, and the battleground fallback must be tested before release.
+
+
 ## 5 November 2026 — the group fix is ready for everyone
 
 After trying the revised build, Flourish seems to behave properly in groups again. That matters more than a small interface improvement: the point of these emotes is to give the character some presence around other players, including those sharing an adventure.

@@ -15,6 +15,23 @@ SlashCmdList.FLOURISHFOREVER = function(msg)
         return
     end
 
+    if msg == "debug" then
+        if FlourishForever_EmoteDiagnostics then
+            print("Flourish Forever: " .. FlourishForever_EmoteDiagnostics())
+        end
+        return
+    end
+
+    local command, ability = msg:match("^(cooldowns)%s*(.-)%s*$")
+    if command == "cooldowns" then
+        if FlourishForever_CooldownDiagnostics then
+            for _, line in ipairs(FlourishForever_CooldownDiagnostics(ability)) do
+                print("Flourish Forever: " .. line)
+            end
+        end
+        return
+    end
+
     if msg == "status" then
         if FlourishForever_StorageStatus then
             print("Flourish Forever: " .. FlourishForever_StorageStatus())
@@ -27,5 +44,5 @@ SlashCmdList.FLOURISHFOREVER = function(msg)
         return
     end
 
-    print("Flourish Forever: /flourish | /ffsh | /flourish status | /flourish config")
+    print("Flourish Forever: /flourish | /ffsh | /flourish status | /flourish debug | /flourish cooldowns [ability] | /flourish config")
 end

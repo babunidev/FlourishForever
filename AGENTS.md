@@ -2,7 +2,44 @@
 
 **Human creative and final decision-maker:** Babuni. **Portfolio:** babuni.dev. **Historical project credit:** Babunigaming.  
 **Game:** World of Warcraft **Forever only**, client 1.60.1 / interface 16001. Recheck after each game update.  
-**Current tagged baseline:** `v0.4.2-beta` · **Prepared patch:** `0.4.3-beta` (not yet tagged/published).
+**Last confirmed public tag:** `v0.4.3-beta` · **Prepared public version:** `v0.5.0-beta` (tag/CurseForge publication pending).
+
+
+## Approved ability-wide cooldown design — 7 November 2026 (development only)
+
+- **Babuni superseded the older independent-per-token gating design.** Each selected native/custom token retains its own adjustable `cooldown = 0..120` seconds, but when a token triggers, **its chosen duration locks the entire configured ability** until expiry. Another selected emote cannot bypass that active lock. Other configured abilities are independent.
+- Snapshot the chosen duration at the time of an attempted emote. Later slider changes affect the next lock, not an already running lock. Select randomly from all appropriate configured tokens only when the ability is unlocked; obey chance, trigger mode, 0.2-second duplicate-press suppression and actual chat restrictions.
+- Native `C_ChatInfo.PerformEmote` calls lock the ability for the chosen duration **even when the API reports false**, without incorrectly recording a successful send. A custom `/e` attempt locks only after it can be submitted. Chance rejection, empty pools, missing APIs or chat lockdown do **not** start a new lock.
+- Persist `cfg.abilityLock = { token, duration, startedAt }` using `GetServerTime()`; keep a precise `GetTime()` session copy. Normalize malformed saved lock values. Preserve old per-token `lastFiredAt` and `lastAttemptAt` records as historical diagnostics, not as independent dispatch gates. A 0-second selected emote causes no ability-wide delay.
+- The earlier **“no global ability cooldown” guidance below describes the superseded design** and must not override this explicit decision. This is *per configured ability*, not a single global cooldown across the character or addon. Automated regression checks pass; Babuni confirmed the revised ability-lock behavior working in the Forever client on 7 November 2026. Complete battleground/secure-chat checks remain unverified. Babuni separately authorized preparation of a public Beta tag; verify package/settings before pushing it.
+
+## False native-emote result and cooldown semantics (development)
+
+- Babuni supplied live diagnostic evidence of `PerformEmote` returning false on nine attempts (accepted zero), most recently `FAINT` with six seconds configured. The actual cause of the visible emote output remains unverified; do not assert that a false API return proves delivery.
+- Keep success and attempt timestamps distinct: `lastFiredAt` records native API success or submitted custom chat; `lastAttemptAt` records native calls regardless of return. **The currently active dispatch gate is the shared ability lock** with the selected token's duration; retain per-token timestamps as truthful history.
+- False-result throttling can delay a later genuinely successful retry. This is the explicit trade-off to prevent possible emote spam without falsely counting rejected calls as accepted. Never attempt restricted APIs when chat lockdown or a block guard prevents dispatch.
+- The last recognized configured ability was `Find Treasure`, not `Mobility`; diagnostic commands must use the actual configured ability key or the no-argument last matched ability. Neither the code-backed explanation nor mock tests prove the live bug fixed yet.
+
+## Continuing six-second cooldown report — preserve design, gather actual evidence
+
+- Babuni's live test of the prior development build reported emote output on every Mobility press despite a six-second setting. Do **not** label the earlier persistence fix sufficient, nor claim the new debug instrumentation resolves the live issue.
+- Historical 6 November behavior: multiple tokens could trigger on successive presses. **Superseded 7 November by Babuni's explicit approval of an ability-wide lock set by the chosen token's duration.**
+- `/flourish cooldowns [ability]` reports (without mutation) the configured emote-token count, each individual timer's SavedVariables value, the remaining time calculated using the same helper as actual eligibility, and the last attempted API token. `/flourish debug` reports last matched ability and token. Both commands run only when requested; never emit chat spam in normal operation.
+- Use an actual in-client `/flourish cooldowns mobility` capture to discriminate bad slider values, single-token repeated attempts, individually rotating tokens, API response anomalies or another addon/macro generating a similar emote. Retest the single-token case in-game before calling the failure resolved.
+
+## Individual emote cooldown correction (development only)
+
+- Keep **per-ability and per-token** delays distinct: `cfg.emotes[token].cooldown` is a 0–120-second preference and `cfg.emotes[token].lastFiredAt` is an optional server Unix timestamp of the last accepted dispatch.
+- `lastFireByAbility` and `GetTime()` still provide precise in-session timing; `GetServerTime()` lets the remaining delay survive `/reload`/relog. Rejected native API calls save `lastAttemptAt` for retry throttling but must not update `lastFiredAt`; chance rejection never writes either stamp. Avoid polling.
+- A zero cooldown permits repeated genuine button presses (apart from short hook dedupe). The new lock is shared **within one configured ability** only; it never blocks other configured abilities.
+- Malformed saved timestamps must never block an emote indefinitely; preserve existing boolean-emote migration and independent profile storage. Player test is still pending; mocks are not game-client evidence.
+
+## Current development investigation — search and PvP
+
+- The native emote editor search must match both the canonical token (e.g. `ROAR`) and any displayed slash alias, without altering stored emotes or leaking display labels into API calls.
+- Explicit Button press mode and the Success-to-press PvP fallback must not be suppressed solely because `IsSpellUsable` is false. The player pressed the button; chance, emote cooldowns, chat security and duplicate-hook suppression remain separate controls.
+- `/flourish debug` is a manual, read-only report of session counters and the actual Forever chat/PvP restriction state. It does not report player names or GUIDs, generate chat spam, send protected actions or change settings. Use actual in-game observations before making further PvP behavior changes.
+- The prior `0.4.3-beta-dev` battleground test was reported silent, with no confirmed restriction reason. Do not claim this new investigation definitively fixes battlegrounds; actual chat lockdown or the restricted native API may still prohibit output. Public `v0.4.3-beta` remains unchanged.
 
 ## Creative boundaries
 
@@ -18,8 +55,11 @@ The expanded interface and custom `/e` text are now part of the approved develop
 - Each ability has `enabled`, `chance` (0–100), and selected `emotes`. Each selected native/custom token stores `{ cooldown = 0..120 }`. The old ability-level `cfg.cooldown` stays for migration/defaults; older `true` token values migrate using that cooldown. An empty emote pool is intentionally silent.
 - **Published 0.4.1-beta PvP guard:** the reported Forever client blocked protected `PerformEmote()` during a battleground cast-success event. For safety, both native and custom addon-driven emotes are suppressed in `IsInInstance()` types `pvp` and `arena`; normal settings are preserved. This is supported by mocked checks but has not yet had a live battleground retest; record that limitation even if an urgently approved public hotfix is distributed.
 - **Group-play compatibility:** only `Chat` and `PvPMatch` addon restriction states are relevant to the emote dispatch guard. Do not block ordinary player-triggered emotes merely because `Map`, `Encounter` or `ChallengeMode` addon data restrictions are active. Keep `C_ChatInfo.InChatMessagingLockdown()` and battleground/arena checks; never try to bypass genuine protected-action restrictions. This correction is prepared for release after Babuni reported it working in-game; the report does not establish a full party/dungeon/raid or combat regression suite.
-- **Current native trigger:** native emotes now use `C_ChatInfo.PerformEmote` directly from player ability-action hooks, and no native emotes are attempted from `UNIT_SPELLCAST_SUCCEEDED`. This sacrifices cast-success timing and may miss non-action-bar spell activations. Babuni reported no noticeable difference during general in-game use and requested publication; a specific successful battleground retest remains unconfirmed. Never route a protected call through a delayed event/timer or attempt to bypass its security.
-- First presses must not be throttled by a synthetic zero timestamp; runtime cooldown timestamps are session-only. Failed API returns must not consume cooldown.
+- **Approved trigger design (implemented in development, not yet verified in-game):** each ability stores `cfg.trigger` as `success` (default, including legacy data), `press`, or `failure`. The dropdown beside Chance must reflect this choice. Player cast-success/failed/quiet-failed/interrupted events drive native outcome emotes; a saved Success setting resolves to Button press in battlegrounds/arenas without changing SavedVariables. Failure remains distinct and is suppressed in PvP restrictions. Respect true chat lockdown and do not bypass protected actions.
+- **Custom /e security:** custom text may be sent only in a genuine player-action press context on Forever; even when an ability is configured Success/Failure, do not send custom messages from outcome events. State this limitation in the interface. Save settings even when the selected custom token cannot fire in outcome mode.
+
+- **Existing public trigger:** v0.4.3-beta uses player-action hooks. The new development branch introduces guarded native outcome-event dispatch outside PvP per Babuni's explicit direction. This may still be restricted in certain combat states and must be tested in-game; never bypass protection or claim full compatibility from mocks.
+- First presses must not be throttled by a synthetic zero timestamp. The development fix persists per-token dispatch timestamps through SavedVariables; in-session `GetTime()` measurements remain transient. Failed API returns do not establish successful dispatch, but actual native API attempts now consume a distinct retry interval under the configured per-token duration.
 - Custom `/e` text uses `c:id` tokens and is attempted during player button-press hooks (`UseAction`, `CastSpellByID`, `C_Spell.CastSpell` where available). It can trigger **before cast success**, including on failed/aborted casts. Preserve this distinction and verify secure-chat restrictions in Forever before claiming complete compatibility.
 - Spellbook selection excludes passive, future, off-spec and non-spell entries. Actual modern API availability must be verified on the target Forever build, not guessed from an interface number.
 - `EnsureDB` validates saved data; keep backward migration compatible and avoid unnecessary allocations on routine casts. Preserve malformed/unknown saved records for possible recovery when safe.

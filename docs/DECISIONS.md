@@ -1,5 +1,51 @@
 # Flourish Forever — recorded design decisions and open alternatives
 
+
+## 7 November 2026 — chosen emote controls the whole ability's cooldown
+
+Babuni confirmed that the most recent individual cooldown implementation works and explicitly chose a revised interaction: every selected emote retains its own duration, but whichever one fires locks the **entire configured ability** for that duration. A minor giggle with a three-second timer allows the next random expression quickly, while a more impactful roar with a twenty-second timer creates a longer silence. The next emote is chosen randomly only after the current ability lock expires. The ability's chance and selected trigger mode remain unchanged; other abilities are never locked by this one.
+
+This explicitly **supersedes** the previous independent-token gating and the earlier instruction not to introduce an ability-wide timer. It does not introduce one global cooldown across the character, nor does it change native versus custom chat protection. AI implemented the chosen-duration lock, kept separate historical attempt/success timestamps for native APIs returning false, updated tests and reports, and documented the outstanding in-game verification. The existing public `v0.4.3-beta` tag is untouched.
+
+## 7 November 2026 — respecting a false-return native-emote retry interval
+
+The next in-game diagnostic showed that Flourish tried nine native emotes and **all nine `PerformEmote` calls returned false**, yet the player had observed repeated emote activity. The most recent token was FAINT with a six-second configured delay. The named `Mobility` lookup did not correspond to a configured ability key; the last matched ability was `Find Treasure`. This explains why the previous accepted-dispatch timer never started, although the cause of visible emotes under false-return status remains unresolved.
+
+The development correction makes a careful distinction: a false return does not record successful delivery, but **an actual call to the native emote API** starts a per-token retry timer equal to its configured cooldown. This prevents a failed or ambiguous call being repeated on every press and preserves the existing per-emote timing and independence across abilities. It may delay a genuinely unsuccessful retry; this is a compatibility/safety trade-off, not a claim that false means success. The client remains responsible for actual chat restrictions and the implementation never bypasses them.
+
+Mocked tests cover a false-returning native API with simulated visible emote output, including six-second repeat suppression and reload persistence. The user has not yet installed or validated this new build in Forever; public release approval remains separate.
+
+## 7 November 2026 — do not confuse per-emote with per-ability cooldown
+
+Babuni's follow-up test contradicted the claim that persistent timestamps had solved the problem: a configured Mobility action on Button press with a six-second emote timer still appeared to produce an emote on every press. The source implements independent timers for each selected emote, so successive *different* emotes may legitimately occur even though the same token should remain blocked for six seconds.
+
+The root cause cannot be established from the report alone. Rather than add an unapproved global ability cooldown or weaken the existing accepted-dispatch requirement, AI added manual per-token observations and tests based on the exact reported six-second setting. The current implementation preserves independent token timers; a real-client report of the selected token, remaining time and actual API return is required before a narrowly targeted correction can be justified. No publication has been approved.
+
+## 6 November 2026 — repairing the individual emote timers
+
+Babuni reported strong in-game evidence that individual timers were not doing their job. Source review identified a definite persistence gap: the selected cooldown values were saved, but the timestamps that determine whether an emote is eligible lived only in a Lua table that reset on every `/reload`. A repeated update-and-reload testing workflow therefore removed all active cooldowns.
+
+Rather than replace the per-emote design or introduce a global timer, the development fix now records the last accepted dispatch in the same per-emote SavedVariables entry using Forever's `GetServerTime()`. The existing `GetTime()` measurement remains for precise active-session decisions. The timers stay independent across different tokens and abilities; native API refusals and chance failures never consume one, and malformed saved timestamps are ignored. That persistence change is a technical correction to make configured durations meaningful across reloads.
+
+Tests now cover saved slider values and multiple timing patterns, including reload. No post-fix in-game test has been recorded, and the possibility of another cause for rapid repetitions within one uninterrupted session remains open. No public release is approved.
+
+## 6 November 2026 — searchable native tokens and targeted PvP diagnosis
+
+Babuni reported that searching for Roar in the emote editor no longer found it, and that the new development build produced no Flourish emotes inside a battleground. Babuni also correctly noted that a game restart is usually unnecessary when an addon can be reloaded.
+
+The source review found a definite search weakness: it indexed displayed slash aliases but not canonical native tokens. The editor now indexes both. A second avoidable suppression was `IsSpellUsable` blocking a true press-triggered emote while an ability is on cooldown or otherwise unavailable; Button press is supposed to describe the action attempt, not spell usability.
+
+The remaining PvP silence is not diagnosed by the source alone. Instead of claiming battleground emotes are impossible or loosening protected APIs blindly, a small read-only `/flourish debug` report now exposes the actual chat lockdown, PvP match state, hook counts and send result from in-game conditions. A hard chat restriction is still respected; the user-facing behavior remains unverified until a live test.
+
+## 6 November 2026 — configurable success, press and failure timing
+
+Babuni explicitly asked to restore success-triggered native emotes as the default and also make Button press and Failure available per ability in a small dropdown beside Chance. For battlegrounds and arenas, the default Success choice should temporarily fall back to Button press to avoid the earlier protected native-emote event. The choice remains saved and is not overwritten during zone changes.
+
+The implementation on `feat/ability-trigger-modes` registers the documented Forever player cast outcome events, preserves the established chance/cooldown behavior and limits native outcome dispatch to contexts where actual chat and PvP restrictions are not active. Explicit Failure remains a separate choice, not silently converted into press mode.
+
+**Known restriction:** Forever's custom `/e` messages require genuine player hardware input. Sending them on a later success/failure event would conflict with that restriction, so the development implementation limits asynchronous outcomes to native tokens and calls out the limitation in the UI. Whether native success/failure emissions are accepted in all outdoor and combat contexts remains unverified until the local test. This is implementation, not a published version; final release authorization must be separate.
+
+
 ## 5 November 2026 — group-play correction approved for distribution
 
 After installing the test branch, Babuni reported that Flourish seems to work fine again and requested that the correction be made available to other players. The next prepared version is `0.4.3-beta`. The actual change remains narrowly scoped: don't conflate Map, Encounter and ChallengeMode data restrictions with chat restrictions, but retain actual chat lockdown, Chat/PvPMatch restriction checks and battleground/arena suppression.
