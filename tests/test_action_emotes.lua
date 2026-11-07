@@ -462,18 +462,18 @@ assert(#sent == beforeCustom + 2, "custom cooldown eventually expires")
 cfg.emotes = { ROAR = { cooldown = 6 } }
 cfg.trigger, cfg.chance, cfg.enabled = "press", 100, true
 local beforeSix = #played
-press(1, 2400)
+press(1, 2450)
 assert(#played == beforeSix + 1, "6s first native press")
 local remaining = FlourishForever_CooldownDiagnostics("strike")
 assert(remaining[1]:find("selected=1 emotes", 1, true)
     and remaining[2]:find("6s cooldown", 1, true)
     and remaining[2]:find("6.0s remaining", 1, true),
     "manual report identifies the configured 6s cooldown and active timer")
-press(1, 2400.5)
-press(1, 2401)
-press(1, 2405.7) -- leave >0.2s before expiry to avoid hook dedupe
+press(1, 2450.5)
+press(1, 2451)
+press(1, 2455.7) -- leave >0.2s before expiry to avoid hook dedupe
 assert(#played == beforeSix + 1, "6s single-token cooldown blocks repeated presses")
-press(1, 2406)
+press(1, 2456)
 assert(#played == beforeSix + 2, "6s single-token cooldown expires")
 remaining = FlourishForever_CooldownDiagnostics("strike")
 assert(remaining[2]:find("6.0s remaining", 1, true),
@@ -483,13 +483,13 @@ assert(remaining[2]:find("6.0s remaining", 1, true),
 -- distinct ready tokens can fire on consecutive presses, each only once.
 cfg.emotes = { ROAR = { cooldown = 6 }, CHEER = { cooldown = 6 } }
 local firstDual = #played
-press(1, 2420)
+press(1, 2470)
 local tokenOne = played[#played]
-press(1, 2421)
+press(1, 2471)
 local tokenTwo = played[#played]
 assert(#played == firstDual + 2 and tokenOne ~= tokenTwo,
     "two different ready tokens may fire on consecutive presses")
-press(1, 2422)
+press(1, 2472)
 assert(#played == firstDual + 2,
     "both individual 6s timers block third press")
 local reports = FlourishForever_CooldownDiagnostics("strike")
