@@ -1,6 +1,12 @@
 # Flourish Forever — creative and technical development journal
 
 
+## 7 November 2026 — a tested rhythm, ready to share
+
+The revised cooldown finally feels right in the Forever client. Whichever emote is chosen determines how long that ability remains quiet, leaving a brief pause after a little giggle and more space after a larger gesture. With that behavior confirmed in play, the next step is a public beta so others can use the new trigger timing and ability-specific expression.
+
+The AI-assisted release preparation updates the manifest, package checks and player-facing notes for `0.5.0-beta`, without changing the tested runtime. Automated tests and a local package dry run cover the installable files; protected chat restrictions in battlegrounds still deserve separate verification. Publication remains a distinct step that requires the actual tagged package to appear on CurseForge.
+
 ## 7 November 2026 — the silence after a larger gesture
 
 With the individual emote timers working again, a different rhythm became appealing. A small giggle should leave room for another gesture almost immediately, while a forceful roar deserves a longer quiet moment. The important part isn't merely how often each emote appears, but how much space it leaves afterward.

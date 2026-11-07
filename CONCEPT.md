@@ -2,14 +2,14 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev.  
 **Platform:** World of Warcraft: Forever, TOC interface 16001 (expanded build tested in-game on November 5, 2026; specific edge cases remain open).  
-**Latest confirmed Git tag:** v0.4.3-beta · **New approved direction:** per-ability trigger timing, development only.
+**Last confirmed public Git tag:** v0.4.3-beta · **Prepared release:** 0.5.0-beta (publication pending).
 
 
 ## The rhythm of a chosen expression — approved November 7 design
 
 Each ability may have several possible emotes, each with a different **cooldown duration**. Once one is randomly chosen, that duration pauses **all flourishes on that ability**. A small gesture can leave room for another expression after three seconds; a powerful gesture can set a twenty-second silence before the next one. The ability's chance and chosen trigger mode remain independent controls, and no other configured ability is affected.
 
-This replaces the earlier independent per-emote eligibility model, where different emotes could trigger during each other's cooldown. The individual sliders remain; only the effect of the chosen timer changes. Babuni confirmed the older timers were working before approving this refinement. The revised model is implemented and automatically tested, but not yet verified in the game client.
+This replaces the earlier independent per-emote eligibility model, where different emotes could trigger during each other's cooldown. The individual sliders remain; only the effect of the chosen timer changes. Babuni confirmed the older timers were working before approving this refinement. The revised model is implemented, automatically tested, and was reported working in the actual Forever client by Babuni on 7 November 2026. Battleground and exhaustive trigger-security testing remain open.
 
 ## A flourish of personality at the moment of action
 

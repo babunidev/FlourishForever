@@ -1,10 +1,18 @@
 # FlourishForever
 
-**WoW Forever only** · **Interface:** `16001` · **Unreleased development:** `0.4.3-beta-dev` trigger-selection branch  
-**Latest confirmed Git tag:** `v0.4.3-beta` · **Creative:** Babuni · **Portfolio:** [babuni.dev](https://babuni.dev)
+**WoW Forever only** · **Interface:** `16001` · **Prepared release:** `0.5.0-beta` (tag and CurseForge publication pending)  
+**Last confirmed public Git tag before this preparation:** `v0.4.3-beta` · **Creative:** Babuni · **Portfolio:** [babuni.dev](https://babuni.dev)
 
 Flourish Forever links player-selected abilities to native or custom emotes, with per-ability chance, per-emote cooldowns and per-character settings. It does not cast abilities automatically.
 
+
+## 0.5.0-beta — release candidate
+
+This feature release combines per-ability **Triggered by** choices (**Success**, **Button press**, **Failure**), a battleground/arena Success-to-press fallback subject to chat protection, native emote search by token and displayed alias, and an updated cooldown model: **each emote's duration locks its entire configured ability after selection**. The player confirmed the new ability-lock behavior in the Forever client on 7 November 2026; automated Lua/UI regressions and a local packaging dry run also passed.
+
+Custom `/e` remains hardware-press-only under Forever's restrictions. Native emotes may still be blocked by true chat lockdown, and actual battleground/arena compatibility is not yet confirmed. Previously configured character profiles and per-emote durations are preserved, with the ability lock recorded in SavedVariables to survive `/reload`.
+
+The package targets **Forever 1.60.1 / Interface 16001**, and the installable directory contains only the TOC, three runtime Lua files, changelog and license. The exact CurseForge publication status must be verified separately after a tag is pushed.
 
 ## Ability-wide cooldowns determined by the chosen emote (development, 7 November 2026)
 
@@ -14,7 +22,7 @@ For example, a small giggle set to **3 seconds** allows another random emote aft
 
 The duration is captured when the emote is attempted. Editing its slider changes the duration of *future* locks, not an already running lock. A native API call returning `false` starts the chosen duration too (to avoid repeated calls that may still animate locally) while remaining recorded as unsuccessful. A rejected chance roll or actual chat restriction does not consume a lock. The lock persists through `/reload` using a saved server timestamp, with precise session timing from `GetTime()`. Previously saved per-token histories are retained for diagnosis, but no longer decide which emote may bypass the ability lock.
 
-**Status:** Implemented on `feat/ability-trigger-modes`, with passing mocked Lua/UI regression and upload-disabled packaging tests. Babuni confirmed that the prior individual-timer implementation worked in-game; this **new ability-wide behavior has not yet been tested in-game**. No new public version is tagged.
+**Status:** Implemented and automatically tested. Babuni subsequently confirmed the revised ability-wide behavior working in WoW Forever on 7 November 2026. Battleground-specific and complete client security coverage remain unverified; publication requires the prepared release tag.
 
 ## 7 November 2026 — False-return native emotes: bounded retry correction (unreleased)
 

@@ -2,7 +2,7 @@
 
 **Human creative and final decision-maker:** Babuni. **Portfolio:** babuni.dev. **Historical project credit:** Babunigaming.  
 **Game:** World of Warcraft **Forever only**, client 1.60.1 / interface 16001. Recheck after each game update.  
-**Current tagged baseline:** `v0.4.3-beta` · **Unreleased feature branch:** `feat/ability-trigger-modes` (`0.4.3-beta-dev`).
+**Last confirmed public tag:** `v0.4.3-beta` · **Prepared public version:** `v0.5.0-beta` (tag/CurseForge publication pending).
 
 
 ## Approved ability-wide cooldown design — 7 November 2026 (development only)
@@ -11,7 +11,7 @@
 - Snapshot the chosen duration at the time of an attempted emote. Later slider changes affect the next lock, not an already running lock. Select randomly from all appropriate configured tokens only when the ability is unlocked; obey chance, trigger mode, 0.2-second duplicate-press suppression and actual chat restrictions.
 - Native `C_ChatInfo.PerformEmote` calls lock the ability for the chosen duration **even when the API reports false**, without incorrectly recording a successful send. A custom `/e` attempt locks only after it can be submitted. Chance rejection, empty pools, missing APIs or chat lockdown do **not** start a new lock.
 - Persist `cfg.abilityLock = { token, duration, startedAt }` using `GetServerTime()`; keep a precise `GetTime()` session copy. Normalize malformed saved lock values. Preserve old per-token `lastFiredAt` and `lastAttemptAt` records as historical diagnostics, not as independent dispatch gates. A 0-second selected emote causes no ability-wide delay.
-- The earlier **“no global ability cooldown” guidance below describes the superseded design** and must not override this explicit decision. This is *per configured ability*, not a single global cooldown across the character or addon. Automated regression checks pass; **this new behavior is not yet verified in-game**. Do not tag or publish without separate release authorization.
+- The earlier **“no global ability cooldown” guidance below describes the superseded design** and must not override this explicit decision. This is *per configured ability*, not a single global cooldown across the character or addon. Automated regression checks pass; Babuni confirmed the revised ability-lock behavior working in the Forever client on 7 November 2026. Complete battleground/secure-chat checks remain unverified. Babuni separately authorized preparation of a public Beta tag; verify package/settings before pushing it.
 
 ## False native-emote result and cooldown semantics (development)
 

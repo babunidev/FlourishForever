@@ -2,6 +2,23 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** WoW Forever 1.60.1 / Interface 16001.
 
+## 0.5.0-beta — selectable triggers and emote-dependent ability cooldowns (2026-11-07)
+
+- **Trigger timing per ability:** select **Success** (default), **Button press**, or **Failure** in the editor beside Chance. Handle player successful, failed, quiet-failed and interrupted casts with deduplication; preserve configured chance and character profiles.
+- **Battleground safety:** Success temporarily falls back to Button press in battlegrounds/arenas without changing the saved setting. Respect genuine chat lockdown and blocked native API calls. Actual battleground availability remains unverified.
+- **Native emote search:** search canonical tokens (such as `ROAR`) and displayed/localized slash aliases.
+- **Emote-dependent ability cooldown:** each selected emote retains an individual 0–120-second duration, but after selection its duration locks the entire configured ability. Other configured abilities remain independent. The chosen duration is preserved across UI reloads and unaffected by later slider edits during the active lock.
+- **Native-call retry protection:** a `C_ChatInfo.PerformEmote` attempt starts the selected ability lock even if the API reports `false`, while retaining accurate separate accepted/refused diagnostics. Chance rejection, chat lockdown or an unavailable API do not consume the lock.
+- **Diagnostics:** `/flourish cooldowns [ability]` reports the active ability lock, selected token and duration; `/flourish debug` reports instance/chat restriction and dispatch state, without automatic chat output.
+- **Custom text:** preserve player-written `/e` emotes on hardware presses only; do not send custom text from delayed success/failure events because of Forever's security restrictions.
+- **Compatibility:** WoW Forever 1.60.1, Interface 16001; preserved existing saved character settings, per-emote duration sliders and MIT license.
+- **Verification:** Babuni reported the new ability-lock design working in the Forever client. GitHub Lua syntax, mocked gameplay/UI regressions and a BigWigs upload-disabled packaging check passed. Exhaustive combat, battleground/arena and cross-addon testing remain unverified.
+- **Release process:** prepared for the approved Beta tag `v0.5.0-beta`. A successful Git tag alone does not prove a CurseForge file was published.
+
+### Detailed development history
+
+The dated entries below preserve the sequence of implementation and investigation prior to this release candidate. References to "unreleased" in those historical entries describe their status when written, not the current candidate.
+
 
 ## Unreleased development — chosen emote sets the whole ability's cooldown (2026-11-07)
 

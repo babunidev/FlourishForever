@@ -1,6 +1,10 @@
 # Flourish Forever — human–AI collaboration and attribution
 
 
+## 7 November 2026 — release preparation after live verification
+
+Babuni confirmed the new emote-dependent ability cooldown works in the Forever client and explicitly requested a publishing tag for other players. AI reviewed the development commit against the last tagged public baseline, prepared `0.5.0-beta` manifest/changelog documentation and synchronized the package validation test. Release tests and packaging must be verified against the final exact commit; a GitHub tag does not on its own establish a live CurseForge file. No additional game-client testing of battlegrounds or protected messaging was claimed.
+
 ## 7 November 2026 — Babuni approves chosen-duration ability locks
 
 Babuni confirmed the preceding individual-emote cooldown implementation works in-game, then directed a new behavior: each emote retains an independently configured duration, but the *one selected* locks its whole ability until that duration expires. The three-second giggle and twenty-second dramatic emote example is Babuni's creative direction, not an AI-generated feature proposal.

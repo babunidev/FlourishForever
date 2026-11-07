@@ -1,9 +1,18 @@
 # Flourish Forever — roadmap and verification status
 
 **Creative decision authority:** Babuni · **Game:** WoW Forever 1.60.1 / Interface 16001  
-**Latest confirmed Git tag:** `v0.4.3-beta` · **Current development:** per-ability trigger modes (unreleased, not tagged).  
+**Last confirmed public Git tag:** `v0.4.3-beta` · **Prepared version:** `0.5.0-beta` (tag/CourseForge publication not yet confirmed).  
 **Development:** Expanded UI restored from Babuni's older local archive and committed to `dev/expanded-ui-merge`. Preparation occurs separately; no public release tag was created.
 
+
+## v0.5.0-beta release preparation — 7 November 2026
+
+- [x] Review the exact development branch against public `v0.4.3-beta` and preserve the approved selectable triggers, token search and chosen-emote ability lock.
+- [x] Prepare version metadata, player-facing changelog and six-file package validator for `0.5.0-beta`.
+- [x] Record Babuni's in-game confirmation of the revised cooldown model without claiming complete battleground security verification.
+- [ ] Re-run exact versioned release commit Lua/UI and upload-disabled packaging checks.
+- [ ] After explicit release authorization, push only the annotated `v0.5.0-beta` publishing tag and confirm its remote target.
+- [ ] Verify the resulting CurseForge file, Beta classification, Forever target, contents and publication status. GitHub tag existence is not proof of publication.
 
 ## Approved cooldown behavior — 7 November 2026
 
@@ -12,8 +21,10 @@
 - [x] Preserve rate-limiting of actual native-emote calls returning `false`, without recording them as confirmed successful dispatches.
 - [x] Update UI guidance and read-only cooldown diagnostics to show which emote is locking the ability and for how long.
 - [x] GitHub mocked Lua regressions cover 3s/20s locks, other-token suppression, independent abilities, changes to slider durations, custom `/e`, false native returns, reload, 0s, and malformed saves; packaging dry run passed.
-- [ ] Validate the new shared lock directly in the Forever client: 3-second giggle versus 20-second ROAR on the same ability, mixed native/custom pools, reload, and group/PvP security restrictions.
-- [ ] No release tag, main merge or CurseForge upload is authorized for this specific change.
+- [x] Babuni confirmed the new emote-dependent ability lock works in actual Forever gameplay (7 November 2026).
+- [ ] Detailed client verification remains open for mixed native/custom pools, reload, group/PvP security restrictions, and all trigger modes.
+- [x] Babuni authorized a new public tag for this tested version (7 November 2026).
+- [ ] Verify the tag is pushed, the CurseForge generated file is really published as Beta for Forever 1.60.1, and the ZIP contents match the package preview.
 
 ## Native emote false-return diagnosis — 7 November 2026
 
