@@ -20,13 +20,13 @@ GetServerTime = function() return 1730000000 + math.floor(now) end
 local chatLockdown = false
 local restrictionStates = {}
 local nativeAllowed = true
+local nativeVisibleDespiteFalse = false
 C_ChatInfo = {
     PerformEmote = function(token)
-        if nativeAllowed then
+        if nativeAllowed or nativeVisibleDespiteFalse then
             played[#played + 1] = token
-            return true
         end
-        return false
+        return nativeAllowed
     end,
     InChatMessagingLockdown = function() return chatLockdown end,
 }
@@ -416,35 +416,42 @@ press(1, 2110)
 press(1, 2110.3)
 assert(#played == first + 9, "zero-second timer permits repeated genuine presses")
 
--- Native API failure does not spend or persist a timer.
+-- Native API false is not a successful send, but it must rate-limit repeated
+-- attempts for the token. The old code retried on every press indefinitely.
 cfg.emotes = { ROAR = { cooldown = 120 } }
 nativeAllowed = false
 press(1, 2240)
-assert(cfg.emotes.ROAR.lastFiredAt == nil, "refused emote does not persist a cooldown")
+assert(cfg.emotes.ROAR.lastFiredAt == nil, "refused native result is not recorded as successful")
+assert(type(cfg.emotes.ROAR.lastAttemptAt) == "number",
+    "false result saves a separate native-attempt timestamp")
 nativeAllowed = true
 press(1, 2241)
+assert(cfg.emotes.ROAR.lastFiredAt == nil,
+    "native retry waits for configured cooldown after a false result")
+press(1, 2360)
 assert(type(cfg.emotes.ROAR.lastFiredAt) == "number",
-    "successful retry starts its cooldown")
+    "retry after false result is allowed when the interval expires")
 
--- Invalid saved timestamps cannot indefinitely silence a token. Reload
--- first so a valid in-session cooldown does not mask timestamp validation.
+-- Invalid saved timestamps cannot indefinitely silence a token. Reload first
+-- to isolate persisted timestamp handling from the valid session clock.
 cfg.emotes.ROAR.lastFiredAt = math.huge
-now = 2242
+cfg.emotes.ROAR.lastAttemptAt = math.huge
+now = 2361
 assert(loadfile("FlourishForever_ActionEmotes.lua"))()
-press(1, 2242)
-assert(#played == first + 11, "malformed persisted timestamp is rejected")
+press(1, 2361)
+assert(#played == first + 11, "malformed persisted timestamps are rejected")
 
 -- Custom text has the same individual cooldown and survives UI reload.
 cfg.emotes = { ["c:1"] = { cooldown = 30 } }
 local beforeCustom = #sent
-press(1, 2300)
+press(1, 2400)
 assert(#sent == beforeCustom + 1, "custom emote fires")
 assert(type(cfg.emotes["c:1"].lastFiredAt) == "number", "custom send persists timer")
-now = 2301
+now = 2401
 assert(loadfile("FlourishForever_ActionEmotes.lua"))()
-press(1, 2301)
+press(1, 2401)
 assert(#sent == beforeCustom + 1, "custom timer survives UI reload")
-press(1, 2330)
+press(1, 2430)
 assert(#sent == beforeCustom + 2, "custom cooldown eventually expires")
 
 -- Exact live report: a single emote set to 6 seconds must not fire on
@@ -492,6 +499,36 @@ assert(FlourishForever_CooldownDiagnostics("nonexistent")[1]:find("No configured
     "invalid query yields a safe read-only message")
 assert(FlourishForever_EmoteDiagnostics():find("lastTokenCooldown=6", 1, true),
     "general debug exposes last selected token's cooldown")
+
+-- Live observation simulation: native API reports false while the emote
+-- appears. Even without a success report, its six-second retry interval must
+-- prevent repeated output on every button press, including through /reload.
+cfg.emotes = { FAINT = { cooldown = 6 } }
+cfg.trigger, cfg.chance, cfg.enabled = "press", 100, true
+nativeAllowed = false
+nativeVisibleDespiteFalse = true
+local beforeFalseVisible = #played
+press(1, 2500)
+assert(#played == beforeFalseVisible + 1 and played[#played] == "FAINT",
+    "first false-result native emote may be locally visible")
+assert(cfg.emotes.FAINT.lastFiredAt == nil and type(cfg.emotes.FAINT.lastAttemptAt) == "number",
+    "a false native result records an attempt, never a claimed success")
+press(1, 2501)
+press(1, 2505)
+assert(#played == beforeFalseVisible + 1,
+    "false-result native emote is rate-limited for the entire six seconds")
+local faints = FlourishForever_CooldownDiagnostics("strike")
+assert(faints[2]:find("6s cooldown", 1, true) and faints[2]:find("remaining", 1, true)
+    and faints[2]:find("attemptStamp=", 1, true),
+    "cooldown diagnostics show native retry interval and attempt timestamp")
+now = 2505.3
+assert(loadfile("FlourishForever_ActionEmotes.lua"))()
+press(1, 2505.3)
+assert(#played == beforeFalseVisible + 1, "false-result attempt cooldown survives /reload")
+press(1, 2506)
+assert(#played == beforeFalseVisible + 2, "native retry resumes after six seconds")
+nativeVisibleDespiteFalse = false
+nativeAllowed = true
 
 -- Current storage module still migrates an existing name-keyed profile.
 local oldProfile = { actionEmotesEnabled = false, instances = {} }

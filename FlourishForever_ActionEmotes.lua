@@ -14,6 +14,9 @@ local HOME_ROW_H = 56
 local HOME_ROW_W = 748
 local ABILITY_ICON = 48
 
+-- Precise session clock for sent emotes and native emote attempts (including
+-- false results). A false API result does not necessarily establish whether
+-- the client played a local emote; rate-limit retries without calling them wins.
 local lastFireByAbility = {}
 -- Session-only counters: no chat spam, player names, GUIDs or SavedVariables.
 local debugState = {
@@ -83,12 +86,14 @@ local function NormalizeEmotes(cfg)
             cfg.emotes[token] = { cooldown = BoundedWholeNumber(value, legacy, 0, 120) }
         elseif type(value) == "table" then
             value.cooldown = BoundedWholeNumber(value.cooldown, legacy, 0, 120)
-            local stamp = value.lastFiredAt
-            if type(stamp) ~= "number" or stamp ~= stamp or
-                stamp <= 0 or stamp >= 100000000000 then
-                value.lastFiredAt = nil
-            else
-                value.lastFiredAt = math.floor(stamp)
+            for _, field in ipairs({ "lastFiredAt", "lastAttemptAt" }) do
+                local stamp = value[field]
+                if type(stamp) ~= "number" or stamp ~= stamp or
+                    stamp <= 0 or stamp >= 100000000000 then
+                    value[field] = nil
+                else
+                    value[field] = math.floor(stamp)
+                end
             end
         else
             cfg.emotes[token] = nil
@@ -478,11 +483,15 @@ local function RemainingCooldown(info, now, last, wallNow)
     end
 
     local wallLeft = 0
-    local stamped = info.lastFiredAt
-    if type(wallNow) == "number" and type(stamped) == "number" then
-        local elapsed = wallNow - stamped
-        if elapsed >= 0 and elapsed < duration then
-            wallLeft = duration - elapsed
+    if type(wallNow) == "number" then
+        for _, field in ipairs({ "lastFiredAt", "lastAttemptAt" }) do
+            local stamped = info[field]
+            if type(stamped) == "number" then
+                local elapsed = wallNow - stamped
+                if elapsed >= 0 and elapsed < duration then
+                    wallLeft = math.max(wallLeft, duration - elapsed)
+                end
+            end
         end
     end
     return math.max(sessionLeft, wallLeft), duration
@@ -499,6 +508,17 @@ local function ReadyEmotes(cfg, now, fired)
         end
     end
     return ready
+end
+
+local function RememberNativeAttempt(key, cfg, token, now)
+    -- A native API false result is not a proven successful emote, but repeated
+    -- immediate attempts can still produce a visible local animation or spam.
+    -- Respect this token's configured interval for retry attempts as well.
+    lastFireByAbility[key][token] = now
+    local entry = cfg.emotes and cfg.emotes[token]
+    if type(entry) == "table" then
+        entry.lastAttemptAt = CooldownWallTime()
+    end
 end
 
 local function RememberEmote(key, cfg, token, now)
@@ -665,14 +685,20 @@ local function DispatchEmote(key, cfg, now, fromPress)
         debugState.refused = debugState.refused + 1
         debugState.lastDispatch = "native PerformEmote API unavailable"
         RecordBlock(debugState.lastDispatch)
-    elseif C_ChatInfo.PerformEmote(token) then
-        RememberEmote(key, cfg, token, now)
-        debugState.accepted = debugState.accepted + 1
-        debugState.lastDispatch = "native emote API accepted " .. token
-        RecordBlock(debugState.lastDispatch)
     else
-        debugState.refused = debugState.refused + 1
-        debugState.lastDispatch = "native emote API returned false for " .. token
+        -- Never interpret a false result as success. Independently throttle
+        -- native *attempts*, because the Forever client can show an emote even
+        -- when the API reports false (observed by the player, unverified cause).
+        local succeeded = C_ChatInfo.PerformEmote(token)
+        RememberNativeAttempt(key, cfg, token, now)
+        if succeeded then
+            RememberEmote(key, cfg, token, now)
+            debugState.accepted = debugState.accepted + 1
+            debugState.lastDispatch = "native emote API accepted " .. token
+        else
+            debugState.refused = debugState.refused + 1
+            debugState.lastDispatch = "native emote API returned false; attempt throttled for " .. token
+        end
         RecordBlock(debugState.lastDispatch)
     end
 end
@@ -2007,6 +2033,7 @@ function FlourishForever_CooldownDiagnostics(abilityName)
         local state = left > 0 and (string.format("%.1fs remaining", left)) or "READY"
         lines[#lines + 1] = token .. ": " .. duration .. "s cooldown, " .. state
             .. ", savedStamp=" .. tostring(entry.lastFiredAt or "none")
+            .. ", attemptStamp=" .. tostring(entry.lastAttemptAt or "none")
             .. ", sessionStamp=" .. tostring(history[token] or "none")
     end
     if #tokens > 12 then
