@@ -1,5 +1,13 @@
 # Flourish Forever — creative and technical development journal
 
+## 7 November 2026 — when the emote API answered no
+
+The diagnostics finally showed why my emote timer wasn't being used: Flourish had attempted nine native emotes, but the client returned false every time. The addon only remembered successful sends, so the same action remained eligible on the next button press. It also became clear that the cooldown command needed the real configured ability name rather than the label I had tried.
+
+The revised development build now keeps separate records for accepted emotes and for native API attempts. Even a reported failed call cannot be repeated until that token's configured delay expires, while the addon still reports the return value truthfully. That means retries after genuine failures are delayed too, which is preferable to hammering the same action on every press. My AI assistant updated the tests to model the exact six-second situation and kept the change out of public releases.
+
+Whether a `false` API result can still show a local emote animation is not established by these logs. Another real-client test is needed before calling the behavior repaired.
+
 ## 7 November 2026 — the six-second test that still failed
 
 After installing the new build, the cooldown still didn't behave as expected. Mobility was set to Button press, with six seconds configured, yet an emote appeared on every press. A passing automated test hadn't been enough to settle the real behavior.

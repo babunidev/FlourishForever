@@ -5,6 +5,16 @@
 
 Flourish Forever links player-selected abilities to native or custom emotes, with per-ability chance, per-emote cooldowns and per-character settings. It does not cast abilities automatically.
 
+## 7 November 2026 — False-return native emotes: bounded retry correction (unreleased)
+
+In-game diagnostics showed `attempts=9; accepted=0; rejected=9` and `lastToken=FAINT; lastTokenCooldown=6`. The previous native code marked an emote's timer only when `C_ChatInfo.PerformEmote` returned `true`. With repeated `false` values, **nothing was throttling repeated native API attempts**, even though Babuni reported visible emotes. The documentation defines the return as a success boolean, but does **not** establish whether a `false` call can still show a local animation or whether some other addon produced that output.
+
+The new development fix preserves the difference between **success** and **attempt**. `lastFiredAt` continues to represent a reported successful dispatch, while an additional per-ability, per-token `lastAttemptAt` records when the addon **actually called** the native emote API, even if that call returned `false`. Both time points participate in the token's configured **0–120-second minimum interval**. Thus repeated `false` results no longer trigger a native emote attempt on every button press; a six-second setting also rate-limits retries for six seconds. Chat lockdown, invalid token pools, and failed chance rolls do not create an attempt timestamp. All tokens and abilities remain independent.
+
+**Trade-off:** a native API call that genuinely failed is also rate-limited; this is intentional to prevent repeated attempts or possible visual spam. `/flourish cooldowns` now shows `attemptStamp` separately from `savedStamp` and `/flourish debug` retains truthful accepted/rejected counters. The last recognized ability in Babuni's diagnostics was **Find Treasure**, not Mobility; use `/flourish cooldowns find treasure` or `/flourish cooldowns` rather than a name absent from the configured profile.
+
+Automated tests model exactly the reported situation: `PerformEmote` returns `false` while the simulated client still displays `FAINT`; repeated presses must not call it again until the six-second interval expires, including across `/reload`. This test is a *model of the user's report*, not proof that Forever's API emits an emote on a false return. No in-game retest of this change has been recorded.
+
 ## 7 November 2026 — Investigating live 6-second cooldown repetition
 
 After installing the persistence fix, Babuni tested a configured ability ("Mobility") using **Button press** and a six-second emote timer, and reported an emote on **every press**. This directly contradicts the desired behavior; the earlier mock-only verification did not prove the live issue was solved.
@@ -13,7 +23,7 @@ Source review found that cooldown dispatch is **per selected emote token, not pe
 
 The development version now reuses a **single cooldown-remaining calculation** for choosing eligible emotes and for read-only diagnostics. Type `/flourish cooldowns mobility` immediately after pressing the configured ability to see each selected token, configured seconds, remaining seconds, recorded server timestamp, and session timestamp. `/flourish cooldowns` uses the most recently matched ability. `/flourish debug` also reports the last attempted token and its configured cooldown alongside API acceptance/rejection counters. These commands send no emotes, do not modify settings, and print only on explicit request.
 
-Regression mocks now reproduce six-second repeated presses with exactly one selected token, and verify that two different tokens can each fire once before **both** become unavailable. The tests pass, but the original live behavior has **not** been reproduced or confirmed resolved in the Forever client. If the same token appears while the diagnostic still shows a positive remaining cooldown and the accepted-dispatch count does not increase, investigate another addon, macro, or client-generated emote before changing the design.
+Regression mocks now reproduce six-second repeated presses with exactly one selected token, and verify that two different tokens can each fire once before **both** become unavailable. The tests pass, but the original live behavior has **not** been reproduced or confirmed resolved in the Forever client. If the same token still appears while the diagnostic shows a positive remaining cooldown **and no native attempt increments**, investigate another addon, macro, or client-generated emote. A false-return native call is now separately rate-limited rather than repeatedly attempted.
 
 ## 6 November 2026 — Individual emote cooldown correction (unreleased)
 

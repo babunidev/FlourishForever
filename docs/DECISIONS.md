@@ -1,5 +1,13 @@
 # Flourish Forever — recorded design decisions and open alternatives
 
+## 7 November 2026 — respecting a false-return native-emote retry interval
+
+The next in-game diagnostic showed that Flourish tried nine native emotes and **all nine `PerformEmote` calls returned false**, yet the player had observed repeated emote activity. The most recent token was FAINT with a six-second configured delay. The named `Mobility` lookup did not correspond to a configured ability key; the last matched ability was `Find Treasure`. This explains why the previous accepted-dispatch timer never started, although the cause of visible emotes under false-return status remains unresolved.
+
+The development correction makes a careful distinction: a false return does not record successful delivery, but **an actual call to the native emote API** starts a per-token retry timer equal to its configured cooldown. This prevents a failed or ambiguous call being repeated on every press and preserves the existing per-emote timing and independence across abilities. It may delay a genuinely unsuccessful retry; this is a compatibility/safety trade-off, not a claim that false means success. The client remains responsible for actual chat restrictions and the implementation never bypasses them.
+
+Mocked tests cover a false-returning native API with simulated visible emote output, including six-second repeat suppression and reload persistence. The user has not yet installed or validated this new build in Forever; public release approval remains separate.
+
 ## 7 November 2026 — do not confuse per-emote with per-ability cooldown
 
 Babuni's follow-up test contradicted the claim that persistent timestamps had solved the problem: a configured Mobility action on Button press with a six-second emote timer still appeared to produce an emote on every press. The source implements independent timers for each selected emote, so successive *different* emotes may legitimately occur even though the same token should remain blocked for six seconds.

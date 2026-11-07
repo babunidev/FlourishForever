@@ -4,13 +4,24 @@
 **Latest confirmed Git tag:** `v0.4.3-beta` · **Current development:** per-ability trigger modes (unreleased, not tagged).  
 **Development:** Expanded UI restored from Babuni's older local archive and committed to `dev/expanded-ui-merge`. Preparation occurs separately; no public release tag was created.
 
+## Native emote false-return diagnosis — 7 November 2026
+
+- [x] Use Babuni's in-game output: `accepted=0`, `rejected=9`, `lastToken=FAINT`, six-second duration and no reported chat lockdown.
+- [x] Identify that the previous implementation never recorded a timestamp after native `PerformEmote` returned false, allowing repeated attempts every eligible press.
+- [x] Add a separate per-token `lastAttemptAt` retry timestamp and retain `lastFiredAt` only for reported successful native dispatches. No global ability cooldown.
+- [x] Add simulated false-return-but-visible `FAINT` regression, rapid presses, reload and six-second retry expiry.
+- [ ] Confirm exact release-branch CI and upload-disabled package checks after final docs.
+- [ ] Live client: repeat one emote on a six-second Button press trigger; inspect `/flourish cooldowns find treasure` (or `/flourish cooldowns`) for the real configured ability and `attemptStamp`, `savedStamp`, remaining seconds.
+- [ ] If a visible emote still appears without an incrementing Flourish attempt counter, check other addon or macro sources. Whether a false native API result itself produces a visible emote remains unconfirmed.
+- [ ] No merge/public tag/CurseForge publication until separate approval and real-world verification.
+
 ## Reported continuing cooldown issue — 7 November 2026
 
 - [x] Review real source after the player's six-second Mobility Button press test continued to show an emote on every press.
 - [x] Confirm that timers are per selected emote token, not a global ability timer; several individually ready tokens can play on successive presses.
 - [x] Refactor readiness/reporting around one cooldown-remaining calculator, with no undocumented change of timing semantics.
 - [x] Add exact six-second single- and multi-token regression mocks and per-ability `/flourish cooldowns` output.
-- [ ] In-game, inspect `/flourish cooldowns mobility` immediately after consecutive presses: selected tokens, actual saved cooldowns, remaining seconds and last attempt.
+- [ ] In-game, inspect `/flourish cooldowns find treasure` or `/flourish cooldowns` (last matched ability); the previous `mobility` lookup did not find a saved ability under that name.
 - [ ] Compare `/flourish debug` before/after apparent repeated emotes. If acceptance does not increment, investigate macros or another enabled addon rather than assuming Flourish generated the emote.
 - [ ] Determine if *the same token* repeats before its timer expires; only then change runtime suppression behavior. Do not silently introduce a shared/global ability cooldown.
 - [ ] Confirm the fix in-game before proposing a release. Existing `v0.4.3-beta` remains untouched.

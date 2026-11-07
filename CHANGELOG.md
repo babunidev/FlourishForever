@@ -2,6 +2,15 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** WoW Forever 1.60.1 / Interface 16001.
 
+## Unreleased fix — native false-result retry throttling (2026-11-07)
+
+- Babuni supplied live diagnostics showing nine native attempts, zero reported successful calls and nine `false` API results; the last attempted token was `FAINT`, with a six-second configured timer. A `Mobility` cooldown lookup found no saved ability under that name, while the last matched ability was `Find Treasure`.
+- Keep `lastFiredAt` exclusively for native API successes and custom `/e` dispatches. Add `lastAttemptAt` for actual native API invocations **regardless of the boolean result**; use the larger remaining interval of precise session and both saved timestamps for per-token rate-limiting.
+- Failed native results continue to be reported as rejected, not mislabeled as success. They now impose the configured retry delay to prevent repeated immediate calls or possible visible animations on every press.
+- Do not consume a timer on chance rejection, client chat lockdown or when the native API is unavailable. Preserve separate emotes/abilities and a zero-second setting.
+- Extend mocked regressions for a native API that returns false while the simulated client displays an emote, including rapid presses, exact six-second expiry, persistence across reload and truthful diagnostics.
+- **Verification:** offline Lua/UI tests and no-upload ZIP checks run on the development branch. The real-client false-return behavior is not fully explained and the throttling fix remains unverified in-game. No new public tag.
+
 ## Unreleased investigation — 6-second emote repeat report (2026-11-07)
 
 - Babuni reported that the installed persistence build still emits an emote every time Mobility is pressed despite a six-second setting. Root cause remains unconfirmed.
@@ -14,7 +23,7 @@
 
 - Fix cooldown history resetting on every `/reload` or relog. Successful native dispatches and submitted custom `/e` messages now save an individual `lastFiredAt` Unix timestamp alongside each emote's configured cooldown.
 - Retain precise `GetTime()` checking within a session and use Forever's `GetServerTime()` to honor the unexpired time across reloads. No polling or additional events.
-- Preserve per-ability/per-token independence, 0–120-second editable settings, immediate first use, chance, and no cooldown consumption for rejected native sends. Invalid or malformed saved timestamps are discarded.
+- Preserve per-ability/per-token independence, 0–120-second editable settings, immediate first use and chance. Rejected native sends do not count as success; the later development correction adds a separate per-token retry interval for them. Invalid or malformed saved timestamps are discarded.
 - Add offline regressions for 0/15/30/60/120-second cases, separate tokens, separate abilities, native API failure, custom emotes, corrupt saved timestamps, simulated reload, and slider save/reopen.
 - **Evidence:** Lua/UI mock tests and real no-upload packaging checks passed on the development branch. The user's timer problem was reported in-game; **this corrective implementation has not yet been retested in-game**. No new public tag.
 

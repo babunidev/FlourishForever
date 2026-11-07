@@ -1,5 +1,9 @@
 # Flourish Forever — human–AI collaboration and attribution
 
+## 7 November 2026 — decoding the native emote diagnostic
+
+Babuni supplied Forever diagnostic output showing nine attempted native emotes, zero API-accepted results, nine false returns, FAINT as the last selected token with a six-second timer, and no chat/PvP lockdown. AI traced the missing cooldown to a native dispatch path that wrote no timestamp when `PerformEmote` returned false. The new development implementation records a separate `lastAttemptAt` for any actual native call, while retaining `lastFiredAt` only for accepted results. This deliberately rate-limits ambiguous or unsuccessful native attempts without falsely claiming their delivery. Regression mocks simulate visible output even from a false-result call and exercise six-second expiry, reload and accepted/refused diagnostics. Actual client delivery on false returns and the effectiveness of the new throttle are still unverified in-game; no release is authorized.
+
 ## 7 November 2026 — continued live cooldown investigation
 
 Babuni reported that even after the new persistence code was installed, Mobility with Button press and six seconds configured still appeared to send an emote on every press. AI confirmed that the source applies individual token cooldowns, which permit different eligible tokens to fire on successive presses, but do not justify early repetition of one token. The source change centralizes cooldown calculations and adds manually invoked token-level diagnostics; tests include the exact six-second single-token and multi-token scenarios. This is *not* a verified live fix. No release tag, merge or CurseForge upload is authorized.

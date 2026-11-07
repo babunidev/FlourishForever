@@ -4,6 +4,14 @@
 **Latest confirmed Git tag:** `v0.4.3-beta` · **Unreleased work:** `feat/ability-trigger-modes`.  
 **Evidence:** current Lua source, package configuration, mocked test suites and Babuni's November 5, 2026 general in-game confirmation.
 
+## Native retry attempt tracking (development; client verification pending)
+
+The runtime now distinguishes three concepts: the **user's configured per-emote cooldown**, a native **API call attempt**, and an API-acknowledged **successful emote dispatch**. `cfg.emotes[token].lastFiredAt` records only successful native API returns (and custom `/e` dispatches), while `lastAttemptAt` records actual native `C_ChatInfo.PerformEmote(token)` invocations even if the function returns false. The latter is a bounded retry interval rather than evidence that the emote appeared. Both are Unix seconds; `lastFireByAbility[key][token]` holds the precise in-session last call time.
+
+`RemainingCooldown` takes the longest active interval from the session clock, accepted-dispatch stamp and native-attempt stamp. `ReadyEmotes` shares this calculation with `/flourish cooldowns`; the report shows separate `savedStamp` and `attemptStamp`. A rejected native call updates only `lastAttemptAt`, never the accepted counter or `lastFiredAt`. Chance rejection, suppression due to actual chat lockdown and an unavailable API do not start the retry. If configured for zero seconds, both intervals are disabled, leaving only short duplicate-hook suppression.
+
+The motivation is Babuni's actual Forever test: all nine native attempts reported false, but emotes appeared on repeated presses. Whether a false-result `PerformEmote` itself produces a local animation or another addon is responsible is still unknown. Applying the token's configured retry delay prevents repeated API calls without claiming successful emotes; it may also delay retries after genuine failures. The false-result-visible regression is a mock of that observation, **not in-game proof**.
+
 ## Per-token cooldown live diagnostics (unreleased)
 
 The timer now has a single `RemainingCooldown(info, now, last, wallNow)` helper, returning the maximum nonexpired local (`GetTime()`) and saved server-time (`GetServerTime()`) remaining delay. Both `ReadyEmotes` and the manual `FlourishForever_CooldownDiagnostics(abilityName)` function call this helper. This refactor changes **no intended user-visible cooldown semantics**; it prevents the live report and selection code from disagreeing on timer calculations.
@@ -16,7 +24,7 @@ A player press dispatches at most one randomly chosen **ready token**; a six-sec
 
 Each selected emote uses `cfg.emotes[token].cooldown` (0–120 seconds) and may include `cfg.emotes[token].lastFiredAt` (integer Unix seconds from `GetServerTime()`). Both values live inside the character's existing SavedVariables profile and are keyed by configured ability and native/custom emote token. In-session `lastFireByAbility[key][token]` still uses high-resolution `GetTime()`, while `ReadyEmotes` requires both the in-session and persisted wall-clock checks to expire before selecting a token. This retains sub-second precision between reloads and prevents the previous reload bypass.
 
-Only `RememberEmote` writes the wall timestamp when a native `C_ChatInfo.PerformEmote` reports success or the custom `/e` dispatch returns success. Chance rejection, no eligible token, or a failed native API return do not update the timer. A zero-second preference is never blocked by its timestamp. Increasing/decreasing a slider applies to the elapsed time since the last dispatch. `NormalizeEmotes` discards impossible saved stamps, including NaN, infinity and non-positive values. Future clock values do not create an indefinite lock.
+Only `RememberEmote` writes the wall timestamp when a native `C_ChatInfo.PerformEmote` reports success or the custom `/e` dispatch returns success. Chance rejection or no eligible token do not update the timer. The subsequent development correction records `lastAttemptAt` for native API false returns, imposing a retry interval without changing `lastFiredAt`. A zero-second preference is never blocked by its timestamp. Increasing/decreasing a slider applies to the elapsed time since the last dispatch. `NormalizeEmotes` discards impossible saved stamps, including NaN, infinity and non-positive values. Future clock values do not create an indefinite lock.
 
 `GetServerTime()` is available on the Forever 1.60.1 API and gives Unix seconds, with one-second precision for persisted durations; `GetTime()` tracks the exact per-session elapsed interval. There is no `OnUpdate`, scheduled callback, timer scanning or addon communication. A UI reload recreates the precise Lua table but leaves each saved last-dispatch time intact.
 
@@ -118,7 +126,7 @@ UNIT_SPELLCAST_SUCCEEDED -> not registered, never dispatches an emote
 
 The modern `C_ChatInfo.PerformEmote` API is documented for Forever 1.60.1 with restrictions, but whether it actually succeeds in all relevant hardware-press/combat contexts remains **unverified in-game**. The guards are preventative, not circumventions. They cannot guarantee that all `ADDON_ACTION_BLOCKED` situations disappear. No deferred retries, synthetic clicks or protected API bypasses were added.
 
-Cooldown timers are per ability and emote token. The current development build retains last-fired timestamps both in session memory for precision and in per-emote SavedVariables for reload persistence. Native API refusal does not consume a cooldown. The expanded interface and other character settings are otherwise unchanged.
+Cooldown timers are per ability and emote token. The current development build retains last-fired timestamps both in session memory for precision and in per-emote SavedVariables for reload persistence. Native API refusal does not count as a successful emote, but actual rejected calls now consume the separate per-token retry interval in development. The expanded interface and other character settings are otherwise unchanged.
 
 ## Automated and in-game evidence
 

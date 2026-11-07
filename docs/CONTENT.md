@@ -12,7 +12,7 @@
 | Custom `/e` text | Player-authored text entered in the custom emote editor | `customEmotes` entries with stable IDs |
 | Per-ability chance and enabled switch | Player configuration | Character profile |
 | Per-emote cooldowns | Player configuration | Emote selection records |
-| Actual last-fired times (development fix) | Session `GetTime()` plus per-token `lastFiredAt` from `GetServerTime()` | Saved per character and emote; remaining delay survives reload/relog |
+| Last successful dispatch / native retry attempt (development) | Session `GetTime()` plus `lastFiredAt` and `lastAttemptAt` from `GetServerTime()` | Separate per-character/per-emote timestamps; both delay types survive reload/relog |
 
 ## Per-ability trigger preference (development)
 
@@ -49,7 +49,7 @@ FlourishForeverStorage = {
 
 This is a structural illustration, not an actual character profile. A new character has no configured abilities. The first added ability starts with native ROAR selected; user-defined emotes are never assigned without explicit player choice.
 
-Older `cfg.emotes[token] = true` entries are normalized into `{ cooldown = legacyAbilityCooldown }`; valid per-emote tables are retained. Unsupported SavedVariables records remain recoverable where possible. Stored cooldown preferences persist. On the development branch, the last accepted native/custom dispatch timestamp also persists per token, while a separate in-memory clock maintains precise in-session timing.
+Older `cfg.emotes[token] = true` entries are normalized into `{ cooldown = legacyAbilityCooldown }`; valid per-emote tables are retained. Unsupported SavedVariables records remain recoverable where possible. Stored cooldown preferences persist. On the development branch, `lastFiredAt` stores the last accepted native/custom dispatch and `lastAttemptAt` stores the last actual native API call even if its return was false. Both are per token; precise in-session timing remains separate. A false result never establishes successful output.
 
 Custom emotes have `c:`-prefixed saved references and text entries under `customEmotes`. Deleting or editing custom lines can affect assigned selections; the editor tries to preserve IDs where corresponding lines remain.
 
