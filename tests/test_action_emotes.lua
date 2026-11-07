@@ -167,13 +167,13 @@ assert(#played == 3, "other units ignored")
 local cfg = FlourishForeverDB.instances.strike
 cfg.emotes = { ROAR = { cooldown = 0 } }
 cfg.trigger = "press"
-press(1, 200)
+press(1, 250)
 assert(#played == 4, "button-press mode fires immediately")
-cast(100, 200.1, "cast-press")
+cast(100, 250.1, "cast-press")
 assert(#played == 4, "button-press mode ignores cast success")
-press(1, 200.05)
+press(1, 250.05)
 assert(#played == 4, "duplicate hook press suppressed")
-press(1, 201)
+press(1, 251)
 assert(#played == 5, "next genuine button press fires")
 
 -- Failure handles normal/quiet failures and interrupts, not success or presses.
@@ -457,13 +457,13 @@ assert(report[1]:find("selected=2 emotes", 1, true)
     and report[2]:find("FAINT", 1, true), "diagnostics describe ability lock and chosen token")
 now = 2305.8
 assert(loadfile("FlourishForever_ActionEmotes.lua"))()
-press(1, 2305.8)
+press(1, 2305.7)
 assert(#played == beforeFalse + 1, "native false ability lock persists through reload")
 nativeAllowed = true
 nativeVisibleDespiteFalse = false
 -- Choose only ROAR for a deterministic next selection.
 cfg.emotes = { ROAR = { cooldown = 3 } }
-press(1, 2306)
+press(1, 2306.2)
 assert(#played == beforeFalse + 2 and cfg.abilityLock.duration == 3,
     "new selected emote can fire once false-result lock expires")
 
@@ -503,7 +503,7 @@ cfg.abilityLock = { token = "ROAR", duration = math.huge, startedAt = math.huge 
 now = 2500
 assert(loadfile("FlourishForever_ActionEmotes.lua"))()
 press(1, 2500)
-assert(cfg.abilityLock.duration == 3 and #played == beforeFalse + 3,
+assert(cfg.abilityLock.duration == 3 and #played == beforeFalse + 4,
     "corrupt lock discarded and normal emote starts")
 
 -- The no-argument report still uses the most recently matched ability.
