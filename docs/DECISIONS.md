@@ -1,6 +1,12 @@
 # Flourish Forever — recorded design decisions and open alternatives
 
 
+## 10 November 2026 — flourishes rest in battlegrounds
+
+A review of the installed copy found an unimplemented local note describing a different battleground behavior from the tagged `v0.5.0-beta`: instead of resolving Success to Button press in PvP, all ability emotes should pause in battlegrounds and arenas, with one local roleplay notice on entry. Babuni chose that behavior for the next version.
+
+The pause covers every trigger mode and both native and custom emotes, and it also applies whenever a `PvPMatch` restriction is reported. Saved triggers are never rewritten, so Success, Button press and Failure resume exactly as selected outside PvP. The notice uses local `print` only, appears once per entry, and is skipped when Flourish is off or no ability is enabled. This **supersedes** the 0.5.0-beta Success-to-press fallback. It trades PvP expression for predictability and for avoiding protected-call attempts in the most restricted contexts. AI implemented the change with mocked tests; in-game verification and any release tag remain separate.
+
 ## 7 November 2026 — chosen emote controls the whole ability's cooldown
 
 Babuni confirmed that the most recent individual cooldown implementation works and explicitly chose a revised interaction: every selected emote retains its own duration, but whichever one fires locks the **entire configured ability** for that duration. A minor giggle with a three-second timer allows the next random expression quickly, while a more impactful roar with a twenty-second timer creates a longer silence. The next emote is chosen randomly only after the current ability lock expires. The ability's chance and selected trigger mode remain unchanged; other abilities are never locked by this one.

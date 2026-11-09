@@ -2,8 +2,16 @@
 
 **Human creative and final decision-maker:** Babuni. **Portfolio:** babuni.dev. **Historical project credit:** Babunigaming.  
 **Game:** World of Warcraft **Forever only**, client 1.60.1 / interface 16001. Recheck after each game update.  
-**Last confirmed public tag:** `v0.4.3-beta` · **Prepared public version:** `v0.5.0-beta` (tag/CurseForge publication pending).
+**Latest Git tag:** `v0.5.0-beta` (2026-11-07; CurseForge file must be verified separately) · **In development:** `0.6.0-beta-dev` on `feat/pvp-pause-notice` (no tag).
 
+
+## Approved PvP pause and entry notice — 10 November 2026 (development only)
+
+- **Babuni chose to pause all ability emotes in battlegrounds, arenas and PvP matches** (`IsInInstance()` `pvp`/`arena`, or an active `PvPMatch` restriction). This applies to Success, Button press and Failure, native and custom alike. It **supersedes** the 0.5.0-beta Success-to-press PvP fallback; do not reintroduce that fallback.
+- Saved triggers and settings are never rewritten. Outside PvP the selected trigger is always used as-is.
+- On PvP entry (`PLAYER_ENTERING_WORLD` / `ZONE_CHANGED_NEW_AREA`), print **one local** in-character notice via `print`, only when the master switch is on and at least one ability is enabled. Never send it to chat channels. Reset on leaving so the next entry notifies again.
+- The editor warns when Success/Failure is paired with a custom-only pool. Gameplay casts use a light profile bind plus normalization of the matched ability only; a full normalization pass runs at login, on UI use and when the profile or custom list table is replaced.
+- Mocked tests pass. No in-game battleground/arena verification yet; no tag without Babuni's version-specific approval.
 
 ## Approved ability-wide cooldown design — 7 November 2026 (development only)
 
@@ -55,10 +63,10 @@ The expanded interface and custom `/e` text are now part of the approved develop
 - Each ability has `enabled`, `chance` (0–100), and selected `emotes`. Each selected native/custom token stores `{ cooldown = 0..120 }`. The old ability-level `cfg.cooldown` stays for migration/defaults; older `true` token values migrate using that cooldown. An empty emote pool is intentionally silent.
 - **Published 0.4.1-beta PvP guard:** the reported Forever client blocked protected `PerformEmote()` during a battleground cast-success event. For safety, both native and custom addon-driven emotes are suppressed in `IsInInstance()` types `pvp` and `arena`; normal settings are preserved. This is supported by mocked checks but has not yet had a live battleground retest; record that limitation even if an urgently approved public hotfix is distributed.
 - **Group-play compatibility:** only `Chat` and `PvPMatch` addon restriction states are relevant to the emote dispatch guard. Do not block ordinary player-triggered emotes merely because `Map`, `Encounter` or `ChallengeMode` addon data restrictions are active. Keep `C_ChatInfo.InChatMessagingLockdown()` and battleground/arena checks; never try to bypass genuine protected-action restrictions. This correction is prepared for release after Babuni reported it working in-game; the report does not establish a full party/dungeon/raid or combat regression suite.
-- **Approved trigger design (implemented in development, not yet verified in-game):** each ability stores `cfg.trigger` as `success` (default, including legacy data), `press`, or `failure`. The dropdown beside Chance must reflect this choice. Player cast-success/failed/quiet-failed/interrupted events drive native outcome emotes; a saved Success setting resolves to Button press in battlegrounds/arenas without changing SavedVariables. Failure remains distinct and is suppressed in PvP restrictions. Respect true chat lockdown and do not bypass protected actions.
+- **Approved trigger design (shipped in v0.5.0-beta):** each ability stores `cfg.trigger` as `success` (default, including legacy data), `press`, or `failure`. The dropdown beside Chance must reflect this choice. Player cast-success/failed/quiet-failed/interrupted events drive native outcome emotes. *(The v0.5.0-beta Success-to-press PvP fallback is superseded by the 10 November PvP pause above.)* Respect true chat lockdown and do not bypass protected actions.
 - **Custom /e security:** custom text may be sent only in a genuine player-action press context on Forever; even when an ability is configured Success/Failure, do not send custom messages from outcome events. State this limitation in the interface. Save settings even when the selected custom token cannot fire in outcome mode.
 
-- **Existing public trigger:** v0.4.3-beta uses player-action hooks. The new development branch introduces guarded native outcome-event dispatch outside PvP per Babuni's explicit direction. This may still be restricted in certain combat states and must be tested in-game; never bypass protection or claim full compatibility from mocks.
+- **Outcome dispatch:** v0.4.3-beta used only player-action hooks; v0.5.0-beta added guarded native outcome-event dispatch outside PvP per Babuni's explicit direction. This may still be restricted in certain combat states and must be tested in-game; never bypass protection or claim full compatibility from mocks.
 - First presses must not be throttled by a synthetic zero timestamp. The development fix persists per-token dispatch timestamps through SavedVariables; in-session `GetTime()` measurements remain transient. Failed API returns do not establish successful dispatch, but actual native API attempts now consume a distinct retry interval under the configured per-token duration.
 - Custom `/e` text uses `c:id` tokens and is attempted during player button-press hooks (`UseAction`, `CastSpellByID`, `C_Spell.CastSpell` where available). It can trigger **before cast success**, including on failed/aborted casts. Preserve this distinction and verify secure-chat restrictions in Forever before claiming complete compatibility.
 - Spellbook selection excludes passive, future, off-spec and non-spell entries. Actual modern API availability must be verified on the target Forever build, not guessed from an interface number.

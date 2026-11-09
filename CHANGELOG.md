@@ -2,6 +2,16 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** WoW Forever 1.60.1 / Interface 16001.
 
+## 0.6.0-beta — flourishes rest in battlegrounds (development, 2026-11-10; not published)
+
+- **Battlegrounds and arenas:** all ability emotes now pause in battlegrounds, arenas and PvP matches, for every trigger mode and for both native and custom emotes. Your saved settings are untouched and work again as soon as you leave.
+- **Entry notice:** when you enter a battleground or arena, Flourish prints one short, in-character line in your own chat window. Nobody else sees it. It only appears when Flourish is on and at least one ability is enabled.
+- **Your trigger stays your trigger:** Success no longer switches to Button press anywhere. Success, Button press and Failure behave exactly as selected outside PvP.
+- **Custom-only warning:** the editor now warns when an ability uses Success or Failure but has only custom `/e` emotes selected, because those can only play on Button press.
+- **Clearer diagnostics:** `/flourish debug` now says "custom emote missing" when a deleted custom line was chosen, instead of blaming the chat API.
+- **Lighter in combat:** ordinary casts no longer re-check every saved ability and custom emote; only the ability you used is checked. The emote list is built once per window open.
+- **Verification:** Lua syntax, mocked gameplay/UI regressions (PvP pause for all triggers, entry notice, trigger preservation, custom-only warning) and the package inventory check passed. In-game battleground, arena and editor layout testing is still pending.
+
 ## 0.5.0-beta — selectable triggers and emote-dependent ability cooldowns (2026-11-07)
 
 - **Trigger timing per ability:** select **Success** (default), **Button press**, or **Failure** in the editor beside Chance. Handle player successful, failed, quiet-failed and interrupted casts with deduplication; preserve configured chance and character profiles.
@@ -13,7 +23,7 @@
 - **Custom text:** preserve player-written `/e` emotes on hardware presses only; do not send custom text from delayed success/failure events because of Forever's security restrictions.
 - **Compatibility:** WoW Forever 1.60.1, Interface 16001; preserved existing saved character settings, per-emote duration sliders and MIT license.
 - **Verification:** Babuni reported the new ability-lock design working in the Forever client. GitHub Lua syntax, mocked gameplay/UI regressions and a BigWigs upload-disabled packaging check passed. Exhaustive combat, battleground/arena and cross-addon testing remain unverified.
-- **Release process:** prepared for the approved Beta tag `v0.5.0-beta`. A successful Git tag alone does not prove a CurseForge file was published.
+- **Release process:** tagged `v0.5.0-beta` on 2026-11-07. A Git tag alone does not prove a CurseForge file was published.
 
 ### Detailed development history
 

@@ -108,6 +108,10 @@ ui:ShowPage("editor")
 assert(ui.triggerButton:GetText():find("Failure", 1, true), "dropdown remembers selected mode")
 ui.triggerOptions.press.scripts.OnClick(ui.triggerOptions.press)
 assert(FlourishForeverDB.instances.strike.trigger == "press", "Button press option persists")
+assert(ui.triggerHelp:GetText():find("pause in battlegrounds and arenas", 1, true)
+    and not ui.triggerHelp:GetText():find("PvP Success uses Button press", 1, true),
+    "editor help describes the PvP pause, not the removed fallback")
+assert(not ui.customOnlyWarning:IsShown(), "no custom-only warning for native ROAR")
 ui.search:SetText("roar")
 local tokenRows = {}
 for _, row in ipairs(ui.emoteRows) do
@@ -145,6 +149,43 @@ assert(ui.customEdit and ui.customSave, "custom emote editor")
 ui.customEdit:SetText("shakes her head")
 ui:SaveCustomEmotes()
 assert(#FlourishForeverDB.customEmotes==1,"custom save")
+
+-- A custom-only pool cannot play from Success/Failure; the editor says so.
+local strike = FlourishForeverDB.instances.strike
+strike.emotes = { ["c:" .. FlourishForeverDB.customEmotes[1].id] = { cooldown = 6 } }
+strike.trigger = "success"
+ui:ShowPage("editor")
+assert(ui.customOnlyWarning:IsShown(), "warn when Success has only custom /e emotes")
+ui.triggerOptions.press.scripts.OnClick(ui.triggerOptions.press)
+assert(not ui.customOnlyWarning:IsShown(), "warning clears for Button press")
+ui.triggerOptions.failure.scripts.OnClick(ui.triggerOptions.failure)
+assert(ui.customOnlyWarning:IsShown(), "warning returns for Failure")
+local roarRow
+for _, row in ipairs(ui.emoteRows) do
+    if row.check and row.check.token == "ROAR" then roarRow = row end
+end
+roarRow.check:SetChecked(true)
+roarRow.check.scripts.OnClick(roarRow.check)
+assert(not ui.customOnlyWarning:IsShown(), "adding a native emote clears the warning")
+
+-- Opening the editor repeatedly scans the emote globals once per window open.
+local scans = 0
+local realPairs = pairs
+pairs = function(t, ...)
+    if t == _G then scans = scans + 1 end
+    return realPairs(t, ...)
+end
+ui:ShowPage("home")
+ui:ShowPage("editor")
+ui:ShowPage("home")
+ui:ShowPage("editor")
+assert(scans == 0, "emote list reused within one window open")
+ui:Hide()
+ui:Show()
+ui:ShowPage("editor")
+assert(scans == 1, "emote list rescanned after reopening the window")
+pairs = realPairs
+ui:ShowPage("custom")
 ui:ShowPage("home")
 assert(ui.homeRows[1]:IsShown(),"home restored")
-print("PASS: UI trigger selection, search, per-emote cooldown slider persistence, picker and custom text")
+print("PASS: UI trigger selection, PvP help, custom-only warning, search, per-emote cooldown slider persistence, picker and custom text")
