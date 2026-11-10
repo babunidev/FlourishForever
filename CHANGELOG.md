@@ -2,6 +2,10 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** WoW Forever 1.60.1 / Interface 16001.
 
+## 2026-11-10 — Documentation readability
+
+- Replaced the dated technical investigations on the front page with a concise player guide; preserved the original investigation and release evidence in `docs/RELEASE_DEVELOPMENT_NOTES.md`. No addon source or publication was changed.
+
 ## 0.5.0-beta — selectable triggers and emote-dependent ability cooldowns (2026-11-07)
 
 - **Trigger timing per ability:** select **Success** (default), **Button press**, or **Failure** in the editor beside Chance. Handle player successful, failed, quiet-failed and interrupted casts with deduplication; preserve configured chance and character profiles.
