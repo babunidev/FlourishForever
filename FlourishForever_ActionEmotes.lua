@@ -229,6 +229,24 @@ local function GetSpellNameByID(spellID)
     return nil
 end
 
+-- New emote selections start at the ability's own base cooldown (whole
+-- seconds, 0-120). Spells without one, or clients without the API, use 6s.
+local function AbilityCooldownDefault(spellID)
+    if type(spellID) ~= "number" then
+        return DEFAULT_COOLDOWN
+    end
+    local getter = (C_Spell and C_Spell.GetSpellBaseCooldown) or GetSpellBaseCooldown
+    if not getter then
+        return DEFAULT_COOLDOWN
+    end
+    local ok, cooldownMS = pcall(getter, spellID)
+    cooldownMS = ok and tonumber(cooldownMS)
+    if not cooldownMS or cooldownMS ~= cooldownMS or cooldownMS <= 0 then
+        return DEFAULT_COOLDOWN
+    end
+    return BoundedWholeNumber(cooldownMS / 1000, DEFAULT_COOLDOWN, 0, 120)
+end
+
 local function SpellIcon(spellID)
     if not spellID then
         return nil
@@ -915,7 +933,7 @@ local function AddOrSelectAbility(ability)
             chance = DEFAULT_CHANCE,
             trigger = DEFAULT_TRIGGER,
             enabled = true,
-            emotes = { ROAR = { cooldown = DEFAULT_COOLDOWN } },
+            emotes = { ROAR = { cooldown = AbilityCooldownDefault(ability.spellID) } },
         }
         db.instances[key] = cfg
     else
@@ -1530,9 +1548,10 @@ local function CreateUI()
             end
 
             if self:GetChecked() then
-                cfg.emotes[self.token] = { cooldown = DEFAULT_COOLDOWN }
+                local default = AbilityCooldownDefault(cfg.spellID)
+                cfg.emotes[self.token] = { cooldown = default }
                 ui.updating = true
-                row.slider:SetValue(DEFAULT_COOLDOWN)
+                row.slider:SetValue(default)
                 ui.updating = false
                 row.slider:Show()
                 row.plate:Show()

@@ -10,6 +10,8 @@ Flourish Forever links player-selected abilities to native or custom emotes, wit
 
 All ability emotes now **pause in battlegrounds, arenas and PvP matches**, whatever trigger is selected and whether the emote is native or custom. Saved settings are not changed; everything resumes on leaving. On entering a battleground or arena, Flourish prints one local, in-character line in your own chat window ("You steel yourself for battle..."), only if Flourish is on and at least one ability is enabled. It is never sent to other players.
 
+A newly selected emote now starts with the ability's own base cooldown (from `GetSpellBaseCooldown`, whole seconds, capped at 120) instead of 6 seconds; abilities without a cooldown keep the 6-second start. Existing emote durations are not changed.
+
 This replaces the 0.5.0-beta behavior in which Success temporarily became Button press in PvP. Outside PvP, **Success**, **Button press** and **Failure** always behave exactly as selected. The editor also warns when Success or Failure is paired with only custom `/e` emotes, which can play only on Button press.
 
 **Status:** mocked gameplay/UI tests pass. Not yet tested in the Forever client, not tagged and not published.

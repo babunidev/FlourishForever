@@ -144,6 +144,37 @@ assert(tokenRows.CHEER:IsShown() and not tokenRows.ROAR:IsShown(),
 ui.search:SetText("")
 assert(tokenRows.ROAR:IsShown() and tokenRows.CHEER:IsShown(),
     "clearing search restores choices")
+
+-- Newly selected emotes start at the ability's own base cooldown.
+local baseCooldowns = { [100] = 12000, [200] = 0, [300] = 300000 }
+GetSpellBaseCooldown = function(id) return baseCooldowns[id], 1500 end
+tokenRows.CHEER.check:SetChecked(true)
+tokenRows.CHEER.check.scripts.OnClick(tokenRows.CHEER.check)
+assert(FlourishForeverDB.instances.strike.emotes.CHEER.cooldown == 12
+    and tokenRows.CHEER.slider:GetValue() == 12,
+    "new emote defaults to Strike's 12s cooldown")
+assert(FlourishForeverDB.instances.strike.emotes.ROAR.cooldown == 47,
+    "existing emote durations are not changed")
+tokenRows.CHEER.check:SetChecked(false)
+tokenRows.CHEER.check.scripts.OnClick(tokenRows.CHEER.check)
+FlourishForeverDB.instances.second = nil
+ui:ShowPage("picker")
+ui.generalButtons[2].scripts.OnClick(ui.generalButtons[2])
+assert(FlourishForeverDB.instances.second.emotes.ROAR.cooldown == 6,
+    "ability without a cooldown falls back to 6s")
+local function NewAbilityCooldown(spellID)
+    FlourishForeverDB.instances.second = nil
+    entries[2].spellID = spellID
+    ui:ShowPage("picker")
+    ui.generalButtons[2].scripts.OnClick(ui.generalButtons[2])
+    return FlourishForeverDB.instances.second.emotes.ROAR.cooldown
+end
+assert(NewAbilityCooldown(300) == 120, "long ability cooldowns clamp to the 120s slider")
+entries[2].spellID = 200
+GetSpellBaseCooldown = nil
+assert(NewAbilityCooldown(200) == 6, "missing cooldown API falls back to 6s")
+ui:ShowPage("picker")
+ui.generalButtons[1].scripts.OnClick(ui.generalButtons[1]) -- back to Strike
 ui:ShowPage("custom")
 assert(ui.customEdit and ui.customSave, "custom emote editor")
 ui.customEdit:SetText("shakes her head")
