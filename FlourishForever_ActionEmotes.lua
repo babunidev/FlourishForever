@@ -946,19 +946,72 @@ local function AddOrSelectAbility(ability)
     return key
 end
 
+local SCROLLBAR_W = 10
+
 local function CreateQuietScroll(parent)
     local scroll = CreateFrame("ScrollFrame", nil, parent)
     scroll:EnableMouseWheel(true)
-    scroll:SetScript("OnMouseWheel", function(self, delta)
+    local function OnWheel(_, delta)
         local step = 36 * delta
-        local nextScroll = self:GetVerticalScroll() - step
-        local maxScroll = self:GetVerticalScrollRange() or 0
+        local nextScroll = scroll:GetVerticalScroll() - step
+        local maxScroll = scroll:GetVerticalScrollRange() or 0
         if nextScroll < 0 then
             nextScroll = 0
         elseif nextScroll > maxScroll then
             nextScroll = maxScroll
         end
-        self:SetVerticalScroll(nextScroll)
+        scroll:SetVerticalScroll(nextScroll)
+    end
+    scroll:SetScript("OnMouseWheel", OnWheel)
+
+    -- Draggable thumb along the right edge; hidden while everything fits.
+    local bar = CreateFrame("Slider", nil, scroll)
+    bar:SetOrientation("VERTICAL")
+    bar:SetWidth(SCROLLBAR_W)
+    bar:SetPoint("TOPRIGHT", scroll, "TOPRIGHT", 0, 0)
+    bar:SetPoint("BOTTOMRIGHT", scroll, "BOTTOMRIGHT", 0, 0)
+    bar:SetFrameLevel((scroll:GetFrameLevel() or 0) + 5)
+    bar.track = bar:CreateTexture(nil, "BACKGROUND")
+    bar.track:SetAllPoints()
+    bar.track:SetColorTexture(0, 0, 0, 0.35)
+    bar.thumb = bar:CreateTexture(nil, "OVERLAY")
+    bar.thumb:SetColorTexture(1, 0.82, 0, 0.85)
+    bar.thumb:SetSize(SCROLLBAR_W, 40)
+    bar:SetThumbTexture(bar.thumb)
+    bar:SetMinMaxValues(0, 0)
+    bar:SetValueStep(1)
+    bar:EnableMouseWheel(true)
+    bar:SetScript("OnMouseWheel", OnWheel)
+    bar:SetScript("OnValueChanged", function(self, value)
+        if not self.syncing then
+            scroll:SetVerticalScroll(value)
+        end
+    end)
+    bar:Hide()
+    scroll.bar = bar
+
+    function scroll:UpdateBar()
+        local range = self:GetVerticalScrollRange() or 0
+        if range <= 0 then
+            bar:Hide()
+            if self:GetVerticalScroll() ~= 0 then self:SetVerticalScroll(0) end
+            return
+        end
+        local view = self:GetHeight() or 0
+        bar.thumb:SetHeight(math.max(24, view * view / (view + range)))
+        bar.syncing = true
+        bar:SetMinMaxValues(0, range)
+        local offset = math.min(self:GetVerticalScroll() or 0, range)
+        bar:SetValue(offset)
+        bar.syncing = false
+        if offset ~= self:GetVerticalScroll() then self:SetVerticalScroll(offset) end
+        bar:Show()
+    end
+    scroll:SetScript("OnScrollRangeChanged", function(self) self:UpdateBar() end)
+    scroll:SetScript("OnVerticalScroll", function(self, offset)
+        bar.syncing = true
+        bar:SetValue(offset)
+        bar.syncing = false
     end)
     return scroll
 end
@@ -1086,7 +1139,7 @@ local function CreateUI()
 
     ui.enabled = CreateCheckbox(ui.home)
     ui.enabled:ClearAllPoints()
-    ui.enabled:SetPoint("TOPLEFT", ui.home, "TOPLEFT", 8, -6)
+    ui.enabled:SetPoint("TOPLEFT", ui.home, "TOPLEFT", 0, 0)
     ui.enabled.label:SetWidth(210)
     ui.enabled.label:SetText("Enable Flourish Forever")
     ui.enabled:SetScript("OnClick", function(self)
@@ -1112,7 +1165,7 @@ local function CreateUI()
 
     ui.customButton = CreateFrame("Button", nil, ui.home, "UIPanelButtonTemplate")
     ui.customButton:SetSize(170, 24)
-    ui.customButton:SetPoint("LEFT", ui.addButton, "RIGHT", 18, 0)
+    ui.customButton:SetPoint("TOPRIGHT", ui.home, "TOPRIGHT", 0, 0)
     ui.customButton:SetText("Add custom emotes")
     ui.customButton:SetScript("OnClick", function()
         ui:ShowPage("custom")
@@ -1124,12 +1177,12 @@ local function CreateUI()
     ui.homeEmpty:Hide()
 
     -- Search the configured ability overview independently of the picker.
-    ui.homeSearchLabel = ui.home:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    ui.homeSearchLabel:SetPoint("TOPRIGHT", ui.home, "TOPRIGHT", -194, -66)
-    ui.homeSearchLabel:SetText("Find ability")
     ui.homeSearch = CreateFrame("EditBox", "FlourishForeverHomeSearch", ui.home, "InputBoxTemplate")
-    ui.homeSearch:SetSize(160, 20)
-    ui.homeSearch:SetPoint("LEFT", ui.homeSearchLabel, "RIGHT", 10, 0)
+    ui.homeSearch:SetSize(164, 20)
+    ui.homeSearch:SetPoint("TOPRIGHT", ui.customButton, "BOTTOMRIGHT", -4, -8)
+    ui.homeSearchLabel = ui.home:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    ui.homeSearchLabel:SetPoint("RIGHT", ui.homeSearch, "LEFT", -10, 0)
+    ui.homeSearchLabel:SetText("Find ability")
     ui.homeSearch:SetAutoFocus(false)
     ui.homeSearch:SetMaxLetters(60)
     ui.homeSearch:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
@@ -1341,6 +1394,9 @@ local function CreateUI()
     ui.emoteChild:SetSize(750, 1)
     ui.emoteScroll:SetScrollChild(ui.emoteChild)
     ui.emoteRows = {}
+    ui.emoteDivider = ui.emoteChild:CreateTexture(nil, "ARTWORK")
+    ui.emoteDivider:SetColorTexture(1, 0.82, 0, 0.55)
+    ui.emoteDivider:Hide()
 
     ui.remove = CreateFrame("Button", nil, ui.editor, "UIPanelButtonTemplate")
     ui.remove:SetSize(110, 24)
@@ -1397,6 +1453,7 @@ local function CreateUI()
             lines = lines + 1
         end
         self:SetHeight(math.max(400, lines * 18))
+        ui.customScroll:UpdateBar()
     end)
 
     ui.customSave = CreateFrame("Button", nil, ui.custom, "UIPanelButtonTemplate")
@@ -1699,7 +1756,7 @@ local function CreateUI()
         if not listW or listW < 200 then
             listW = 760
         end
-        local widgetW = listW - 44
+        local widgetW = listW - 48 - SCROLLBAR_W
         self.homeChild:SetWidth(listW)
 
         local keys = SortedInstanceKeys()
@@ -1742,6 +1799,7 @@ local function CreateUI()
         end
 
         self.homeChild:SetHeight(math.max(1, #keys * (HOME_ROW_H + 6)))
+        self.homeScroll:UpdateBar()
         self.homeEmpty:SetText(query == "" and "No abilities yet." or "No matching abilities.")
         self.homeEmpty:SetShown(#keys == 0)
     end
@@ -1802,6 +1860,7 @@ local function CreateUI()
             self.generalScroll:SetSize(PAGE_W - 20, viewH)
             self.generalScroll:Show()
             self.generalChild:SetSize(PAGE_W - 24, math.max(1, contentH))
+            self.generalScroll:UpdateBar()
 
             for index, ability in ipairs(general.abilities) do
                 local button = self.generalButtons[index]
@@ -1823,7 +1882,7 @@ local function CreateUI()
                 local col = (index - 1) % perRow
                 local rowIndex = math.floor((index - 1) / perRow)
                 local rowCount = math.min(perRow, #general.abilities - rowIndex * perRow)
-                local origin = math.floor((PAGE_W - 24 - rowCount * buttonW) / 2)
+                local origin = math.floor((PAGE_W - 24 - SCROLLBAR_W - rowCount * buttonW) / 2)
                 button:SetPoint("TOPLEFT", self.generalChild, "TOPLEFT", origin + col * buttonW, -(rowIndex * pitch))
                 button:SetWidth(buttonW - 8)
                 button.label:SetWidth(buttonW - 96)
@@ -1868,7 +1927,7 @@ local function CreateUI()
             end
             column:Show()
 
-            local buttonWidth = math.max(80, width - 8)
+            local buttonWidth = math.max(80, width - 10 - SCROLLBAR_W)
             column.child:SetWidth(buttonWidth)
             for index, ability in ipairs(columnInfo.abilities) do
                 local button = EnsurePickerButton(column, index)
@@ -1886,6 +1945,7 @@ local function CreateUI()
             end
 
             column.child:SetHeight(math.max(1, #columnInfo.abilities * 70))
+            column.scroll:UpdateBar()
         end
 
         for i = count + 1, #self.pickerColumns do
@@ -1901,6 +1961,7 @@ local function CreateUI()
         if not areaW or areaW < 200 then
             areaW = 750
         end
+        areaW = areaW - SCROLLBAR_W - 4
         self.emoteChild:SetWidth(areaW)
         local colW = math.floor((areaW - gap * (cols - 1)) / cols)
 
@@ -1938,6 +1999,9 @@ local function CreateUI()
             return bottom
         end
 
+        -- Checked emotes (native and custom) first, then a divider, then the
+        -- unchecked native list and the unchecked custom section.
+        local checked = {}
         local standard = {}
         local custom = {}
         local header = nil
@@ -1950,7 +2014,9 @@ local function CreateUI()
                     header = row
                     row:Hide()
                 elseif Matches(item) then
-                    if customSection then
+                    if row.check:GetChecked() then
+                        checked[#checked + 1] = row
+                    elseif customSection then
                         custom[#custom + 1] = row
                     else
                         standard[#standard + 1] = row
@@ -1961,7 +2027,17 @@ local function CreateUI()
             end
         end
 
-        local y = Place(standard, 0)
+        local y = Place(checked, 0)
+        if #checked > 0 and (#standard > 0 or #custom > 0) then
+            self.emoteDivider:ClearAllPoints()
+            self.emoteDivider:SetPoint("TOPLEFT", self.emoteChild, "TOPLEFT", 0, -(y + 2))
+            self.emoteDivider:SetSize(areaW, 2)
+            self.emoteDivider:Show()
+            y = y + 12
+        else
+            self.emoteDivider:Hide()
+        end
+        y = Place(standard, y)
         if header and #custom > 0 then
             header:ClearAllPoints()
             header:SetPoint("TOPLEFT", self.emoteChild, "TOPLEFT", 0, -y)
@@ -1972,6 +2048,7 @@ local function CreateUI()
         end
         y = Place(custom, y)
         self.emoteChild:SetHeight(math.max(1, y))
+        self.emoteScroll:UpdateBar()
     end
 
     function ui:UpdateCustomOnlyWarning()

@@ -8,6 +8,9 @@
 - **Entry notice:** when you enter a battleground or arena, Flourish prints one short, in-character line in your own chat window. Nobody else sees it. It only appears when Flourish is on and at least one ability is enabled.
 - **Your trigger stays your trigger:** Success no longer switches to Button press anywhere. Success, Button press and Failure behave exactly as selected outside PvP.
 - **Cooldowns match your ability:** a newly selected emote (and the starting ROAR on a newly added ability) now begins with that ability's own cooldown instead of 6 seconds, rounded to whole seconds and capped at 120. Abilities without a cooldown still start at 6 seconds. Emotes you already set up keep their values, and every slider can still be changed.
+- **Easier long lists:** every list in the window (abilities, spellbook picker, emotes, custom text) now has a draggable scrollbar on the right. It hides when everything fits.
+- **Selected emotes on top:** in the ability editor, checked emotes are listed first, followed by a divider line and then the unchecked ones. Ticking or unticking an emote moves it to the matching group.
+- **Tidier main screen:** "Enable Flourish Forever" sits in the top-left corner, "Add custom emotes" in the top-right corner, and the ability search directly below it.
 - **Custom-only warning:** the editor now warns when an ability uses Success or Failure but has only custom `/e` emotes selected, because those can only play on Button press.
 - **Clearer diagnostics:** `/flourish debug` now says "custom emote missing" when a deleted custom line was chosen, instead of blaming the chat API.
 - **Lighter in combat:** ordinary casts no longer re-check every saved ability and custom emote; only the ability you used is checked. The emote list is built once per window open.
