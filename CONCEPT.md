@@ -2,8 +2,12 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev.  
 **Platform:** World of Warcraft: Forever, TOC interface 16001 (expanded build tested in-game on November 5, 2026; specific edge cases remain open).  
-**Last confirmed public Git tag:** v0.4.3-beta · **Prepared release:** 0.5.0-beta (publication pending).
+**Latest Git tag:** v0.5.0-beta · **In development:** 0.6.0-beta-dev (PvP pause and entry notice).
 
+
+## A pause before battle — approved November 10 design
+
+Flourishes belong to the roleplay of a character's ordinary adventures. In battlegrounds and arenas they now rest entirely, and a single quiet line in the player's own chat marks the moment: the character steels themselves for battle. Nothing is sent to other players, and every flourish returns unchanged once the battlefield is left.
 
 ## The rhythm of a chosen expression — approved November 7 design
 

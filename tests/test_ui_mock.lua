@@ -31,7 +31,17 @@ function methods:SetWidth(w) self.width=w end
 function methods:SetHeight(h) self.height=h end
 function methods:GetWidth() return rawget(self,"width") or 760 end
 function methods:GetHeight() return rawget(self,"height") or 600 end
-function methods:GetVerticalScroll() return 0 end
+function methods:SetPoint(...)
+    local points = rawget(self, "points") or {}
+    points[#points + 1] = { ... }
+    self.points = points
+end
+function methods:ClearAllPoints() self.points = {} end
+function methods:SetVerticalScroll(v)
+    self.vscroll = v
+    if self.scripts.OnVerticalScroll then self.scripts.OnVerticalScroll(self, v) end
+end
+function methods:GetVerticalScroll() return rawget(self, "vscroll") or 0 end
 function methods:GetVerticalScrollRange() return 0 end
 function methods:SetHighlightTexture()
     self.highlight = rawget(self,"highlight") or setmetatable({ scripts={},events={} }, M)
@@ -83,6 +93,16 @@ assert(loadfile("FlourishForever_ActionEmotes.lua"))()
 local ok, err = xpcall(FlourishForever_OpenConfig, debug.traceback); if not ok then print("TRACE:",err); os.exit(1) end
 local ui=_G.FlourishForeverConfigFrame
 assert(ui and ui:IsShown() and ui.page=="home", "opens home")
+local function LastPoint(frame) local p = frame.points; return p[#p] end
+local enablePoint = LastPoint(ui.enabled)
+assert(enablePoint[1] == "TOPLEFT" and enablePoint[2] == ui.home and enablePoint[4] == 0 and enablePoint[5] == 0,
+    "enable switch sits in the top-left corner")
+local customPoint = LastPoint(ui.customButton)
+assert(customPoint[1] == "TOPRIGHT" and customPoint[2] == ui.home and customPoint[4] == 0 and customPoint[5] == 0,
+    "custom emotes button sits in the top-right corner")
+local searchPoint = LastPoint(ui.homeSearch)
+assert(searchPoint[1] == "TOPRIGHT" and searchPoint[2] == ui.customButton and searchPoint[3] == "BOTTOMRIGHT",
+    "ability search sits under the custom emotes button")
 assert(ui.homeRows[1] and ui.homeRows[2],"renders saved abilities")
 ui.homeSearch:SetText("str")
 assert(ui.homeRows[1]:IsShown() and not ui.homeRows[2]:IsShown(),"searches configured abilities")
@@ -108,6 +128,10 @@ ui:ShowPage("editor")
 assert(ui.triggerButton:GetText():find("Failure", 1, true), "dropdown remembers selected mode")
 ui.triggerOptions.press.scripts.OnClick(ui.triggerOptions.press)
 assert(FlourishForeverDB.instances.strike.trigger == "press", "Button press option persists")
+assert(ui.triggerHelp:GetText():find("pause in battlegrounds and arenas", 1, true)
+    and not ui.triggerHelp:GetText():find("PvP Success uses Button press", 1, true),
+    "editor help describes the PvP pause, not the removed fallback")
+assert(not ui.customOnlyWarning:IsShown(), "no custom-only warning for native ROAR")
 ui.search:SetText("roar")
 local tokenRows = {}
 for _, row in ipairs(ui.emoteRows) do
@@ -140,11 +164,99 @@ assert(tokenRows.CHEER:IsShown() and not tokenRows.ROAR:IsShown(),
 ui.search:SetText("")
 assert(tokenRows.ROAR:IsShown() and tokenRows.CHEER:IsShown(),
     "clearing search restores choices")
+
+-- Checked emotes are listed first, then a divider, then unchecked emotes.
+local function RowY(row) return -LastPoint(row)[5] end
+assert(RowY(tokenRows.ROAR) == 0 and ui.emoteDivider:IsShown()
+    and RowY(tokenRows.CHEER) > RowY(tokenRows.ROAR) + 64,
+    "checked ROAR on top, unchecked CHEER below the divider")
+
+-- The draggable scrollbar follows the list and moves it.
+local scroll, bar = ui.emoteScroll, ui.emoteScroll.bar
+assert(not bar:IsShown(), "scrollbar hidden while everything fits")
+scroll.GetVerticalScrollRange = function() return 300 end
+scroll:UpdateBar()
+assert(bar:IsShown(), "scrollbar appears for a long list")
+bar:SetValue(120)
+assert(scroll:GetVerticalScroll() == 120, "dragging the thumb scrolls the list")
+scroll.scripts.OnMouseWheel(scroll, -1)
+assert(scroll:GetVerticalScroll() == 156 and bar:GetValue() == 156, "mouse wheel moves the thumb too")
+scroll.GetVerticalScrollRange = nil
+scroll:UpdateBar()
+assert(not bar:IsShown() and scroll:GetVerticalScroll() == 0, "scrollbar hides and resets when the list fits")
+
+-- Newly selected emotes start at the ability's own base cooldown.
+local baseCooldowns = { [100] = 12000, [200] = 0, [300] = 300000 }
+GetSpellBaseCooldown = function(id) return baseCooldowns[id], 1500 end
+tokenRows.CHEER.check:SetChecked(true)
+tokenRows.CHEER.check.scripts.OnClick(tokenRows.CHEER.check)
+assert(FlourishForeverDB.instances.strike.emotes.CHEER.cooldown == 12
+    and tokenRows.CHEER.slider:GetValue() == 12,
+    "new emote defaults to Strike's 12s cooldown")
+assert(FlourishForeverDB.instances.strike.emotes.ROAR.cooldown == 47,
+    "existing emote durations are not changed")
+tokenRows.CHEER.check:SetChecked(false)
+tokenRows.CHEER.check.scripts.OnClick(tokenRows.CHEER.check)
+FlourishForeverDB.instances.second = nil
+ui:ShowPage("picker")
+ui.generalButtons[2].scripts.OnClick(ui.generalButtons[2])
+assert(FlourishForeverDB.instances.second.emotes.ROAR.cooldown == 6,
+    "ability without a cooldown falls back to 6s")
+local function NewAbilityCooldown(spellID)
+    FlourishForeverDB.instances.second = nil
+    entries[2].spellID = spellID
+    ui:ShowPage("picker")
+    ui.generalButtons[2].scripts.OnClick(ui.generalButtons[2])
+    return FlourishForeverDB.instances.second.emotes.ROAR.cooldown
+end
+assert(NewAbilityCooldown(300) == 120, "long ability cooldowns clamp to the 120s slider")
+entries[2].spellID = 200
+GetSpellBaseCooldown = nil
+assert(NewAbilityCooldown(200) == 6, "missing cooldown API falls back to 6s")
+ui:ShowPage("picker")
+ui.generalButtons[1].scripts.OnClick(ui.generalButtons[1]) -- back to Strike
 ui:ShowPage("custom")
 assert(ui.customEdit and ui.customSave, "custom emote editor")
 ui.customEdit:SetText("shakes her head")
 ui:SaveCustomEmotes()
 assert(#FlourishForeverDB.customEmotes==1,"custom save")
+
+-- A custom-only pool cannot play from Success/Failure; the editor says so.
+local strike = FlourishForeverDB.instances.strike
+strike.emotes = { ["c:" .. FlourishForeverDB.customEmotes[1].id] = { cooldown = 6 } }
+strike.trigger = "success"
+ui:ShowPage("editor")
+assert(ui.customOnlyWarning:IsShown(), "warn when Success has only custom /e emotes")
+ui.triggerOptions.press.scripts.OnClick(ui.triggerOptions.press)
+assert(not ui.customOnlyWarning:IsShown(), "warning clears for Button press")
+ui.triggerOptions.failure.scripts.OnClick(ui.triggerOptions.failure)
+assert(ui.customOnlyWarning:IsShown(), "warning returns for Failure")
+local roarRow
+for _, row in ipairs(ui.emoteRows) do
+    if row.check and row.check.token == "ROAR" then roarRow = row end
+end
+roarRow.check:SetChecked(true)
+roarRow.check.scripts.OnClick(roarRow.check)
+assert(not ui.customOnlyWarning:IsShown(), "adding a native emote clears the warning")
+
+-- Opening the editor repeatedly scans the emote globals once per window open.
+local scans = 0
+local realPairs = pairs
+pairs = function(t, ...)
+    if t == _G then scans = scans + 1 end
+    return realPairs(t, ...)
+end
+ui:ShowPage("home")
+ui:ShowPage("editor")
+ui:ShowPage("home")
+ui:ShowPage("editor")
+assert(scans == 0, "emote list reused within one window open")
+ui:Hide()
+ui:Show()
+ui:ShowPage("editor")
+assert(scans == 1, "emote list rescanned after reopening the window")
+pairs = realPairs
+ui:ShowPage("custom")
 ui:ShowPage("home")
 assert(ui.homeRows[1]:IsShown(),"home restored")
-print("PASS: UI trigger selection, search, per-emote cooldown slider persistence, picker and custom text")
+print("PASS: UI trigger selection, PvP help, custom-only warning, search, per-emote cooldown slider persistence, picker and custom text")

@@ -47,12 +47,19 @@ def main():
         if not re.search(r"^## Interface: 16001\s*$", toc, re.M):
             print("FAIL: wrong target interface", file=sys.stderr)
             return 1
-        if not re.search(r"^## Version: 0\.5\.0-beta\s*$", toc, re.M):
-            print("FAIL: wrong addon version", file=sys.stderr)
+        source_toc = (ROOT / "FlourishForever.toc").read_text(encoding="utf-8")
+        match = re.search(r"^## Version: (\S+)\s*$", source_toc, re.M)
+        if not match:
+            print("FAIL: source TOC has no version", file=sys.stderr)
             return 1
+        version = match.group(1)
+        if not re.search(r"^## Version: " + re.escape(version) + r"\s*$", toc, re.M):
+            print(f"FAIL: packaged TOC version differs from source {version}", file=sys.stderr)
+            return 1
+        release = re.sub(r"-dev$", "", version)
         changelog = zf.read("FlourishForever/CHANGELOG.md").decode("utf-8")
-        if "## 0.4.3-beta" not in changelog:
-            print("FAIL: missing release-notes section", file=sys.stderr)
+        if not re.search(r"^## " + re.escape(release) + r"\b", changelog, re.M):
+            print(f"FAIL: missing release-notes section for {release}", file=sys.stderr)
             return 1
         license_text = zf.read("FlourishForever/LICENSE").decode("utf-8")
         if "MIT License" not in license_text:

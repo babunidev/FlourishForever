@@ -1,7 +1,7 @@
 # Flourish Forever — emote content, character settings and assets
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** World of Warcraft Forever / interface 16001.  
-**Public baseline:** v0.4.3-beta · **Development:** Success/press/failure choice per ability, pending in-game verification.
+**Latest Git tag:** v0.5.0-beta (Success/press/failure choice per ability) · **Development:** 0.6.0-beta-dev adds the local PvP entry notice text, pending in-game verification.
 
 
 ## Chosen emote determines the active ability lock (development)

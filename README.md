@@ -1,12 +1,22 @@
 # FlourishForever
 
-**WoW Forever only** · **Interface:** `16001` · **Prepared release:** `0.5.0-beta` (tag and CurseForge publication pending)  
-**Last confirmed public Git tag before this preparation:** `v0.4.3-beta` · **Creative:** Babuni · **Portfolio:** [babuni.dev](https://babuni.dev)
+**WoW Forever only** · **Interface:** `16001` · **Latest Git tag:** `v0.5.0-beta` (2026-11-07) · **In development:** `0.6.0-beta-dev`  
+**Creative:** Babuni · **Portfolio:** [babuni.dev](https://babuni.dev)
 
 Flourish Forever links player-selected abilities to native or custom emotes, with per-ability chance, per-emote cooldowns and per-character settings. It does not cast abilities automatically.
 
 
-## 0.5.0-beta — release candidate
+## 0.6.0-beta (development) — flourishes rest in battlegrounds
+
+All ability emotes now **pause in battlegrounds, arenas and PvP matches**, whatever trigger is selected and whether the emote is native or custom. Saved settings are not changed; everything resumes on leaving. On entering a battleground or arena, Flourish prints one local, in-character line in your own chat window ("You steel yourself for battle..."), only if Flourish is on and at least one ability is enabled. It is never sent to other players.
+
+A newly selected emote now starts with the ability's own base cooldown (from `GetSpellBaseCooldown`, whole seconds, capped at 120) instead of 6 seconds; abilities without a cooldown keep the 6-second start. Existing emote durations are not changed.
+
+This replaces the 0.5.0-beta behavior in which Success temporarily became Button press in PvP. Outside PvP, **Success**, **Button press** and **Failure** always behave exactly as selected. The editor also warns when Success or Failure is paired with only custom `/e` emotes, which can play only on Button press.
+
+**Status:** mocked gameplay/UI tests pass. Not yet tested in the Forever client, not tagged and not published.
+
+## 0.5.0-beta — tagged release
 
 This feature release combines per-ability **Triggered by** choices (**Success**, **Button press**, **Failure**), a battleground/arena Success-to-press fallback subject to chat protection, native emote search by token and displayed alias, and an updated cooldown model: **each emote's duration locks its entire configured ability after selection**. The player confirmed the new ability-lock behavior in the Forever client on 7 November 2026; automated Lua/UI regressions and a local packaging dry run also passed.
 
@@ -72,11 +82,11 @@ Each ability has a **Triggered by** dropdown beside the **Chance** slider:
 - **Button press:** attempts the emote during a player button/action hook, without waiting for a cast result.
 - **Failure:** attempts a native emote on player `UNIT_SPELLCAST_FAILED`, `UNIT_SPELLCAST_FAILED_QUIET` or `UNIT_SPELLCAST_INTERRUPTED`. Not every unusable button attempt yields a cast-failure event.
 
-**Battleground/arena safety:** an ability saved with Success temporarily uses Button press while `IsInInstance()` reports `pvp` or `arena`. The saved selection never changes. If Forever reports actual chat lockdown, no emote is sent. Explicit Failure remains Failure, but asynchronous failures are suppressed during PvP restrictions. A PvPMatch addon restriction by itself is not treated as chat lockdown for genuine player press; whether Forever permits a native emote in every PvP state must be tested in-game.
+**Battleground/arena behavior (0.6.0-beta-dev):** every trigger mode pauses while `IsInInstance()` reports `pvp` or `arena`, or a `PvPMatch` restriction is active. The saved selection never changes. If Forever reports actual chat lockdown, no emote is sent anywhere. *(0.5.0-beta instead resolved Success to Button press in PvP; that fallback has been removed.)*
 
-**Custom `/e` limitation:** Forever requires a hardware event for custom chat emotes. Custom text is therefore available with **Button press** (also the automatic PvP fallback), but cannot be emitted from the asynchronous Success or Failure event. For outcome modes, the engine considers only selected native tokens, leaving custom selection and cooldown preferences intact. No delayed chat retry or protected-action bypass is attempted.
+**Custom `/e` limitation:** Forever requires a hardware event for custom chat emotes. Custom text is therefore available with **Button press**, but cannot be emitted from the asynchronous Success or Failure event. For outcome modes, the engine considers only selected native tokens, leaving custom selection and cooldown preferences intact. No delayed chat retry or protected-action bypass is attempted.
 
-The dropdown is character-specific per ability and does not change chance, cooldowns, emote lists or the recovered editor. It is **implemented for local testing only**; neither new public tag nor game-client verification exists yet.
+The dropdown is character-specific per ability and does not change chance, cooldowns, emote lists or the recovered editor. It shipped in `v0.5.0-beta`.
 ## Group-play emotes restored — 0.4.3-beta
 
 A player report after `v0.4.2-beta` found that Flourish was silent while grouped. Review found an overly broad restriction check: the addon treated `Map`, `Encounter` and `ChallengeMode` *addon data restrictions* as a blanket prohibition on player-triggered emotes. The 0.4.3-beta candidate allows emotes in outdoor parties, party dungeons and raids while those unrelated restriction types are active.
@@ -103,12 +113,14 @@ The 810×676 configuration window provides a searchable overview of configured a
 | Command | Function |
 | --- | --- |
 | `/flourish`, `/flourish ui`, `/flourish config` | Toggle editor |
-| `/flourish status` | Print current profile status |
+| `/flourish status` | Print current profile status (includes your character GUID) |
+| `/flourish debug` | Read-only restriction and dispatch report |
+| `/flourish cooldowns [ability]` | Read-only ability-lock report (last matched ability if no name) |
 | `/flourishforever`, `/rit`, `/ffsh` | Aliases |
 
-Install the latest available Forever file from [CurseForge](https://www.curseforge.com/wow/addons/flourishforever). Version `0.4.3-beta` is prepared but has not yet been confirmed there. The game addon directory `_forever_/Interface/AddOns/FlourishForever/` must contain `FlourishForever.toc`, `FlourishForever_Storage.lua`, `FlourishForever.lua`, and `FlourishForever_ActionEmotes.lua`.
+Install the latest available Forever file from [CurseForge](https://www.curseforge.com/wow/addons/flourishforever). Check the file list there for the version actually published; a Git tag alone does not prove publication. The game addon directory `_forever_/Interface/AddOns/FlourishForever/` must contain `FlourishForever.toc`, `FlourishForever_Storage.lua`, `FlourishForever.lua`, and `FlourishForever_ActionEmotes.lua`.
 
-Settings persist in `FlourishForeverStorage`, indexed by character GUID. Older boolean emote selections are migrated; in the **unreleased cooldown fix**, per-emote last-fired timestamps also persist across `/reload` and relog, while the in-session clock retains precise timing.
+Settings persist in `FlourishForeverStorage`, indexed by character GUID. Older boolean emote selections are migrated; the active ability lock and per-emote timestamps persist across `/reload` and relog, while the in-session clock retains precise timing.
 
 ## Development checks
 

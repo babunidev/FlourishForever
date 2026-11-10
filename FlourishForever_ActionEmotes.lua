@@ -104,7 +104,42 @@ local function NormalizeEmotes(cfg)
     end
 end
 
-local function EnsureDB()
+local function NormalizeAbility(key, cfg)
+    if type(cfg.name) ~= "string" or cfg.name == "" then
+        cfg.name = key
+    end
+    cfg.chance = BoundedWholeNumber(cfg.chance, DEFAULT_CHANCE, 0, 100)
+    cfg.trigger = NormalizeTrigger(cfg.trigger)
+    if cfg.enabled == nil then
+        cfg.enabled = true
+    elseif type(cfg.enabled) ~= "boolean" then
+        cfg.enabled = false
+    end
+    NormalizeEmotes(cfg)
+    -- This new per-ability lock is introduced without inventing a
+    -- retroactive lock from old per-token histories.
+    local lock = cfg.abilityLock
+    if type(lock) == "table" then
+        local duration = tonumber(lock.duration)
+        local stamp = CleanCooldownStamp(lock.startedAt)
+        if type(lock.token) ~= "string" or lock.token == ""
+            or type(duration) ~= "number" or duration ~= duration
+            or duration < 0 or duration > 120 or not stamp then
+            cfg.abilityLock = nil
+        else
+            lock.duration = BoundedWholeNumber(duration, 0, 0, 120)
+            lock.startedAt = stamp
+        end
+    elseif lock ~= nil then
+        cfg.abilityLock = nil
+    end
+end
+
+-- Identity of the profile and custom list last fully normalized. Runtime
+-- casts only repeat the full pass when either table has been replaced.
+local normalizedProfile, normalizedCustom
+
+local function BindProfile()
     if FlourishForever_BindCharacterDB then
         FlourishForever_BindCharacterDB()
     end
@@ -121,37 +156,14 @@ local function EnsureDB()
     if type(FlourishForeverDB.instances) ~= "table" then
         FlourishForeverDB.instances = {}
     end
+end
+
+local function EnsureDB()
+    BindProfile()
 
     for key, cfg in pairs(FlourishForeverDB.instances) do
         if type(key) == "string" and key ~= "" and type(cfg) == "table" then
-            if type(cfg.name) ~= "string" or cfg.name == "" then
-                cfg.name = key
-            end
-            cfg.chance = BoundedWholeNumber(cfg.chance, DEFAULT_CHANCE, 0, 100)
-            cfg.trigger = NormalizeTrigger(cfg.trigger)
-            if cfg.enabled == nil then
-                cfg.enabled = true
-            elseif type(cfg.enabled) ~= "boolean" then
-                cfg.enabled = false
-            end
-            NormalizeEmotes(cfg)
-            -- This new per-ability lock is introduced without inventing a
-            -- retroactive lock from old per-token histories.
-            local lock = cfg.abilityLock
-            if type(lock) == "table" then
-                local duration = tonumber(lock.duration)
-                local stamp = CleanCooldownStamp(lock.startedAt)
-                if type(lock.token) ~= "string" or lock.token == ""
-                    or type(duration) ~= "number" or duration ~= duration
-                    or duration < 0 or duration > 120 or not stamp then
-                    cfg.abilityLock = nil
-                else
-                    lock.duration = BoundedWholeNumber(duration, 0, 0, 120)
-                    lock.startedAt = stamp
-                end
-            elseif lock ~= nil then
-                cfg.abilityLock = nil
-            end
+            NormalizeAbility(key, cfg)
         end
         -- Malformed records are preserved for manual recovery but never run.
     end
@@ -188,6 +200,19 @@ local function EnsureDB()
         end
     end
 
+    normalizedProfile = FlourishForeverDB
+    normalizedCustom = FlourishForeverDB.customEmotes
+    db = FlourishForeverDB
+    return db
+end
+
+-- Gameplay path: avoid rebuilding every ability and custom list per cast.
+local function EnsureRuntimeDB()
+    BindProfile()
+    if normalizedProfile ~= FlourishForeverDB
+        or normalizedCustom ~= FlourishForeverDB.customEmotes then
+        return EnsureDB()
+    end
     db = FlourishForeverDB
     return db
 end
@@ -202,6 +227,24 @@ local function GetSpellNameByID(spellID)
     end
 
     return nil
+end
+
+-- New emote selections start at the ability's own base cooldown (whole
+-- seconds, 0-120). Spells without one, or clients without the API, use 6s.
+local function AbilityCooldownDefault(spellID)
+    if type(spellID) ~= "number" then
+        return DEFAULT_COOLDOWN
+    end
+    local getter = (C_Spell and C_Spell.GetSpellBaseCooldown) or GetSpellBaseCooldown
+    if not getter then
+        return DEFAULT_COOLDOWN
+    end
+    local ok, cooldownMS = pcall(getter, spellID)
+    cooldownMS = ok and tonumber(cooldownMS)
+    if not cooldownMS or cooldownMS ~= cooldownMS or cooldownMS <= 0 then
+        return DEFAULT_COOLDOWN
+    end
+    return BoundedWholeNumber(cooldownMS / 1000, DEFAULT_COOLDOWN, 0, 120)
 end
 
 local function SpellIcon(spellID)
@@ -559,16 +602,15 @@ local function RememberEmote(key, cfg, token, now)
     end
 end
 
--- Press dispatch is hardware-event-bound. Outcome dispatch is native-only and
--- disabled for PvP/chat lockdown so protected emote calls are not retried.
+-- Press dispatch is hardware-event-bound. Outcome dispatch is native-only.
+-- Both are disabled for PvP/chat lockdown so protected calls are not retried.
 local pressStamp = {}
 local function IsCustomToken(token)
     return type(token) == "string" and string.sub(token, 1, 2) == "c:"
 end
 
 -- Button press means the actual player action, even during a GCD/cooldown.
--- Spell usability is not an emote-security check. On some clients it can be
--- false in combat and unexpectedly silence the battleground press fallback.
+-- Spell usability is not an emote-security check and can be false in combat.
 -- Keep chat/PvP security checks, without equating Map/Encounter/ChallengeMode
 -- restriction states with a prohibition on ordinary player-triggered emotes.
 -- Group membership and normal party/raid instances never suppress Flourish.
@@ -597,31 +639,30 @@ local function IsChatRestricted()
     return IsRestrictionActive("Chat")
 end
 
--- A PvP match is a separate addon-data restriction from chat lockdown.
--- The hardware-press fallback may be attempted when chat itself is allowed;
--- result-event dispatch is never attempted while PvP restrictions are active.
-local function CanDispatchEmote(fromPress)
-    if IsChatRestricted() then
-        RecordBlock("chat messaging lockdown / Chat restriction")
+-- Battlegrounds, arenas and PvP matches pause every trigger mode. Saved
+-- triggers are untouched and resume unchanged outside PvP.
+local function IsPvPPaused()
+    return IsBattleground() or IsRestrictionActive("PvPMatch")
+end
+
+local function CanDispatchEmote()
+    if IsPvPPaused() then
+        RecordBlock("paused in battleground/arena/PvP match")
         return false
     end
-    if not fromPress and (IsBattleground() or IsRestrictionActive("PvPMatch")) then
-        RecordBlock("outcome event suppressed in PvP")
+    if IsChatRestricted() then
+        RecordBlock("chat messaging lockdown / Chat restriction")
         return false
     end
     return true
 end
 
 local function EffectiveTrigger(cfg)
-    local trigger = NormalizeTrigger(cfg.trigger)
-    if trigger == "success" and IsBattleground() then
-        return "press"
-    end
-    return trigger
+    return NormalizeTrigger(cfg.trigger)
 end
 
 local function ResolveAbility(spellID)
-    EnsureDB()
+    EnsureRuntimeDB()
 
     if not db.actionEmotesEnabled then
         return
@@ -634,7 +675,11 @@ local function ResolveAbility(spellID)
 
     local key = AbilityKey(spellName)
     local cfg = db.instances[key]
-    if type(cfg) ~= "table" or cfg.enabled == false then
+    if type(cfg) ~= "table" then
+        return
+    end
+    NormalizeAbility(key, cfg)
+    if cfg.enabled == false then
         return
     end
 
@@ -652,7 +697,7 @@ end
 local function SendCustomEmote(token)
     local entry = CustomEmoteById(string.sub(token, 3))
     if not entry or entry.text == "" then
-        return false
+        return false, "custom emote missing"
     end
 
     if C_ChatInfo and C_ChatInfo.SendChatMessage then
@@ -665,7 +710,7 @@ local function SendCustomEmote(token)
         return true
     end
 
-    return false
+    return false, "custom chat API unavailable"
 end
 
 -- Native tokens have a documented success return. Custom /e requires a
@@ -705,7 +750,11 @@ local function DispatchEmote(key, cfg, now, fromPress)
         and BoundedWholeNumber(option.cooldown, DEFAULT_COOLDOWN, 0, 120) or nil
     debugState.attempts = debugState.attempts + 1
     if IsCustomToken(token) then
-        if fromPress and SendCustomEmote(token) then
+        local sentCustom, failure = false, "custom /e needs a button press"
+        if fromPress then
+            sentCustom, failure = SendCustomEmote(token)
+        end
+        if sentCustom then
             RememberEmote(key, cfg, token, now)
             StartAbilityLock(key, cfg, token, now)
             debugState.accepted = debugState.accepted + 1
@@ -713,7 +762,7 @@ local function DispatchEmote(key, cfg, now, fromPress)
             RecordBlock(debugState.lastDispatch)
         else
             debugState.refused = debugState.refused + 1
-            debugState.lastDispatch = "custom chat API unavailable"
+            debugState.lastDispatch = failure
             RecordBlock(debugState.lastDispatch)
         end
     elseif not C_ChatInfo or not C_ChatInfo.PerformEmote then
@@ -745,7 +794,7 @@ local function TryAbilityEmoteFromPress(spellID)
         return
     end
     debugState.lastSpell = spellID
-    if not CanDispatchEmote(true) then return end
+    if not CanDispatchEmote() then return end
 
     local key, cfg = ResolveAbility(spellID)
     if not key then
@@ -775,7 +824,7 @@ local function TryAbilityEmoteForOutcome(event, unit, castGUID, spellID)
     debugState.outcomeEvents = debugState.outcomeEvents + 1
     if IsSecret(unit) or IsSecret(spellID) or IsSecret(castGUID)
         or unit ~= "player" or type(spellID) ~= "number"
-        or not CanDispatchEmote(false) then
+        or not CanDispatchEmote() then
         return
     end
 
@@ -884,7 +933,7 @@ local function AddOrSelectAbility(ability)
             chance = DEFAULT_CHANCE,
             trigger = DEFAULT_TRIGGER,
             enabled = true,
-            emotes = { ROAR = { cooldown = DEFAULT_COOLDOWN } },
+            emotes = { ROAR = { cooldown = AbilityCooldownDefault(ability.spellID) } },
         }
         db.instances[key] = cfg
     else
@@ -897,19 +946,72 @@ local function AddOrSelectAbility(ability)
     return key
 end
 
+local SCROLLBAR_W = 10
+
 local function CreateQuietScroll(parent)
     local scroll = CreateFrame("ScrollFrame", nil, parent)
     scroll:EnableMouseWheel(true)
-    scroll:SetScript("OnMouseWheel", function(self, delta)
+    local function OnWheel(_, delta)
         local step = 36 * delta
-        local nextScroll = self:GetVerticalScroll() - step
-        local maxScroll = self:GetVerticalScrollRange() or 0
+        local nextScroll = scroll:GetVerticalScroll() - step
+        local maxScroll = scroll:GetVerticalScrollRange() or 0
         if nextScroll < 0 then
             nextScroll = 0
         elseif nextScroll > maxScroll then
             nextScroll = maxScroll
         end
-        self:SetVerticalScroll(nextScroll)
+        scroll:SetVerticalScroll(nextScroll)
+    end
+    scroll:SetScript("OnMouseWheel", OnWheel)
+
+    -- Draggable thumb along the right edge; hidden while everything fits.
+    local bar = CreateFrame("Slider", nil, scroll)
+    bar:SetOrientation("VERTICAL")
+    bar:SetWidth(SCROLLBAR_W)
+    bar:SetPoint("TOPRIGHT", scroll, "TOPRIGHT", 0, 0)
+    bar:SetPoint("BOTTOMRIGHT", scroll, "BOTTOMRIGHT", 0, 0)
+    bar:SetFrameLevel((scroll:GetFrameLevel() or 0) + 5)
+    bar.track = bar:CreateTexture(nil, "BACKGROUND")
+    bar.track:SetAllPoints()
+    bar.track:SetColorTexture(0, 0, 0, 0.35)
+    bar.thumb = bar:CreateTexture(nil, "OVERLAY")
+    bar.thumb:SetColorTexture(1, 0.82, 0, 0.85)
+    bar.thumb:SetSize(SCROLLBAR_W, 40)
+    bar:SetThumbTexture(bar.thumb)
+    bar:SetMinMaxValues(0, 0)
+    bar:SetValueStep(1)
+    bar:EnableMouseWheel(true)
+    bar:SetScript("OnMouseWheel", OnWheel)
+    bar:SetScript("OnValueChanged", function(self, value)
+        if not self.syncing then
+            scroll:SetVerticalScroll(value)
+        end
+    end)
+    bar:Hide()
+    scroll.bar = bar
+
+    function scroll:UpdateBar()
+        local range = self:GetVerticalScrollRange() or 0
+        if range <= 0 then
+            bar:Hide()
+            if self:GetVerticalScroll() ~= 0 then self:SetVerticalScroll(0) end
+            return
+        end
+        local view = self:GetHeight() or 0
+        bar.thumb:SetHeight(math.max(24, view * view / (view + range)))
+        bar.syncing = true
+        bar:SetMinMaxValues(0, range)
+        local offset = math.min(self:GetVerticalScroll() or 0, range)
+        bar:SetValue(offset)
+        bar.syncing = false
+        if offset ~= self:GetVerticalScroll() then self:SetVerticalScroll(offset) end
+        bar:Show()
+    end
+    scroll:SetScript("OnScrollRangeChanged", function(self) self:UpdateBar() end)
+    scroll:SetScript("OnVerticalScroll", function(self, offset)
+        bar.syncing = true
+        bar:SetValue(offset)
+        bar.syncing = false
     end)
     return scroll
 end
@@ -1037,7 +1139,7 @@ local function CreateUI()
 
     ui.enabled = CreateCheckbox(ui.home)
     ui.enabled:ClearAllPoints()
-    ui.enabled:SetPoint("TOPLEFT", ui.home, "TOPLEFT", 8, -6)
+    ui.enabled:SetPoint("TOPLEFT", ui.home, "TOPLEFT", 0, 0)
     ui.enabled.label:SetWidth(210)
     ui.enabled.label:SetText("Enable Flourish Forever")
     ui.enabled:SetScript("OnClick", function(self)
@@ -1063,7 +1165,7 @@ local function CreateUI()
 
     ui.customButton = CreateFrame("Button", nil, ui.home, "UIPanelButtonTemplate")
     ui.customButton:SetSize(170, 24)
-    ui.customButton:SetPoint("LEFT", ui.addButton, "RIGHT", 18, 0)
+    ui.customButton:SetPoint("TOPRIGHT", ui.home, "TOPRIGHT", 0, 0)
     ui.customButton:SetText("Add custom emotes")
     ui.customButton:SetScript("OnClick", function()
         ui:ShowPage("custom")
@@ -1075,12 +1177,12 @@ local function CreateUI()
     ui.homeEmpty:Hide()
 
     -- Search the configured ability overview independently of the picker.
-    ui.homeSearchLabel = ui.home:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    ui.homeSearchLabel:SetPoint("TOPRIGHT", ui.home, "TOPRIGHT", -194, -66)
-    ui.homeSearchLabel:SetText("Find ability")
     ui.homeSearch = CreateFrame("EditBox", "FlourishForeverHomeSearch", ui.home, "InputBoxTemplate")
-    ui.homeSearch:SetSize(160, 20)
-    ui.homeSearch:SetPoint("LEFT", ui.homeSearchLabel, "RIGHT", 10, 0)
+    ui.homeSearch:SetSize(164, 20)
+    ui.homeSearch:SetPoint("TOPRIGHT", ui.customButton, "BOTTOMRIGHT", -4, -8)
+    ui.homeSearchLabel = ui.home:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    ui.homeSearchLabel:SetPoint("RIGHT", ui.homeSearch, "LEFT", -10, 0)
+    ui.homeSearchLabel:SetText("Find ability")
     ui.homeSearch:SetAutoFocus(false)
     ui.homeSearch:SetMaxLetters(60)
     ui.homeSearch:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
@@ -1252,6 +1354,7 @@ local function CreateUI()
                 local cfg = db.instances[selectedKey]
                 if cfg then cfg.trigger = trigger end
                 ui.triggerButton:SetText(TRIGGER_LABELS[trigger] .. "  v")
+                ui:UpdateCustomOnlyWarning()
             end
             ui.triggerMenu:Hide()
         end)
@@ -1270,11 +1373,19 @@ local function CreateUI()
     ui.triggerHelp:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 18, -94)
     ui.triggerHelp:SetWidth(748)
     ui.triggerHelp:SetJustifyH("LEFT")
-    ui.triggerHelp:SetText("Chosen emote locks this ability for its cooldown. PvP Success uses Button press; custom /e needs press.")
+    ui.triggerHelp:SetText("Chosen emote locks this ability for its cooldown. Emotes pause in battlegrounds and arenas; custom /e needs Button press.")
 
     ui.emoteHint = ui.editor:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     ui.emoteHint:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 16, -119)
     ui.emoteHint:SetText("Emotes. One ready emote is chosen at random.")
+
+    ui.customOnlyWarning = ui.editor:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    ui.customOnlyWarning:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 360, -121)
+    ui.customOnlyWarning:SetWidth(410)
+    ui.customOnlyWarning:SetJustifyH("LEFT")
+    ui.customOnlyWarning:SetTextColor(1, 0.35, 0.25)
+    ui.customOnlyWarning:SetText("Only custom /e selected: this trigger cannot play it. Use Button press.")
+    ui.customOnlyWarning:Hide()
 
     ui.emoteScroll = CreateQuietScroll(ui.editor)
     ui.emoteScroll:SetPoint("TOPLEFT", ui.editor, "TOPLEFT", 12, -145)
@@ -1283,6 +1394,9 @@ local function CreateUI()
     ui.emoteChild:SetSize(750, 1)
     ui.emoteScroll:SetScrollChild(ui.emoteChild)
     ui.emoteRows = {}
+    ui.emoteDivider = ui.emoteChild:CreateTexture(nil, "ARTWORK")
+    ui.emoteDivider:SetColorTexture(1, 0.82, 0, 0.55)
+    ui.emoteDivider:Hide()
 
     ui.remove = CreateFrame("Button", nil, ui.editor, "UIPanelButtonTemplate")
     ui.remove:SetSize(110, 24)
@@ -1339,6 +1453,7 @@ local function CreateUI()
             lines = lines + 1
         end
         self:SetHeight(math.max(400, lines * 18))
+        ui.customScroll:UpdateBar()
     end)
 
     ui.customSave = CreateFrame("Button", nil, ui.custom, "UIPanelButtonTemplate")
@@ -1490,9 +1605,10 @@ local function CreateUI()
             end
 
             if self:GetChecked() then
-                cfg.emotes[self.token] = { cooldown = DEFAULT_COOLDOWN }
+                local default = AbilityCooldownDefault(cfg.spellID)
+                cfg.emotes[self.token] = { cooldown = default }
                 ui.updating = true
-                row.slider:SetValue(DEFAULT_COOLDOWN)
+                row.slider:SetValue(default)
                 ui.updating = false
                 row.slider:Show()
                 row.plate:Show()
@@ -1502,6 +1618,7 @@ local function CreateUI()
                 row.plate:Hide()
             end
 
+            ui:UpdateCustomOnlyWarning()
             ui:LayoutEmoteRows()
         end)
 
@@ -1639,7 +1756,7 @@ local function CreateUI()
         if not listW or listW < 200 then
             listW = 760
         end
-        local widgetW = listW - 44
+        local widgetW = listW - 48 - SCROLLBAR_W
         self.homeChild:SetWidth(listW)
 
         local keys = SortedInstanceKeys()
@@ -1682,6 +1799,7 @@ local function CreateUI()
         end
 
         self.homeChild:SetHeight(math.max(1, #keys * (HOME_ROW_H + 6)))
+        self.homeScroll:UpdateBar()
         self.homeEmpty:SetText(query == "" and "No abilities yet." or "No matching abilities.")
         self.homeEmpty:SetShown(#keys == 0)
     end
@@ -1742,6 +1860,7 @@ local function CreateUI()
             self.generalScroll:SetSize(PAGE_W - 20, viewH)
             self.generalScroll:Show()
             self.generalChild:SetSize(PAGE_W - 24, math.max(1, contentH))
+            self.generalScroll:UpdateBar()
 
             for index, ability in ipairs(general.abilities) do
                 local button = self.generalButtons[index]
@@ -1763,7 +1882,7 @@ local function CreateUI()
                 local col = (index - 1) % perRow
                 local rowIndex = math.floor((index - 1) / perRow)
                 local rowCount = math.min(perRow, #general.abilities - rowIndex * perRow)
-                local origin = math.floor((PAGE_W - 24 - rowCount * buttonW) / 2)
+                local origin = math.floor((PAGE_W - 24 - SCROLLBAR_W - rowCount * buttonW) / 2)
                 button:SetPoint("TOPLEFT", self.generalChild, "TOPLEFT", origin + col * buttonW, -(rowIndex * pitch))
                 button:SetWidth(buttonW - 8)
                 button.label:SetWidth(buttonW - 96)
@@ -1808,7 +1927,7 @@ local function CreateUI()
             end
             column:Show()
 
-            local buttonWidth = math.max(80, width - 8)
+            local buttonWidth = math.max(80, width - 10 - SCROLLBAR_W)
             column.child:SetWidth(buttonWidth)
             for index, ability in ipairs(columnInfo.abilities) do
                 local button = EnsurePickerButton(column, index)
@@ -1826,6 +1945,7 @@ local function CreateUI()
             end
 
             column.child:SetHeight(math.max(1, #columnInfo.abilities * 70))
+            column.scroll:UpdateBar()
         end
 
         for i = count + 1, #self.pickerColumns do
@@ -1841,6 +1961,7 @@ local function CreateUI()
         if not areaW or areaW < 200 then
             areaW = 750
         end
+        areaW = areaW - SCROLLBAR_W - 4
         self.emoteChild:SetWidth(areaW)
         local colW = math.floor((areaW - gap * (cols - 1)) / cols)
 
@@ -1878,6 +1999,9 @@ local function CreateUI()
             return bottom
         end
 
+        -- Checked emotes (native and custom) first, then a divider, then the
+        -- unchecked native list and the unchecked custom section.
+        local checked = {}
         local standard = {}
         local custom = {}
         local header = nil
@@ -1890,7 +2014,9 @@ local function CreateUI()
                     header = row
                     row:Hide()
                 elseif Matches(item) then
-                    if customSection then
+                    if row.check:GetChecked() then
+                        checked[#checked + 1] = row
+                    elseif customSection then
                         custom[#custom + 1] = row
                     else
                         standard[#standard + 1] = row
@@ -1901,7 +2027,17 @@ local function CreateUI()
             end
         end
 
-        local y = Place(standard, 0)
+        local y = Place(checked, 0)
+        if #checked > 0 and (#standard > 0 or #custom > 0) then
+            self.emoteDivider:ClearAllPoints()
+            self.emoteDivider:SetPoint("TOPLEFT", self.emoteChild, "TOPLEFT", 0, -(y + 2))
+            self.emoteDivider:SetSize(areaW, 2)
+            self.emoteDivider:Show()
+            y = y + 12
+        else
+            self.emoteDivider:Hide()
+        end
+        y = Place(standard, y)
         if header and #custom > 0 then
             header:ClearAllPoints()
             header:SetPoint("TOPLEFT", self.emoteChild, "TOPLEFT", 0, -y)
@@ -1912,11 +2048,33 @@ local function CreateUI()
         end
         y = Place(custom, y)
         self.emoteChild:SetHeight(math.max(1, y))
+        self.emoteScroll:UpdateBar()
+    end
+
+    function ui:UpdateCustomOnlyWarning()
+        local cfg = selectedKey and db and db.instances[selectedKey]
+        local customOnly = false
+        if type(cfg) == "table" and NormalizeTrigger(cfg.trigger) ~= "press" then
+            for token, info in pairs(cfg.emotes or {}) do
+                if type(info) == "table" then
+                    if not IsCustomToken(token) then
+                        customOnly = false
+                        break
+                    end
+                    customOnly = true
+                end
+            end
+        end
+        self.customOnlyWarning:SetShown(customOnly)
     end
 
     function ui:RefreshEditor()
         EnsureDB()
-        RefreshKnownEmotes()
+        -- Walking _G is costly; scan once per window open, not per editor visit.
+        if not self.emotesScanned then
+            RefreshKnownEmotes()
+            self.emotesScanned = true
+        end
 
         local cfg = selectedKey and db.instances[selectedKey]
         if not cfg then
@@ -1932,6 +2090,7 @@ local function CreateUI()
         self.triggerButton:SetText(TRIGGER_LABELS[NormalizeTrigger(cfg.trigger)] .. "  v")
         self.triggerMenu:Hide()
         self.updating = false
+        self:UpdateCustomOnlyWarning()
 
         local items = {}
         for _, token in ipairs(knownEmotes) do
@@ -1991,11 +2150,12 @@ local function CreateUI()
 
     ui:SetScript("OnShow", function(self)
         EnsureDB()
-        RefreshKnownEmotes()
+        self.emotesScanned = false
         self:ShowPage(self.page or "home")
     end)
     ui:SetScript("OnHide", function(self)
         self.triggerMenu:Hide()
+        self.emotesScanned = false
     end)
 
     return ui
@@ -2120,8 +2280,31 @@ function FlourishForever_EmoteDiagnostics()
         .. "; last=" .. debugState.last
 end
 
+local PVP_NOTICE = "Flourish Forever: You steel yourself for battle. Your flourishes will rest until you leave the battlefield."
+local wasInPvP = false
+
+-- One local chat-frame line per battleground/arena entry; never sent to others.
+local function UpdatePvPNotice()
+    local inPvP = IsBattleground()
+    if inPvP and not wasInPvP then
+        EnsureDB()
+        if db.actionEmotesEnabled then
+            for key, cfg in pairs(db.instances) do
+                if type(key) == "string" and key ~= "" and type(cfg) == "table"
+                    and cfg.enabled ~= false then
+                    print(PVP_NOTICE)
+                    break
+                end
+            end
+        end
+    end
+    wasInPvP = inPvP
+end
+
 eventFrame:SetScript("OnEvent", function(self, event, ...)
-    if event == "UNIT_SPELLCAST_SUCCEEDED" or event == "UNIT_SPELLCAST_FAILED"
+    if event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA" then
+        UpdatePvPNotice()
+    elseif event == "UNIT_SPELLCAST_SUCCEEDED" or event == "UNIT_SPELLCAST_FAILED"
         or event == "UNIT_SPELLCAST_FAILED_QUIET"
         or event == "UNIT_SPELLCAST_INTERRUPTED" then
         local unit, castGUID, spellID = ...
@@ -2136,6 +2319,8 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
     end
 end)
 
+eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+eventFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 eventFrame:RegisterEvent("SPELLS_CHANGED")
 eventFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
 eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED")

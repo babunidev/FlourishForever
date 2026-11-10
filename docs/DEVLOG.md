@@ -1,6 +1,12 @@
 # Flourish Forever — creative and technical development journal
 
 
+## 10 November 2026 — a quiet moment before battle
+
+Reviewing the installed copy turned up a note for a battleground behavior I had wanted but never built: flourishes simply rest during battlegrounds and arenas, and my character acknowledges it once as the match begins. The tagged beta did something else, quietly switching Success to Button press in PvP. I chose the quieter version.
+
+My AI assistant made every trigger pause in PvP without touching saved settings, added the single local entry line, and warned in the editor when an outcome trigger only has custom `/e` text that can't play. It also trimmed the work done on every cast and updated the tests and docs, which had fallen behind the `v0.5.0-beta` tag. Mocked tests pass; I still need to try it in a real battleground. No tag yet.
+
 ## 7 November 2026 — a tested rhythm, ready to share
 
 The revised cooldown finally feels right in the Forever client. Whichever emote is chosen determines how long that ability remains quiet, leaving a brief pause after a little giggle and more space after a larger gesture. With that behavior confirmed in play, the next step is a public beta so others can use the new trigger timing and ability-specific expression.

@@ -1,17 +1,26 @@
 # Flourish Forever — roadmap and verification status
 
 **Creative decision authority:** Babuni · **Game:** WoW Forever 1.60.1 / Interface 16001  
-**Last confirmed public Git tag:** `v0.4.3-beta` · **Prepared version:** `0.5.0-beta` (tag/CourseForge publication not yet confirmed).  
-**Development:** Expanded UI restored from Babuni's older local archive and committed to `dev/expanded-ui-merge`. Preparation occurs separately; no public release tag was created.
+**Latest Git tag:** `v0.5.0-beta` (2026-11-07; CurseForge publication still to be confirmed) · **In development:** `0.6.0-beta-dev` on `feat/pvp-pause-notice`.
 
+
+## 0.6.0-beta development — PvP pause and entry notice (10 November 2026)
+
+- [x] Pause every trigger mode, native and custom, in battlegrounds, arenas and PvP matches; remove the Success-to-press fallback without rewriting saved triggers.
+- [x] Print one local in-character notice per PvP entry when Flourish is on and an ability is enabled.
+- [x] Warn in the editor about custom-only pools on Success/Failure; report deleted custom emotes accurately in `/flourish debug`.
+- [x] Reduce per-cast work (normalize only the used ability) and scan native emotes once per window open.
+- [x] Mocked gameplay/UI regressions, syntax and package inventory checks pass; ZIP validator now follows the source TOC version.
+- [ ] Test in the Forever client: battleground and arena silence, entry notice, normal triggers outside PvP, warning layout.
+- [ ] Only after Babuni's explicit approval: set `0.6.0-beta`, push the `v0.6.0-beta` tag and verify the CurseForge file.
 
 ## v0.5.0-beta release preparation — 7 November 2026
 
 - [x] Review the exact development branch against public `v0.4.3-beta` and preserve the approved selectable triggers, token search and chosen-emote ability lock.
 - [x] Prepare version metadata, player-facing changelog and six-file package validator for `0.5.0-beta`.
 - [x] Record Babuni's in-game confirmation of the revised cooldown model without claiming complete battleground security verification.
-- [ ] Re-run exact versioned release commit Lua/UI and upload-disabled packaging checks.
-- [ ] After explicit release authorization, push only the annotated `v0.5.0-beta` publishing tag and confirm its remote target.
+- [x] Re-run exact versioned release commit Lua/UI and upload-disabled packaging checks (CI green on `release/0.5.0-beta-prep`).
+- [x] Push the annotated `v0.5.0-beta` publishing tag.
 - [ ] Verify the resulting CurseForge file, Beta classification, Forever target, contents and publication status. GitHub tag existence is not proof of publication.
 
 ## Approved cooldown behavior — 7 November 2026

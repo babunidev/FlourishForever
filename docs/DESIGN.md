@@ -1,7 +1,7 @@
 # Flourish Forever — visual and interaction design
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** Forever interface 16001.  
-**Current public tag:** v0.4.3-beta · **New development:** per-ability Triggered by selector. The earlier 0.3.2-beta used a smaller 620×520 layout.
+**Latest Git tag:** v0.5.0-beta (per-ability Triggered by selector) · **Development:** 0.6.0-beta-dev adds a custom-only trigger warning beside the emote heading and PvP-pause help text. The earlier 0.3.2-beta used a smaller 620×520 layout.
 
 
 ## Cooldown slider behavior — 7 November development
