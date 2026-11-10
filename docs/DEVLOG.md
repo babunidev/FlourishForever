@@ -1,5 +1,4 @@
-# Flourish Forever — creative and technical development journal
-
+# Flourish Forever — development journal
 
 ## 7 November 2026 — a tested rhythm, ready to share
 
@@ -52,7 +51,6 @@ After the security fixes, it became clear that moving every native emote to the 
 The new design gives each ability a small Triggered by menu beside Chance: Success, Button press, or Failure. Success remains my default, while battlegrounds temporarily use a press-triggered fallback when the client permits chat. My AI assistant has implemented the state handling and tests on a separate development branch. Custom `/e` chat has stricter hardware restrictions and cannot be sent from the later outcome events; the interface now explains that limit.
 
 There is no new public version yet. The Forever client still needs to confirm that success and failure events permit native emotes without protected-action errors, and the battleground fallback must be tested before release.
-
 
 ## 5 November 2026 — the group fix is ready for everyone
 
