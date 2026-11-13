@@ -1,5 +1,7 @@
 # Flourish Forever — human–AI collaboration and attribution
 
+Follow [the documentation standard](DOCUMENTATION.md) for first-person author voice throughout project documentation, factual changelogs, and naming the AI tool and verified model for each contribution.
+
 
 ## 7 November 2026 — release preparation after live verification
 
@@ -63,8 +65,8 @@ For the next version AI prepared `0.4.0-beta` release copy, the updated manifest
 Babuni supplied the expanded addon archive and requested the recovered features be developed through GitHub. AI integrated the expanded interface, saved-setting migration, searches and tests with current release safeguards on a separate branch. Offline tests do not prove Forever-client compatibility or protected custom-emote behavior. No public release was created.
 
 
-**Original idea, creative direction and final decisions:** Babuni · **Portfolio:** babuni.dev.  
-**Earlier public developer identity:** Babunigaming, preserved from the original October 22 README/TOC.  
+**Original idea, creative direction and final decisions:** Babuni · **Portfolio:** babuni.dev.
+**Earlier public developer identity:** Babunigaming, preserved from the original October 22 README/TOC.
 **Retrospective date:** October 27, 2026.
 
 ## Authorship isn't inferred from who writes the documentation

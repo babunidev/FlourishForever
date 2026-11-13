@@ -1,7 +1,9 @@
 # Flourish Forever — development and AI collaboration rules
 
-**Human creative and final decision-maker:** Babuni. **Portfolio:** babuni.dev. **Historical project credit:** Babunigaming.  
-**Game:** World of Warcraft **Forever only**, client 1.60.1 / interface 16001. Recheck after each game update.  
+Follow [the documentation standard](docs/DOCUMENTATION.md) for first-person author voice throughout project documentation, factual changelogs, and naming the AI tool and verified model for each contribution.
+
+**Human creative and final decision-maker:** Babuni. **Portfolio:** babuni.dev. **Historical project credit:** Babunigaming.
+**Game:** World of Warcraft **Forever only**, client 1.60.1 / interface 16001. Recheck after each game update.
 **Last confirmed public tag:** `v0.4.3-beta` · **Prepared public version:** `v0.5.0-beta` (tag/CurseForge publication pending).
 
 
