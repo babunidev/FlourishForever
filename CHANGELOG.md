@@ -2,13 +2,14 @@
 
 **Creative direction:** Babuni · **Portfolio:** babuni.dev · **Target:** WoW Forever 1.60.1 / Interface 16001.
 
-## 0.6.1-beta — spellbook button (development, 2026-11-19; not published)
+## 0.6.1-beta — spellbook button (2026-11-19)
 
 - **Spellbook button:** the top-left book icon becomes the Flourish medallion. Clicking it opens the Flourish window, the same window as `/flourish`. The spell list stays as it is.
 - **Addon list:** the same medallion is the icon beside Flourish Forever in the addon list.
-- **Verification:** the logo file is included in the local test package. Lua syntax, UI mocks and the package inventory were checked. The portrait button has not been confirmed in the Forever client.
+- **Verification:** Babuni accepted this button for release. Lua syntax, mocked regressions and the package inventory passed. A tag does not by itself prove the CurseForge file is published.
+- **Release process:** tagged `v0.6.1-beta`.
 
-## 0.6.0-beta — flourishes rest in battlegrounds (development, 2026-11-10; not published)
+## 0.6.0-beta — flourishes rest in battlegrounds (2026-11-10)
 
 - **Battlegrounds and arenas:** all ability emotes now pause in battlegrounds, arenas and PvP matches, for every trigger mode and for both native and custom emotes. Your saved settings are untouched and work again as soon as you leave.
 - **Entry notice:** when you enter a battleground or arena, Flourish prints one short, in-character line in your own chat window. Nobody else sees it. It only appears when Flourish is on and at least one ability is enabled.

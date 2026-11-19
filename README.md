@@ -46,7 +46,7 @@ The saved profile is `FlourishForeverStorage`. Existing per-character selections
 
 ## Status and important limitations
 
-A **0.5.0-beta release candidate** was prepared, with per-ability trigger choices, searchable native emotes and the chosen-emote ability-lock behavior. The creative confirmed the revised lock in the Forever client on **7 November 2026**, and automated Lua/UI checks and a local packaging preview passed. **Tag publication and CurseForge approval must be verified separately**; a prepared release is not proof of a published file. The last public tag confirmed in that preparation record was `v0.4.3-beta`.
+**0.6.1-beta** adds a Flourish medallion on the spellbook's top-left book icon. Clicking it opens the Flourish window. The previous public tag is `v0.5.0-beta`. A Git tag does not by itself prove the CurseForge file is published.
 
 Forever places restrictions on automated chat. Custom `/e` text remains tied to eligible hardware presses; native emotes can also be blocked by actual chat lockdown. Battleground and arena fallback behavior is not fully verified in-game. Do not assume a successful mock test means that protected-action behavior works in every game context.
 
