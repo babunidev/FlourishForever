@@ -84,6 +84,10 @@ The expanded interface and custom `/e` text are now part of the approved develop
 
 The October 2026 original implementation began as native-emote-only ability expression. The November 2026 recovered UI introduced more extensive selection and custom text. Do not confuse this project with the action-slot emote family or [Roar Forever](https://github.com/babunidev/RoarForever) audio restoration. See [the family history](docs/EMOTE_FAMILY_HISTORY.md) and [expanded merge technical notes](docs/EXPANDED_UI_MERGE.md).
 
+## Human–AI collaboration record
+
+`docs/AI_COLLABORATION.md` is the short record of how Babuni works with AI and who did what, with the same text in all of Babuni's repositories. Do not add dated entries, session notes or per-change attribution to it. Record each contribution in `docs/DEVLOG.md` (what Babuni asked for and what the AI did, naming the tool and model) and in `CHANGELOG.md`. Change `docs/AI_COLLABORATION.md` only to add a row to its "Who did what" table when a new AI tool or model starts contributing to this project, or when Babuni revises the shared text.
+
 ## Repository layout
 
 The repository root holds only `README.md`, `AGENTS.md`, `LICENSE` and `CHANGELOG.md` (plus any additional license files). All other documentation lives in `docs/`; put new documents there.
