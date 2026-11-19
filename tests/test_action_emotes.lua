@@ -88,6 +88,7 @@ assert(loadfile("FlourishForever_ActionEmotes.lua"))()
 assert(#frames == 1)
 local frame=frames[1]
 for _, name in ipairs({
+    "PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA",
     "SPELLS_CHANGED", "UNIT_SPELLCAST_SUCCEEDED",
     "UNIT_SPELLCAST_FAILED", "UNIT_SPELLCAST_FAILED_QUIET",
     "UNIT_SPELLCAST_INTERRUPTED",
@@ -233,10 +234,17 @@ assert(#sent == 0, "custom chat never sent from failed event")
 cfg.trigger = "press"
 press(1, 1002)
 assert(#sent == 1 and sent[1] == "shakes her head", "custom /e on press")
+local customList = FlourishForeverDB.customEmotes
 press(1, 1003)
 assert(#sent == 1, "custom per-token cooldown")
 press(1, 1032)
+assert(FlourishForeverDB.customEmotes == customList, "routine presses do not rebuild the custom list")
 assert(#sent == 2, "custom cooldown expires")
+cfg.emotes = { ["c:99"] = { cooldown = 0 } }
+press(1, 1063)
+assert(#sent == 2 and FlourishForever_EmoteDiagnostics():find("lastDispatch=custom emote missing", 1, true),
+    "deleted custom emote is reported as missing, not as an API failure")
+cfg.emotes = { ["c:1"] = { cooldown = 30 } }
 
 -- Success mode filters custom tokens rather than randomly selecting silence.
 cfg.trigger = "success"
@@ -246,45 +254,66 @@ cast(100, 1070, "mixed-native")
 assert(#played == nativeBefore + 1 and #sent == sentBefore,
     "success mode selects native token only")
 
--- Battleground Success is resolved to Button press only at runtime; it does not
--- modify SavedVariables. A PvP match restriction alone is not a chat lockdown.
-cfg.emotes = { ROAR = { cooldown = 0 } }
-currentInstanceType = "pvp"
-restrictionStates[Enum.AddOnRestrictionType.PvPMatch] = 2
-nativeBefore = #played
-C_Spell.IsSpellUsable = function() return false end
-press(1, 1100)
-assert(#played == nativeBefore + 1, "PvP fallback works despite false spell usability")
-C_Spell.IsSpellUsable = function() return true end
-cast(100, 1100.1, "pvp-success")
-assert(#played == nativeBefore + 1, "PvP success never runs delayed emote")
-assert(cfg.trigger == "success", "PvP fallback must not overwrite saved mode")
-cfg.trigger = "failure"
-press(1, 1101)
-fire("UNIT_SPELLCAST_FAILED", 100, 1101.1, "pvp-failure")
-assert(#played == nativeBefore + 1, "explicit failure remains distinct and safely suppressed")
+-- Battlegrounds, arenas and PvP matches pause every trigger mode, native and
+-- custom alike. Saved triggers are never rewritten and resume outside PvP.
+cfg.emotes = { ROAR = { cooldown = 0 }, ["c:1"] = { cooldown = 0 } }
+local printed = {}
+local realPrint = print
+print = function(message) printed[#printed + 1] = message end
+local function zone(instanceType, name)
+    currentInstanceType = instanceType
+    event(frame, name or "ZONE_CHANGED_NEW_AREA")
+end
+nativeBefore, sentBefore = #played, #sent
+zone("pvp", "PLAYER_ENTERING_WORLD")
+assert(#printed == 1 and printed[1]:find("steel yourself for battle", 1, true),
+    "one local notice on battleground entry")
+zone("pvp")
+assert(#printed == 1, "notice not repeated inside the same battleground")
+for i, trigger in ipairs({ "success", "press", "failure" }) do
+    cfg.trigger = trigger
+    local t = 1100 + i
+    press(1, t)
+    cast(100, t + 0.1, "pvp-success-" .. i)
+    fire("UNIT_SPELLCAST_FAILED", 100, t + 0.2, "pvp-failure-" .. i)
+    assert(#played == nativeBefore and #sent == sentBefore, trigger .. " paused in battleground")
+    assert(cfg.trigger == trigger, "PvP pause must not overwrite saved " .. trigger)
+end
+assert(FlourishForever_EmoteDiagnostics():find("paused in battleground", 1, true),
+    "debug reports the PvP pause reason")
+zone("none")
 cfg.trigger = "success"
-currentInstanceType = "none"
-restrictionStates[Enum.AddOnRestrictionType.PvPMatch] = 0
 press(1, 1110)
-assert(#played == nativeBefore + 1, "world success mode no press emote")
+assert(#played == nativeBefore, "world success mode does not fire on press")
 cast(100, 1110.1, "back-world")
-assert(#played == nativeBefore + 2, "world success behavior restored")
-currentInstanceType = "arena"
-press(1, 1112)
-assert(#played == nativeBefore + 3, "arena also uses PvP press fallback")
-nativeAllowed = false
-press(1, 1114)
-cast(100, 1114.1, "arena-later-event")
-local pvpDiagnostic = FlourishForever_EmoteDiagnostics()
-assert(pvpDiagnostic:find("lastDispatch=native emote API returned false; attempt throttled for ROAR", 1, true),
-    "later PvP cast event must not erase the native send refusal")
-nativeAllowed = true
-chatLockdown = true
-press(1, 1113)
-assert(#played == nativeBefore + 3, "PvP press fallback respects true chat lockdown")
-chatLockdown = false
-currentInstanceType = "none"
+assert(#played == nativeBefore + 1, "saved success behavior restored after leaving PvP")
+cfg.trigger = "press"
+press(1, 1111)
+assert(#played + #sent == nativeBefore + 1 + sentBefore + 1, "press behavior restored after leaving PvP")
+cfg.trigger = "success"
+zone("arena")
+assert(#printed == 2, "notice returns on the next PvP entry")
+cast(100, 1112, "arena-success")
+press(1, 1112.5)
+assert(#played + #sent == nativeBefore + sentBefore + 2, "arena also paused")
+zone("none")
+restrictionStates[Enum.AddOnRestrictionType.PvPMatch] = 2
+cast(100, 1113, "pvp-match-world")
+assert(#played + #sent == nativeBefore + sentBefore + 2, "PvPMatch restriction alone pauses")
+restrictionStates[Enum.AddOnRestrictionType.PvPMatch] = 0
+FlourishForeverDB.actionEmotesEnabled = false
+zone("pvp")
+assert(#printed == 2, "no notice while Flourish is disabled")
+zone("none")
+FlourishForeverDB.actionEmotesEnabled = true
+local savedInstances = FlourishForeverDB.instances
+FlourishForeverDB.instances = { off = { name = "Off", enabled = false, emotes = {} } }
+zone("arena")
+assert(#printed == 2, "no notice without an enabled ability")
+zone("none")
+FlourishForeverDB.instances = savedInstances
+print = realPrint
+cfg.emotes = { ROAR = { cooldown = 0 } }
 
 -- Any true chat restriction overrides both native and custom press dispatch.
 chatLockdown = true
@@ -348,6 +377,10 @@ FlourishForeverDB.actionEmotesEnabled = "invalid"
 cfg.trigger = 0 / 0 -- corrupt SavedVariables should never index a table with NaN
 cfg.chance = 0 / 0
 cfg.emotes = { ROAR = { cooldown = math.huge } }
+-- SavedVariables arrive as a fresh profile table, which forces a full pass.
+local loadedProfile = {}
+for k, v in pairs(FlourishForeverDB) do loadedProfile[k] = v end
+FlourishForeverDB = loadedProfile
 cast(100, 1700, "invalid-config")
 assert(FlourishForeverDB.actionEmotesEnabled == false, "invalid master disables safely")
 assert(cfg.trigger == "success", "bad trigger resets to success")
@@ -530,4 +563,4 @@ assert(guid == "Player-TEST" and migrated == oldProfile,"old profile migrated")
 assert(FlourishForeverStorage.profiles.Tester == nil,"legacy profile removed after migration")
 assert(FlourishForeverStorage.profiles[guid] == oldProfile,"GUID profile retained")
 
-print("PASS: success/press/failure trigger modes, PvP fallback, groups, chat guards, custom safety and migration")
+print("PASS: success/press/failure trigger modes, PvP pause and notice, groups, chat guards, custom safety and migration")

@@ -5,6 +5,11 @@
 **Development:** Expanded UI restored from Babuni's older local archive and committed to `dev/expanded-ui-merge`. Preparation occurs separately; no public release tag was created.
 
 
+## v0.6.1-beta — spellbook tab (development, 19 November 2026)
+
+- [x] Put the Flourish medallion on the spellbook's top-left book icon and open the Flourish window from that click.
+- [ ] Confirm the button and the window in the Forever client.
+
 ## v0.5.0-beta release preparation — 7 November 2026
 
 - [x] Review the exact development branch against public `v0.4.3-beta` and preserve the approved selectable triggers, token search and chosen-emote ability lock.

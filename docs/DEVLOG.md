@@ -1,6 +1,12 @@
 # Flourish Forever — creative and technical development journal
 
 
+## 19 November 2026 — a tab on the spellbook
+
+Replacing the spell list with a Flourish tab was the wrong fit. The button belongs on the book icon at the top left of the spellbook, and that click has to open the Flourish window. The earlier icon was there, but the click never opened the window.
+
+The 0.6.1 build puts the medallion back on that icon and opens the same window as `/flourish`. The Forever client has not confirmed the click yet.
+
 ## 7 November 2026 — a tested rhythm, ready to share
 
 The revised cooldown finally feels right in the Forever client. Whichever emote is chosen determines how long that ability remains quiet, leaving a brief pause after a little giggle and more space after a larger gesture. With that behavior confirmed in play, the next step is a public beta so others can use the new trigger timing and ability-specific expression.

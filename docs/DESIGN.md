@@ -10,6 +10,12 @@ Each selected emote keeps its individual 0–120-second slider. The editor now e
 
 The existing `/flourish cooldowns` readout shows the active ability lock and the duration each selected token would impose if chosen. The interface and diagnostics have mocked coverage; game-client visuals and actual live timing remain to be verified.
 
+## Spellbook tab — 0.6.1 development
+
+The spellbook keeps its own spell list. The top-left book icon is covered by the Flourish medallion, and clicking that icon opens the Flourish window. Replacing the spell list with the editor was tried and set aside. This button has not been confirmed in the Forever client.
+
+The medallion in the game is a 256-pixel copy of the supplied logo. The larger portfolio masters stay out of the installable addon.
+
 ## Expanded configuration window
 
 The player opens a movable Blizzard-style **810×676** window using `/flourish` or an alias. The four UI pages guide a player from a general overview to selecting an ability, assigning emotes and managing custom text:
@@ -23,7 +29,7 @@ The character-wide switch can silence all configured flourishes; each ability ca
 
 ## Experience and design principles
 
-- The interface is built with game-native frames, icons, sliders, scroll surfaces, fonts and checkboxes; portfolio artwork is not loaded by the addon.
+- The interface is built with game-native frames, icons, sliders, scroll surfaces, fonts and checkboxes. The spellbook portrait is the one exception: it uses the supplied Flourish medallion. Portfolio masters are not loaded.
 - Displayed spells originate in the player's spellbook, not from a hand-maintained class roster.
 - **ROAR** remains the initial native selection for a newly configured ability; other native emotes and custom lines are optional.
 - Each selected emote has its own cooldown, rather than forcing one shared delay on an entire ability.

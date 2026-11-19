@@ -16,8 +16,10 @@ EXPECTED = {
     "FlourishForever.lua",
     "FlourishForever_Storage.lua",
     "FlourishForever_ActionEmotes.lua",
+    "FlourishForever_SpellBook.lua",
     "CHANGELOG.md",
     "LICENSE",
+    "Textures/FlourishForeverLogo.tga",
 }
 
 
@@ -47,8 +49,11 @@ def main():
         if not re.search(r"^## Interface: 16001\s*$", toc, re.M):
             print("FAIL: wrong target interface", file=sys.stderr)
             return 1
-        if not re.search(r"^## Version: 0\.5\.0-beta\s*$", toc, re.M):
-            print("FAIL: wrong addon version", file=sys.stderr)
+        disk_toc = (ROOT / "FlourishForever.toc").read_text(encoding="utf-8")
+        disk_version = re.search(r"^## Version:\s*(\S+)\s*$", disk_toc, re.M)
+        zip_version = re.search(r"^## Version:\s*(\S+)\s*$", toc, re.M)
+        if not disk_version or not zip_version or disk_version.group(1) != zip_version.group(1):
+            print("FAIL: ZIP version does not match the repository TOC", file=sys.stderr)
             return 1
         changelog = zf.read("FlourishForever/CHANGELOG.md").decode("utf-8")
         if "## 0.4.3-beta" not in changelog:
@@ -59,7 +64,7 @@ def main():
             print("FAIL: missing MIT license text", file=sys.stderr)
             return 1
 
-    print("PASS: packager dry-run ZIP has six intended files, correct TOC and license")
+    print("PASS: packager dry-run ZIP has the intended files, correct TOC and license")
     print(f"Checked: {path}")
     return 0
 

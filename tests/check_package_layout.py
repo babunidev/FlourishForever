@@ -41,7 +41,7 @@ def main():
         for line in TOC.read_text(encoding="utf-8").splitlines()
         if line.strip() and not line.lstrip().startswith("#")
     }
-    expected = {"FlourishForever.toc", "CHANGELOG.md"} | toc_files
+    expected = {"FlourishForever.toc", "CHANGELOG.md", "Textures/FlourishForeverLogo.tga"} | toc_files
     if (ROOT / "LICENSE").is_file():
         expected.add("LICENSE")
 
@@ -55,7 +55,10 @@ def main():
         ["git", "ls-files", "-z"], cwd=ROOT, check=True, capture_output=True
     )
     tracked = {p for p in proc.stdout.decode("utf-8").split("\0") if p}
-    included = {p for p in tracked if not excluded(p, rules)}
+    # TOC files saved on disk count before the next commit, so a new runtime
+    # file is not reported missing while it is still untracked.
+    on_disk = {name for name in expected if (ROOT / name).is_file()}
+    included = {p for p in tracked if not excluded(p, rules)} | on_disk
     absent = sorted(expected - included)
     unexpected = sorted(included - expected)
     print("Static installable file inventory:")

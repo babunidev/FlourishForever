@@ -24,6 +24,8 @@ The setting is 0–120 seconds per emote and 0–100% chance per ability. Charac
 | `/flourish status` | Show current profile status |
 | `/flourishforever`, `/rit`, `/ffsh` | Command aliases |
 
+The spellbook's top-left book icon is the Flourish medallion. Click it to open or close the Flourish window. `/flourish` opens that same window.
+
 The editor includes a searchable ability list, spellbook picker, enable switches, emote choices, custom text and duration/chance controls. New characters begin with no abilities configured.
 
 ## Installation
@@ -35,6 +37,9 @@ FlourishForever.toc
 FlourishForever_Storage.lua
 FlourishForever.lua
 FlourishForever_ActionEmotes.lua
+FlourishForever_SpellBook.lua
+CHANGELOG.md
+LICENSE
 ```
 
 The saved profile is `FlourishForeverStorage`. Existing per-character selections are migrated rather than discarded when the data format changes.
@@ -56,9 +61,12 @@ luac -p FlourishForever_ActionEmotes.lua
 lua tests/test_action_emotes.lua
 lua tests/test_ui_mock.lua
 python3 tests/check_package_layout.py
+python3 tests/pack_test_zip.py --install
 ```
 
-CI checks a packaging preview, but an upload-disabled dry run is **not** a verified CurseForge release. The package is intended to include its TOC, three runtime Lua files, changelog and license.
+CI checks a packaging preview, but an upload-disabled dry run is **not** a verified CurseForge release. The package contains the TOC, the Lua files it names, the changelog and the license.
+
+`python3 tests/pack_test_zip.py --install` writes `dist/FlourishForever-<version>-test.zip` from the files on disk, including uncommitted edits, and installs that package into the local Forever `Interface/AddOns` folder. Do this whenever the runnable addon changes locally, so the game copy stays current. The game folder receives that package only. This repository stays the working copy, outside the game folder.
 
 ## Read more
 

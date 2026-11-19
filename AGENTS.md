@@ -66,12 +66,13 @@ The expanded interface and custom `/e` text are now part of the approved develop
 - Spellbook selection excludes passive, future, off-spec and non-spell entries. Actual modern API availability must be verified on the target Forever build, not guessed from an interface number.
 - `EnsureDB` validates saved data; keep backward migration compatible and avoid unnecessary allocations on routine casts. Preserve malformed/unknown saved records for possible recovery when safe.
 - The UI uses an 810×676 multi-page editor with searchable overview, categorized spellbook picker, emote search, per-token cooldowns, custom-emote editor and per-ability enable switches.
+- **Spellbook button (0.6.1 development, not yet verified in-game):** `FlourishForever_SpellBook.lua` covers the spellbook's top-left book icon with `Textures/FlourishForeverLogo.tga`. Clicking it calls `FlourishForever_OpenConfig` and opens the existing Flourish window. It does not replace the spell list or add a category tab. Do not cast spells from this button. Gamepad spellbook UI is left untouched. `## IconTexture` points at the same medallion for the addon list. The large portfolio masters in `assets/` stay out of the package.
 - Slash commands: `/flourish`, `/flourishforever`, `/rit`, `/ffsh`, plus `status` and `config`. `status` may print the player's GUID; redact public screenshots/logs.
 - MIT `LICENSE` and `.pkgmeta` package policy are authoritative; do not ship project docs, tests or portfolio assets with the addon.
 
 ## Repository and documentation protocol
 
-1. **Read this file and [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md) first**, then inspect README, CONCEPT, ROADMAP, CHANGELOG, relevant source, TOC, `.pkgmeta`, docs and repository state before modifying anything.
+1. **Read this file and [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md) first**, then inspect README, [docs/CONCEPT.md](docs/CONCEPT.md), [docs/ROADMAP.md](docs/ROADMAP.md), CHANGELOG, relevant source, TOC, `.pkgmeta`, docs and repository state before modifying anything.
 2. Preserve Babuni's approved concept, history, attribution, existing license, SavedVariables and unrelated changes. Discuss materially different gameplay designs instead of silently substituting them.
 3. Make small, maintainable edits. Validate inputs, handle absent APIs, avoid excessive allocations, chat output, sound repetition, unnecessary hooks and addon communications.
 4. Run Lua syntax checks, mocked gameplay and UI tests, static package inventory, and an upload-disabled real packager ZIP preview for release candidates. Record exact results and limitations. **Do not claim mocked tests prove in-game behavior.**
@@ -86,3 +87,7 @@ The October 2026 original implementation began as native-emote-only ability expr
 ## Repository layout
 
 The repository root holds only `README.md`, `AGENTS.md`, `LICENSE` and `CHANGELOG.md` (plus any additional license files). All other documentation lives in `docs/`; put new documents there.
+
+Develop in this git checkout. The Forever `Interface/AddOns/FlourishForever` folder is an installed package, not the repository.
+
+After any local change to the runnable addon, rebuild the test package and install it into the game folder before finishing. Run `python3 tests/pack_test_zip.py --install`. That writes `dist/FlourishForever-<version>-test.zip` and extracts it into `/home/babuni/Games/battlenet/drive_c/Program Files (x86)/World of Warcraft/_forever_/Interface/AddOns`. The installed folder contains only the CurseForge file set: the TOC, the Lua files it lists, `CHANGELOG.md` and `LICENSE`. Do not copy this repository, its docs, or its tests into the game folder. Leaving the ZIP in `dist/` is not an installation. The same rule applies to Babuni's other World of Warcraft addon projects: when the addon is changed locally, update the copy in that client's `Interface/AddOns` folder as well.

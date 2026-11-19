@@ -1,6 +1,14 @@
 # Flourish Forever — recorded design decisions and open alternatives
 
 
+## 19 November 2026 — open Flourish on the spellbook page
+
+Babuni asked for version 0.6.1 to add a spellbook button like What's Training: the same kind of tab as General and the three skill trees, on the top row of the spellbook, opening Flourish there instead of only in a separate window. The search box may become narrower so the tab fits on that row. The editor should scroll on the spellbook background rather than resize the spellbook.
+
+A spellbook tab that replaced the spell list was tried, including a gold selected state beside What's Training. Babuni set that aside and asked to return to the top-left book icon. That icon uses the Flourish medallion, and clicking it must open the Flourish window itself. The earlier portrait button had not done so.
+
+The development build does that. The spell list is left unchanged. `/flourish` opens the same window. The medallion remains the addon-list icon. The button has not been confirmed in the client, and no public tag is authorized.
+
 ## 7 November 2026 — chosen emote controls the whole ability's cooldown
 
 Babuni confirmed that the most recent individual cooldown implementation works and explicitly chose a revised interaction: every selected emote retains its own duration, but whichever one fires locks the **entire configured ability** for that duration. A minor giggle with a three-second timer allows the next random expression quickly, while a more impactful roar with a twenty-second timer creates a longer silence. The next emote is chosen randomly only after the current ability lock expires. The ability's chance and selected trigger mode remain unchanged; other abilities are never locked by this one.
