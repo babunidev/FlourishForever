@@ -82,3 +82,7 @@ The expanded interface and custom `/e` text are now part of the approved develop
 ## Related history
 
 The October 2026 original implementation began as native-emote-only ability expression. The November 2026 recovered UI introduced more extensive selection and custom text. Do not confuse this project with the action-slot emote family or [Roar Forever](https://github.com/babunidev/RoarForever) audio restoration. See [the family history](docs/EMOTE_FAMILY_HISTORY.md) and [expanded merge technical notes](docs/EXPANDED_UI_MERGE.md).
+
+## Repository layout
+
+The repository root holds only `README.md`, `AGENTS.md`, `LICENSE` and `CHANGELOG.md` (plus any additional license files). All other documentation lives in `docs/`; put new documents there.

@@ -162,4 +162,4 @@ Optional native-emote preview, a global social-volume limit across abilities, mo
 
 ## Historic baseline
 
-The original `0.3.0-beta` and `0.3.1-beta` used a 620×520 window, a single cooldown per ability and native-only `DoEmote`. `v0.3.2-beta` improved first-cast handling, saved values and spellbook filtering. `0.4.0-beta` brings the recovered expanded editor and custom emotes into the existing Forever codebase while retaining those safeguards. See [CHANGELOG](CHANGELOG.md), [technical architecture](docs/ARCHITECTURE.md) and [recovery notes](docs/EXPANDED_UI_MERGE.md).
+The original `0.3.0-beta` and `0.3.1-beta` used a 620×520 window, a single cooldown per ability and native-only `DoEmote`. `v0.3.2-beta` improved first-cast handling, saved values and spellbook filtering. `0.4.0-beta` brings the recovered expanded editor and custom emotes into the existing Forever codebase while retaining those safeguards. See [CHANGELOG](../CHANGELOG.md), [technical architecture](ARCHITECTURE.md) and [recovery notes](EXPANDED_UI_MERGE.md).

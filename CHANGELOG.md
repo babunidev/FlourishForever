@@ -26,6 +26,9 @@ The dated entries below preserve the sequence of implementation and investigatio
 
 ## Unreleased development — chosen emote sets the whole ability's cooldown (2026-11-07)
 
+### Changed — documentation moved into `docs/` (2026-11-19)
+- Moved `CONCEPT.md` and `ROADMAP.md` into `docs/`. The root keeps only `README.md`, `AGENTS.md`, `LICENSE` and `CHANGELOG.md`; links to the moved files and the documentation rules in `AGENTS.md` were updated. No code changed. Claude Code (Claude Opus 5.5).
+
 - Babuni confirmed that the preceding cooldown implementation works in-game and approved a change to **ability-wide cooldown gating** without removing individual emote duration sliders.
 - Whenever a selected emote is attempted, snapshot its 0–120-second duration and lock **all emotes on that configured ability** until it expires. Afterward, randomly select from the eligible native/custom pool again; other configured abilities remain independent.
 - Preserve native-emote false-return retry protection: a real native API attempt starts the ability lock even if the function returns false, without claiming a successful dispatch. Custom `/e` starts the lock when submitted; blocked chat calls, empty pools and chance rejections do not start one.

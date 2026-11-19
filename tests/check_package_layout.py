@@ -46,7 +46,7 @@ def main():
         expected.add("LICENSE")
 
     rules = read_ignores()
-    needed = {"assets", "docs", "tests", "AGENTS.md", "CONCEPT.md", "README.md", "ROADMAP.md"}
+    needed = {"assets", "docs", "tests", "AGENTS.md", "README.md"}
     if not needed.issubset(set(rules)):
         print("FAIL: packaging ignore rules are incomplete", file=sys.stderr)
         return 1

@@ -11,6 +11,4 @@ ignore:
   - docs
   - tests
   - AGENTS.md
-  - CONCEPT.md
   - README.md
-  - ROADMAP.md

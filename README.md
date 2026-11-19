@@ -64,7 +64,7 @@ CI checks a packaging preview, but an upload-disabled dry run is **not** a verif
 
 | Topic | Document |
 | --- | --- |
-| Creative purpose and future direction | [Concept](CONCEPT.md) · [Roadmap](ROADMAP.md) |
+| Creative purpose and future direction | [Concept](docs/CONCEPT.md) · [Roadmap](docs/ROADMAP.md) |
 | Layout, implementation and interfaces | [Design](docs/DESIGN.md) · [Architecture](docs/ARCHITECTURE.md) |
 | What changed and why | [Changelog](CHANGELOG.md) · [Decisions](docs/DECISIONS.md) |
 | Experiments and earlier interpretations | [Development notes](docs/RELEASE_DEVELOPMENT_NOTES.md) · [Development journal](docs/DEVLOG.md) |
